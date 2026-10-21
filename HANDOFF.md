@@ -2,8 +2,8 @@
 
 Read this first, then `ARCHITECTURE.md` (code map), `ASSETS.md` (every asset path and the art pipeline) and
 `CREDITS.md`. This file is written so that another person or another AI assistant can pick the work up exactly
-where it stopped. Last updated 2026-10-20 (round 46, judge 45 repairs, committed and pushed; judge 46 run), branch `main`, remote
-`https://github.com/wolfxxx/Heroes.git` (public repo).
+where it stopped. Last updated 2026-10-21 (HeroesGPT repository continuation; latest visual review: judge 46,
+overall 9.4), branch `main`, remote `https://github.com/wolfxxx/HeroesGPT.git` (public repo).
 
 ## 1. The project in one paragraph
 
@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Repository continuation (2026-10-21):** at the user's request, further development in this checkout belongs to
+  `wolfxxx/HeroesGPT`, with `origin` pointing there. The original `wolfxxx/Heroes` repository is the source and must
+  remain untouched by this continuation. Preserve the existing `main` history. The last gameplay commit is
+  `f50213e` (round 46 repairs); the repository setup commit also includes the previously uncommitted judge 46
+  scores and findings below. This migration changes only the handoff and Git destination; no gameplay or assets
+  changed and no game tests were rerun. Resume from the open findings and AI work in section 8.
 - **Artifacts and combination artifacts are built** (the user approved `docs/ARTIFACTS_PROPOSAL.md` as proposed:
   merging as in HoMM3, relics also on random maps, our own names). 41 artifacts in four tiers plus three
   combinations, effects in battle and on the map, tiered placement with guards, the hero screen (tier-coloured
@@ -28,8 +34,8 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   tree, and the stumps, logs and flowers right beside each are removed instead, so all five show again); corpses
   grey and low in contrast (the outline shader's saturation at 0.25 on death); the hero screen's Formation toggle dims
   the option not chosen. The judge 45 "fade did not trigger" finding was checked with a debug print on that siege
-  frame: battle timing varies from run to run, so the judge's frame (Vampires buried behind the Angel) does not recur
-  in a new run — in the re-run the Vampires stand clear, lit by their halo. The rule was left as it is.
+  frame: battle timing varies from run to run; in that re-run the Vampires stood clear, so the rule was left as it is.
+  (Judge 46 then saw the knot again in its own run: it recurs in some runs — still open, see section 8.)
 - Round 45 committed and pushed, judge 45 run on it: judge 44 fixes — a big figure just behind the stack whose turn it is fades too
   (`_see_through`, the 6th info field), fades a little lighter (0.55); corpses darker and greyer; a spell's log line
   shows with its banner (`_flush_log` in `_anim_spell`); the combination's greyed copy brighter; the showcase
@@ -162,11 +168,26 @@ magenta key for pink fringes (recolour them, as was done for the Luck clover).
 | 43 | 9.2 | 9.4 | 9.4 | 9.7 | 8.9 | 9.3 |
 | 44 | 9.2 | 9.4 | 9.4 | 9.7 | 8.9 | 9.3 |
 | 45 | 9.2 | 9.3 | 9.4 | 9.7 | 9.0 | 9.3 |
+| 46 | 9.2 | 9.4 | 9.4 | 9.7 | 9.1 | 9.4 |
 
 Trend: gains have flattened at 9.2 for three rounds. Battle is the weakest area; the next big step most likely comes
 from battle (crowded siege melees, the lightning effect) or from new gameplay (section 8), not more small polish.
 
 ## 8. What's next
+
+### Open findings from judge 46 (overall 9.4 — a new high; battle 9.1)
+1. The siege-gate knot DID recur in judge 46's run (Vampires, whose turn it is, lying across the Angel; Ghosts on the
+   Angel's head; Bone Dragon over the Cavaliers). Round 46's note that it "does not recur" was wrong: it recurs in
+   some runs, not all. Needs a real fix (e.g. keep a stack's figure from overlapping a neighbour's, or a stronger
+   fade/outline for the stack in play), checked over several runs.
+2. In battle_siege_haven the living Bone Dragon and the Angel are drawn semi-transparent while the stack in play is far
+   away; they now look like the grey corpses. Find which fade rule fires there.
+3. Corpses are too dark (charcoal): raise them to mid-grey near the ground's brightness.
+4. adventure_artifacts: the cape lies right behind the castle's tallest tower and reads as a flag on it.
+5. Lightning: the cloud forms over the top-row stack; the bolt passes two stacks to reach its target.
+6. adventure_overview: about 20 wandering monsters on one screen — denser than HoMM3.
+7. battle_spellbook: the two page headings differ in size and colour.
+8. hero_screen: the dimmed backpack arrows nearly vanish.
 
 ### Open findings from judge 45 (overall 9.3; battle up to 9.0, adventure down to 9.3)
 Landed: spell log line with its banner, darker corpses, recognisable greyed combination copy.
