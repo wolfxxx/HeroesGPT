@@ -36,12 +36,13 @@ func run_turn(adv, player: Dictionary) -> String:
 				hero["movement"] = 0
 				break
 			var before: int = hero["movement"]
+			var army_before := GameState.army_strength(hero["army"])
 			var r: String = await adv.move_hero(hero, choice, false)
 			if r == "battle":
 				return "battle"
 			if not adv.is_inside_tree():
 				return "battle"
-			if world["heroes"].has(hid) and world["heroes"][hid]["movement"] == before:
+			if world["heroes"].has(hid) and world["heroes"][hid]["movement"] == before and GameState.army_strength(hero["army"]) == army_before:
 				hero["movement"] = 0
 				break
 			# Hero standing in own town: reinforce.
@@ -141,6 +142,55 @@ func _reinforce(hero: Dictionary, town: Dictionary, _player: Dictionary) -> void
 		var s = town["garrison"][i]
 		if s and GameState.add_to_army(hero["army"], s["id"], s["count"]):
 			town["garrison"][i] = null
+	for stack in hero["army"]:
+		if stack:
+			TownLogic.upgrade_stack(town, _player, stack)
+
+## Consolidate at an ordinary adjacent friendly meeting, retaining one creature with the courier.
+## Preview on copies first: seven-slot limits must never cause lost troops or pointless trips.
+func _transfer(receiver: Array, donor: Array, keep_one: bool) -> int:
+	var reserve := -1
+	if keep_one:
+		for i in donor.size():
+			if donor[i] and (reserve < 0 or GameData.CREATURES[donor[i]["id"]]["ai_value"] < GameData.CREATURES[donor[reserve]["id"]]["ai_value"]):
+				reserve = i
+	var value := 0
+	for i in donor.size():
+		var s = donor[i]
+		if s == null: continue
+		var count: int = s["count"] - (1 if i == reserve else 0)
+		if count > 0 and GameState.add_to_army(receiver, s["id"], count):
+			value += count * GameData.CREATURES[s["id"]]["ai_value"]
+			s["count"] -= count
+			if s["count"] == 0: donor[i] = null
+	return value
+
+func _transfer_value(receiver: Dictionary, donor: Array, keep_one: bool) -> int:
+	return _transfer(receiver["army"].duplicate(true), donor.duplicate(true), keep_one)
+
+func _leader(player: Dictionary) -> int:
+	var uid := -1
+	var best := -1.0
+	for hid in player["heroes"]:
+		var hero: Dictionary = world["heroes"].get(hid, {})
+		if hero.is_empty(): continue
+		var value: float = _strength(hero) + hero["level"] * 200
+		if value > best:
+			best = value
+			uid = hid
+	return uid
+
+func exchange_troops(a: Dictionary, b: Dictionary) -> int:
+	if a["owner"] != b["owner"]: return 0
+	var distance: Vector2i = a["pos"] - b["pos"]
+	if maxi(absi(distance.x), absi(distance.y)) > 1: return 0
+	var leader := _leader(rules.player_of(a))
+	if leader != a["uid"] and leader != b["uid"]: return 0
+	var receiver := a if leader == a["uid"] else b
+	var donor := b if receiver == a else a
+	var moved := _transfer(receiver["army"], donor["army"], true)
+	donor.erase("ai_goal")
+	return moved
 
 func recruit_from_dwelling(hero: Dictionary, o: Dictionary) -> void:
 	var player := rules.player_of(hero)
@@ -182,6 +232,7 @@ func _strength(hero: Dictionary) -> float:
 func choose(hero: Dictionary) -> Dictionary:
 	var defense := _defense(hero)
 	if not defense.is_empty():
+		hero.erase("ai_goal")
 		return {} if defense.has("hold") else defense
 	var me := _strength(hero)
 	var player := rules.player_of(hero)
@@ -189,6 +240,15 @@ func choose(hero: Dictionary) -> Dictionary:
 	var best_score := 0.0
 	var hp: Vector2i = hero["pos"]
 	var cands := []
+	var leader_uid := _leader(player)
+	if hero["uid"] != leader_uid and leader_uid >= 0:
+		var leader: Dictionary = world["heroes"][leader_uid]
+		var delivery := _transfer_value(leader, hero["army"], true)
+		# Do not dismantle a useful second army or chase the leader across the map.
+		if delivery > 400 and _strength(hero) < _strength(leader) * 0.35:
+			var meeting := rules.plan(hero, leader["pos"])
+			if not meeting["path"].is_empty() and meeting["costs"].back() <= hero.get("max_movement", 1500) * 0.5:
+				cands.append([leader["pos"], delivery * 1.2])
 	for o in world["objects"].values():
 		var d: Vector2i = o["pos"] - hp
 		if absi(d.x) > 22 or absi(d.y) > 22:
@@ -205,8 +265,10 @@ func choose(hero: Dictionary) -> Dictionary:
 				def += _strength(dh)
 			if me > def * 1.4:
 				v = 12000.0
-		elif t["pos"] != hp and rules.hero_at(t["pos"]).is_empty() and GameState.army_strength(t["garrison"]) > me * 0.25:
-			v = 2500.0 + GameState.army_strength(t["garrison"]) * 0.6
+		elif t["pos"] != hp and rules.hero_at(t["pos"]).is_empty():
+			var reinforcement := _transfer_value(hero, t["garrison"], false)
+			if reinforcement > me * 0.25:
+				v = 2500.0 + reinforcement * 0.6
 		if v > 0:
 			cands.append([t["pos"], v])
 	for e in world["heroes"].values():
@@ -235,9 +297,28 @@ func choose(hero: Dictionary) -> Dictionary:
 			continue
 		var cost: int = plan["costs"][plan["costs"].size() - 1]
 		var score: float = c[1] / (1.0 + cost / 150.0)
+		var goal: Dictionary = hero.get("ai_goal", {})
+		if goal.get("pos", Vector2i(-1, -1)) == c[0]:
+			score *= 1.2 # keep a viable multi-day objective unless a materially better opportunity appears
+		var exclusive: bool = plan["kind"] == "town" and plan["target"].get("owner", -1) != hero["owner"]
+		exclusive = exclusive or plan["target"].get("type", "") in ["resource", "chest", "campfire", "artifact", "monster", "mine"]
+		for hid in (player["heroes"] if exclusive else []):
+			if hid == hero["uid"]: continue
+			var other: Dictionary = world["heroes"].get(hid, {})
+			var assigned: Dictionary = other.get("ai_goal", {})
+			if assigned.get("pos", Vector2i(-1, -1)) != c[0] or int(assigned.get("day", -2)) < world["day"] - 1:
+				continue
+			# A recent assignment avoids duplicate errands; a much nearer hero may still take over.
+			if Vector2(other["pos"] - c[0]).length() <= Vector2(hp - c[0]).length() + 2.0:
+				score *= 0.6
+				break
 		if score > best_score:
 			best_score = score
 			best = plan
+	if best.is_empty():
+		hero.erase("ai_goal")
+	else:
+		hero["ai_goal"] = {"pos": best["path"].back(), "day": world["day"]}
 	return best
 
 ## Largest hostile army that can reach the gate next turn, following the actual terrain/occupancy path.

@@ -328,22 +328,22 @@ func xp_level(xp: int) -> int:
 # ---------------------------------------------------------------------------------------------
 const SAVE_PATH := "user://savegame.dat"
 
-func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+func has_save(path := SAVE_PATH) -> bool:
+	return FileAccess.file_exists(path)
 
-func save_game() -> bool:
+func save_game(path := SAVE_PATH) -> bool:
 	if world.is_empty():
 		return false
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
 		return false
 	f.store_var({"version": 1, "world": world, "uid": _uid})
 	return true
 
-func load_game() -> bool:
-	if not has_save():
+func load_game(path := SAVE_PATH) -> bool:
+	if not has_save(path):
 		return false
-	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		return false
 	var d = f.get_var()

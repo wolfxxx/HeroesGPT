@@ -1,7 +1,7 @@
 extends Node
 ## Fixed siege layouts for regressions and screenshots, independent of auto-battle timing.
 ## --headless res://tools/battle_visual_test.tscn runs assertions.
-## With -- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck, holds that layout for Shot.
+## With -- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck|movement, holds that layout for Shot.
 
 var battle: Node2D
 var failures := 0
@@ -31,6 +31,9 @@ func _run() -> void:
 			"distant": _focus("pikeman")
 			"corpses": _corpses()
 			"wreck": _wreck()
+			"movement":
+				await get_tree().create_timer(maxf(0.1, float(Shot.args.get("delay", "3")) - 0.35)).timeout
+				_move_ghost()
 			"lightning":
 				# Capture the real spell animation near its peak, on a fixed target.
 				await get_tree().create_timer(maxf(0.1, float(Shot.args.get("delay", "3")) - 0.15)).timeout
@@ -39,6 +42,7 @@ func _run() -> void:
 					"hex": target["hex"], "dmg": {}, "killed": {}})
 		return
 	await get_tree().create_timer(0.7).timeout
+	_check_separation()
 	_check(_alpha("vampire") > 0.99, "active Vampire stays opaque")
 	_check(_alpha("angel") < 0.6, "Angel overlapping the active Vampire fades")
 	_check(_alpha("pikeman") > 0.99, "remote Pikeman stays opaque")
@@ -55,6 +59,15 @@ func _run() -> void:
 	await get_tree().create_timer(0.4).timeout
 	_check(_alpha("angel") < 0.6, "hover reveals Vampire")
 	battle._hover = Vector2i(-1, -1)
+	var ghost_node: Node2D = battle._unit(_stack("ghost"))
+	var start := ghost_node.position
+	_move_ghost()
+	await get_tree().create_timer(0.1).timeout
+	_check(ghost_node.get_meta("moving", false) and ghost_node.position.distance_to(start) > 1.0
+		and ghost_node.position.distance_to(battle.stand_pos(_stack("ghost"))) > 1.0, "crowd settling does not snap a moving flyer to its destination")
+	await get_tree().create_timer(1.2).timeout
+	_check(not ghost_node.get_meta("moving", false) and ghost_node.position.distance_to(battle.stand_pos(_stack("ghost"))) < 0.1,
+		"moving flyer lands on its footprint and releases crowd settling")
 	_corpses()
 	await get_tree().create_timer(0.7).timeout
 	var corpse: Sprite2D = battle._unit(_stack("bone_dragon")).get_node("Sprite")
@@ -77,6 +90,44 @@ func _stack(id: String) -> Dictionary:
 		if s["id"] == id:
 			return s
 	return {}
+
+func _move_ghost() -> void:
+	var ghost := _stack("ghost")
+	var old: Vector2i = ghost["hex"]
+	ghost["hex"] = Vector2i(6, 3)
+	await battle._anim_move(ghost, [old, ghost["hex"]])
+
+func _check_separation() -> void:
+	var ids := ["ghost", "angel", "vampire"]
+	var positions := []
+	var cells := []
+	for id in ids:
+		var st := _stack(id)
+		var n: Node2D = battle._unit(st)
+		positions.append(n.position)
+		cells.append(battle.L.cells(st).duplicate())
+		_check(n.position.distance_to(battle._footprint_center(st, st["hex"])) <= 18.01, "crowd shift stays within footprint: " + id)
+	var separated := _overlap_samples("ghost", "angel") + _overlap_samples("angel", "vampire")
+	for id in ids:
+		var st := _stack(id)
+		battle._unit(st).position = battle._footprint_center(st, st["hex"])
+	var centered := _overlap_samples("ghost", "angel") + _overlap_samples("angel", "vampire")
+	for i in ids.size():
+		battle._unit(_stack(ids[i])).position = positions[i]
+		_check(battle.L.cells(_stack(ids[i])) == cells[i], "presentation keeps combat cells unchanged: " + ids[i])
+	_check(separated < centered, "staggering reduces painted silhouette overlap (%d < %d samples)" % [separated, centered])
+	print("CROWD OVERLAP: %d -> %d opaque samples" % [centered, separated])
+
+func _overlap_samples(a_id: String, b_id: String) -> int:
+	var a: Sprite2D = battle._unit(_stack(a_id)).get_node("Sprite")
+	var b: Sprite2D = battle._unit(_stack(b_id)).get_node("Sprite")
+	var box: Rect2 = (a.global_transform * a.get_rect()).intersection(b.global_transform * b.get_rect())
+	var count := 0
+	for y in range(int(box.position.y), int(box.end.y), 2):
+		for x in range(int(box.position.x), int(box.end.x), 2):
+			var p := Vector2(x, y)
+			if a.is_pixel_opaque(a.to_local(p)) and b.is_pixel_opaque(b.to_local(p)): count += 1
+	return count
 
 func _place(id: String, hex: Vector2i) -> void:
 	var s := _stack(id)

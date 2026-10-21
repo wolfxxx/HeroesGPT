@@ -287,11 +287,10 @@ func gain_xp(hero: Dictionary, xp: int) -> int:
 	return gained
 
 ## Rolls a level-up: returns {"stat": String, "options": Array[skill_id]} (does not apply).
-func roll_level_up(hero: Dictionary, rng := RandomNumberGenerator.new()) -> Dictionary:
-	rng.randomize()
+func roll_level_up(hero: Dictionary, rng: RandomNumberGenerator = null) -> Dictionary:
 	var might: bool = hero["class"] in ["Knight", "Death Knight"]
 	var weights := {"attack": 35, "defense": 35, "power": 15, "knowledge": 15} if might else {"attack": 15, "defense": 15, "power": 35, "knowledge": 35}
-	var roll := rng.randi_range(1, 100)
+	var roll := rng.randi_range(1, 100) if rng else randi_range(1, 100)
 	var stat := "attack"
 	for k in weights:
 		roll -= weights[k]
@@ -308,8 +307,12 @@ func roll_level_up(hero: Dictionary, rng := RandomNumberGenerator.new()) -> Dict
 		for s in GameData.SKILLS:
 			if not skills.has(s):
 				fresh.append(s)
-	upgradable.shuffle()
-	fresh.shuffle()
+	for pool in [upgradable, fresh]:
+		for i in range(pool.size() - 1, 0, -1):
+			var j := rng.randi_range(0, i) if rng else randi_range(0, i)
+			var swap: String = pool[i]
+			pool[i] = pool[j]
+			pool[j] = swap
 	var opts := []
 	if upgradable.size() > 0:
 		opts.append(upgradable[0])

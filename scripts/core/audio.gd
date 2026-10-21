@@ -10,9 +10,11 @@ var _active_is_a := true
 var _current := ""
 var _sfx_pool: Array[AudioStreamPlayer] = []
 var _last_played := {}
+var _pitch_rng := RandomNumberGenerator.new() # presentation must not consume combat/map dice
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_pitch_rng.randomize()
 	_music_a = AudioStreamPlayer.new()
 	_music_b = AudioStreamPlayer.new()
 	for p in [_music_a, _music_b]:
@@ -65,7 +67,7 @@ func sfx(name: String, volume_offset := 0.0, pitch_var := 0.06) -> void:
 		if not p.playing:
 			p.stream = stream
 			p.volume_db = sfx_volume_db + volume_offset
-			p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
+			p.pitch_scale = 1.0 + _pitch_rng.randf_range(-pitch_var, pitch_var)
 			p.play()
 			return
 

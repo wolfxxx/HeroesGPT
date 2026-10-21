@@ -7,8 +7,9 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
 - `GameData` — static tables (creatures, heroes, spells, buildings, artifacts, terrains, mines). Source of all ids.
 - `Assets` — `Assets.tex("creatures/pikeman.png")` with placeholder fallback; `Assets.anchor(path)` returns the
   foot point of a Blender-rendered sprite (from `<dir>/anchors.json`). See ASSETS.md for every asset path.
-- `Audio` — `Audio.music("battle")`, `Audio.sfx("sword_hit")`.
+- `Audio` — `Audio.music("battle")`, `Audio.sfx("sword_hit")`; pitch uses a private RNG, independent of gameplay.
 - `GameState` — world state across scenes, fade `change_scene()`, battle/town handoff, hero helpers, save/load.
+  `save_game`, `load_game`, `has_save` accept an optional path for isolated tests; default remains `user://savegame.dat`.
 - `Shot` — screenshot harness for automated visual review (see below).
 
 ## Shared classes
@@ -52,6 +53,30 @@ route completion also releases it. `_start_human_turn` restores the human hero's
 Otherwise a late tween update can overwrite subsequent instant hidden movement and leave a sprite at the fog edge.
 No persistent camera state or fog-rule changes; existing saves work after restarting.
 
+## Adventure strategy
+`AdvAI.choose` scores safe reachable objectives, favors its existing viable target by 20%, and discounts recent
+assignments to another nearby hero for consumable/capturable sites. Repeatable shops and friendly towns remain
+available to everyone. Optional `hero.ai_goal={pos:Vector2i,day:int}` persists through saves and is revalidated
+on each decision; stale reservations expire. Defense overrides ordinary errands.
+
+`_leader` identifies the strongest army/hero. A small secondary army can deliver troops within half a day's
+journey. `adventure.gd._interact_with` calls `exchange_troops` only at a normal friendly meeting. `_transfer`
+obeys army slot limits and retains one creature; `_transfer_value` previews on deep copies. A changed army counts
+as progress even when an adjacent meeting consumes no movement. `_reinforce` pays normal town upgrade costs.
+Map-spell planning and fog-aware strategic knowledge remain unimplemented. Campaign results are in HANDOFF.md;
+functional coordination tests pass, but overall strength gain is unproven.
+
+`AdvRules.roll_level_up(hero, rng=null)` honors a supplied generator for both stats and skill options; otherwise
+it uses the global gameplay stream. No reseeding from wall-clock time. Other presentation randomness still needs
+isolation before deterministic network/replay support.
+
+## Battle presentation
+`stand_pos` starts from `_footprint_center` and offsets aligned figures on successive rows by up to 18px within
+their footprints. `_crowd` settles idle nodes and keeps existing crowd scaling; `_anim_move` marks its node
+`moving` so layout cannot override its tween. Rings follow the actual node. Combat hexes, movement costs, hit
+testing and depth order are unchanged. Focus fading still handles residual wing overlap. The Necropolis corner
+hero uses the existing outline shader with a modest rim/exposure lift against dark towers.
+
 ## Artifacts
 `GameData.ARTIFACTS` (tiers treasure/minor/major/relic, set pieces with `"set"`, combinations with `"parts"`; the
 bonus keys and flags are listed in its header comment) and `GameData.ARTIFACT_TIERS`. Rules in `GameState`:
@@ -60,6 +85,9 @@ bonus keys and flags are listed in its header comment) and `GameData.ARTIFACT_TI
 `join_combination` (a hero's `"apart"` list keeps split sets from re-merging). Effects are applied in
 `BattleLogic.max_hp / speed / spell_damage / immune`, `Necromancy` (post-battle raising), `AdvRules` (scouting, daily gold and
 mana, weekly first-level growth). Placement by tier: `WorldGen._place_artifacts`. Design: `docs/ARTIFACTS_PROPOSAL.md`.
+
+`MapView._ArtifactGlow` draws the twinkle as explicit convex triangles, skipping near-invisible subpixel phases.
+This avoids triangulation of a collapsing concave star. A windowed phase sweep is in `tools/artifact_glow_test.tscn`.
 
 ## War machine shops
 `GameData.WAR_MACHINES` lists the three purchasable types, with prices in `CREATURES`; `SMITH_MACHINE` keeps the
@@ -103,7 +131,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
-  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (14 spending/defense/target checks),
+  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (35 spending/defense/coordination/transfer/RNG checks),
+  `campaign_week_test` (63 integrated week/save checks), `adventure_tournament --self --pairs=2` (RNG control),
+  `artifact_glow_test` (4096 phase draws in a window, inspect errors),
   `adventure_camera_test` (33 movement/visibility/turn-camera checks),
   `war_machine_test` (purchases, factory persistence, AI, generated access and battle ammo),
   `necromancy_test` (46 checks of raising rules, slots, casualties and rewards on both sides),
@@ -119,9 +149,25 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/necromancy_test.tscn` — rates, small battles, undead/machines, full and upgraded armies, no-room feedback,
   stacked amplifiers/artifacts, Mantle health cap, separate casualty stacks, field/town attacker/defender rewards,
   serialization, and instant resolution on both sides. Does not touch the user's save file.
-- `tools/battle_visual_test.tscn` — 16 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck`
+- `tools/campaign_week_test.tscn` — a controlled seven-day fixture through production movement, visits, battles,
+  enemy AI, building/recruiting, factory purchases, Necromancy and weekly growth. Saves/loads an isolated
+  `user://campaign_week_test_<pid>.dat`, compares the complete world and removes only that test file.
+- `tools/ai/campaign_driver.gd` — headless subclass of the adventure controller. Suppresses drawing, camera
+  visibility and game-over popups; all players must be AI. Runs real turns and instant battles, counts battles.
+- `tools/adventure_tournament.tscn` — paired generated maps, sides swapped, current policy versus the frozen
+  `tools/ai/adventure_ai_baseline.gd` from `35ed2e6`. Example: `Godot --headless --path .
+  res://tools/adventure_tournament.tscn -- --pairs=48 --start=200 --days=42`. `--self` uses baseline on both sides
+  and fails if any pair differs. Reset UID and global RNG for each game. Strategic score: army + 5000/town +
+  half treasury gold + 100/hero level + five days' mine income (wood/ore valued 100, rare resources 250).
+  Report paired normalized score delta with two standard errors and actual wins/losses/unresolved separately.
+  Many games hit the limit: a score advantage is not an elimination. Shared rules are the same for both policies.
+- `tools/artifact_glow_test.tscn` — render 32 glows over 128 frames, sampling appearance/disappearance thresholds
+  and the wider cycle. Run windowed for actual renderer verification; `-- --shot=shots/x.png --delay=1` holds a
+  labelled phase sheet. Restore `project.godot` after any windowed run (the full suite's exit trap does this).
+- `tools/battle_visual_test.tscn` — 25 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck|movement`
   in a window to hold the same siege layout for screenshot comparison. Battle `_acting_uid` tracks the turn being
   animated (rules can already be on the next turn); `_figures_overlap` samples sprite alpha above the ground shadow.
+  Checks also compare painted overlap with/without staggering, unchanged combat cells and smooth flyer movement.
 - `tools/ai_tournament.tscn` — the current battle AI against the frozen baseline (`tools/ai/battle_ai_baseline.gd`):
   `Godot --headless --path . res://tools/ai_tournament.tscn -- --games=300` (600 battles; allow several minutes); prints the win rate
   and the paired difference in army kept, with its error bar. Measure every battle-AI change with it; refreeze the

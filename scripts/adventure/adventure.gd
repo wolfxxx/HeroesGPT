@@ -816,6 +816,8 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 			if other["owner"] == hero["owner"]:
 				if human:
 					hud.open_exchange(hero, other)
+				else:
+					ai.exchange_troops(hero, other)
 				return ""
 			var involves_human: bool = human or not rules.player_of(other)["is_ai"]
 			for t in world["towns"].values():

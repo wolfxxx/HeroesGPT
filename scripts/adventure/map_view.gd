@@ -699,7 +699,7 @@ class _ArtifactGlow extends Node2D:
 		if strong:  # a soft four-pointed glint now and then (never a hard cross: a still caught it as a debug mark)
 			for k in 2:
 				var a := clampf(sin(t * 1.6 + k * 2.6) * 1.6 - 0.6, 0.0, 1.0)
-				if a <= 0.0:
+				if a < 0.02: # subpixel, effectively invisible glints need no geometry
 					continue
 				var p := Vector2(-16 + k * 30, -40 - k * 14)
 				var r := 7.0 * a
@@ -707,8 +707,12 @@ class _ArtifactGlow extends Node2D:
 					var c := Color(1.0, 0.97, 0.88, sc[1] * a)
 					var l: float = r * sc[0]
 					var wd: float = r * 0.16
-					draw_colored_polygon(PackedVector2Array([p + Vector2(0, -l), p + Vector2(wd, -wd), p + Vector2(l, 0),
-						p + Vector2(wd, wd), p + Vector2(0, l), p + Vector2(-wd, wd), p + Vector2(-l, 0), p + Vector2(-wd, -wd)]), c)
+					var tips := PackedVector2Array([Vector2(0, -l), Vector2(wd, -wd), Vector2(l, 0),
+						Vector2(wd, wd), Vector2(0, l), Vector2(-wd, wd), Vector2(-l, 0), Vector2(-wd, -wd)])
+					# Explicit convex triangles avoid concave-polygon triangulation at the twinkle's tiny tips.
+					for i in tips.size():
+						draw_primitive(PackedVector2Array([p, p + tips[i], p + tips[(i + 1) % tips.size()]]),
+							PackedColorArray([c]), PackedVector2Array())
 				draw_circle(p, r * 0.22, Color(1, 1, 1, 0.8 * a))
 
 class _RectNode extends Node2D:

@@ -16,7 +16,50 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Current checkpoint (2026-10-21), this commit:** `Add factories and fix hero controls, necromancy, and camera follow`.
+- **Session48 checkpoint (2026-10-21), this commit:** `Add campaign benchmarks, AI coordination, and visual fixes`.
+  The user authorized committing/pushing this tested checkpoint, then investigating long AI campaigns and
+  improving conquest/reinforcement decisions. Previous pushed commit: **`35ed2e6`**; use `git log -1` for this
+  checkpoint's hash. No new assets, judge run or score. Captures/logs are local under ignored `shots/session48/`.
+  - `tools/campaign_week_test.tscn` passes **63 checks** through the production adventure controller: seven legal
+    daily builds and resets, recruitment, walking to the factory and equipping all machines, a guard battle with
+    Expert Necromancy, enemy turns, day-eight growth and midweek save/load of the full world. This is a scripted
+    integration fixture, not a manual UI playthrough. It uses a unique test save; the player's save is untouched.
+    `GameState` save/load/has-save accept an optional path; default and schema stay unchanged.
+  - `AdvAI` retains viable multi-day targets, discourages duplicate errands to consumable/capturable sites, and
+    lets nearby small armies deliver troops to the strongest hero (at most half a day's journey, army below 35%
+    of the leader's strength). Transfers obey normal army slots and retain one creature with the donor; useful
+    free meetings no longer exhaust movement. Town visits pay normal upgrade costs and evaluate only troops the
+    visitor can carry. **35 focused checks pass**, including a real meeting followed by movement/collection.
+    Defense still takes priority. Optional `hero.ai_goal={pos,day}` uses existing save serialization; no migration.
+  - New benchmark: `tools/adventure_tournament.tscn`, production-controller adapter `tools/ai/campaign_driver.gd`,
+    frozen pre-change policy `tools/ai/adventure_ai_baseline.gd` from `35ed2e6`. Final candidate on **48 fresh
+    pairs / 96 games**, start=200, days=42: **14 wins, 10 losses, 72 unresolved**; normalized strategic-score
+    difference **-3.93 +/- 10.02 points (2 SE)**, 2914 instant battles (`strategy-final.log`). **No demonstrated
+    overall strength gain**; score leads are not wins. An aggressive courier trial was rejected after -17.11 +/-
+    6.63 on eight development pairs; an intermediate policy scored -9.47 +/- 16.10 on 24 validation pairs
+    (`strategy-heldout.log`). Final version restores ordinary hero order and fixes free-meeting progress.
+    Same-policy control is exactly 0.00 +/- 0.00. Two shared randomness bugs were fixed: sound pitch uses a
+    private generator; level-ups honor a supplied RNG or the seeded global stream instead of reseeding from time.
+    Other presentation code still consumes global randomness; this is not deterministic online/saved replay.
+  - Aligned siege figures shift at most 18px horizontally within their footprints; rings follow, depth order and
+    combat cells are unchanged. Movement tweens retain control of moving units. **25 visual checks pass**;
+    painted overlap in the fixed Ghost/Angel/Vampire fixture fell from about 686 to 312 samples (breathing causes
+    small variation). Residual wing overlap remains; focused fading is still needed. The Necropolis battle hero
+    has a modest rim/exposure lift against the towers. Inspected `distant-before/after.png`, `crowd-before/after.png`
+    and `movement.png`. Two live auto-sieges also ran without script errors; inspected late frames
+    `live-necro_1.png` and `live-haven_1.png` (four captures total). No new independent judge score or claim that
+    every siege arrangement is solved.
+  - Artifact twinkles use explicit triangle fans and skip invisible subpixel glints, avoiding concave-polygon
+    triangulation at near-zero radius. `tools/artifact_glow_test.tscn` completed **4096 phase draws in a real
+    window**, including threshold samples, with no polygon errors; inspected `glow-phases.png`.
+  - **Full suite passed** (`tests.log`): compile; 40 battles; 25 battle visual; 15 battle AI; 35 adventure AI;
+    63 campaign week; two paired same-policy campaigns at exactly zero difference; 4096 glow phase draws;
+    33 camera; 227 factory; 46 Necromancy; 31 clicks/drag/queued click; five visits; 306 artifact checks; `SIM DONE`.
+    Week/control/glow tools are now in the suite. An exit trap restores `project.godot` even on interruption.
+  - Next: evaluate conquest/reinforcement priorities against the measured limits; further siege silhouette work
+    without hiding unrelated figures. Map-spell planning, fog policy, difficulty, hot-seat and three machine
+    wrecks remain open. This checkpoint's commit/push is authorized; further changes need their own instruction.
+- **Last pushed checkpoint (2026-10-21), `35ed2e6`:** `Add factories and fix hero controls, necromancy, and camera follow`.
   The user requested committing and pushing all work so far to `wolfxxx/HeroesGPT`, branch `main`; the previous
   pushed commit was `b81b0c7`. This checkpoint includes all eight changes detailed below, their regression tools,
   the factory painting and its provenance, and the updated architecture/asset/credit docs. Use `git log -1` for
@@ -355,11 +398,13 @@ strategic AI are more substantial next steps than further small dialog polish.
 
 ### Open findings from judge 47 (overall 9.4; battle 9.3)
 1. Other participants in siege melees remain crowded even though the focused Vampire is now clear
-   (`battle_siege_later`, x790–1040/y560–720). Preserve depth order; examine silhouette separation next.
+   (`battle_siege_later`, x790–1040/y560–720). Local session48 adds bounded staggering and verifies reduced
+   silhouette overlap. Residual wing overlap remains; no new judge has reviewed it.
 2. Lightning targeting is clear, but its uniform double stroke and blunt top look drawn rather than painted
    (`session47/lightning`, x1325–1355/y395–500). Taper/irregularity is a future visual refinement.
 3. Lakes have blurred decal-like edges (`adventure_close` bottom centre; `adventure_overview` right centre).
-4. Necropolis battle hero blends into the dark towers (siege shots, upper right).
+4. Necropolis battle hero blends into the dark towers (siege shots, upper right). Local session48 adds a modest
+   exposure/rim lift, verified in before/after screenshots; awaiting a future judge.
 5. Construction thumbnail heights vary around wrapped prices (`town_build_rich`, Mage Guild/upgrades).
 6. War-machine labels vary in size in the siege turn queue.
 7. Starting-bonus descriptions are cramped (`newgame`, lower left).
@@ -468,13 +513,14 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 1. **Artifacts and combinations — BUILT.** The approved `docs/ARTIFACTS_PROPOSAL.md` is implemented: 38 ordinary
    artifacts plus three combinations, four tiers, guarded map placement, hero equipment/backpack, merging and
    splitting, and battle/adventure effects. There are no pending proposal questions.
-2. **Computer opponent — tactical/local-defense pass COMPLETE; broader strategy remains.** Battle AI scores
+2. **Computer opponent — tactical/local-defense pass COMPLETE; initial strategic pass local.** Battle AI scores
    damage, surviving retaliation, shooter blocking and collateral; it waits/defends with ranged support for at most
    eight rounds. Adventure AI recruits under immediate threat and assigns a nearby viable defender, while ordinary
-   expansion remains value divided by route cost. Remaining work: multi-turn objectives, troop transfers between
-   heroes, map-spell planning, fog-information policy, difficulty behavior, and a strategic win-rate benchmark.
-   The battle tournament and 29 new battle/adventure decision checks are in place. Round47 is statistically
-   close to the prior AI overall; keep that limitation when proposing further tuning.
+   expansion remains value divided by route cost. Session48 adds target persistence/coordination, bounded troop
+   deliveries, paid upgrades and a paired campaign benchmark. Overall strength gain is unproven (results in §2).
+   Remaining work: better conquest/reinforcement priorities, map-spell planning, fog policy and difficulty.
+   Adventure AI still enumerates world targets regardless of fog. Keep the frozen baseline and use fresh map
+   pairs for comparisons; strategic scores and eliminations measure different outcomes.
 3. **Multiplayer.** None today (`world_gen.gd`: `"is_ai": i != 0`). Step 1, hot-seat (players sharing one
    computer, as HoMM3): choose human/computer per player on New Game, a "pass to the next player" screen,
    human-vs-human battles. Step 2, online play, is its own large project: an authoritative host, deterministic
@@ -487,6 +533,12 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Strategic campaign work (session48):** `AdvAI.choose` owns the optional target assignment; `_leader`,
+  `_transfer_value`, `_transfer`, `exchange_troops` handle legal nearby deliveries. `adventure.gd._interact_with`
+  executes AI meetings. `tools/ai/campaign_driver.gd` runs production turns/visits/instant battles without UI;
+  `campaign_week_test.gd` and `adventure_tournament.gd` use it. Frozen AI policy is in `tools/ai/`.
+- **Twinkle reliability:** `MapView._ArtifactGlow` emits convex triangles instead of triangulating a collapsing
+  concave star; `tools/artifact_glow_test.tscn` sweeps phases using the real renderer.
 - **Map edge**: `scripts/adventure/fog.gdshader` draws the shroud, the slate void past the edge and a rocky ridge
   (`rock_h` height map: warped power-diagram boulders + crags; `ridge` lighting; `band`/`enc` set how far it runs
   out and onto the map). `map_view.gd` `_build_border()` places the map's own mountain sprites around the edge
@@ -496,7 +548,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   - `_see_through()` / `_figures_overlap()` — only painted figures overlapping a focused stack fade via
     `body_alpha`; no permanent feet-holes in unrelated stacks. `_acting_uid` follows the displayed turn through
     animations. The active stack gets a pulsing halo (`team`); `corpse_tone` softens corpse contrast.
-  - `_crowd()` — wide-winged figures and figures in 3+ / 4+ stack melees draw smaller.
+  - `_crowd()` — wide-winged figures and figures in 3+ / 4+ stack melees draw smaller. `stand_pos` staggers aligned
+    successive rows by at most 18px inside their footprints; `_footprint_center` keeps the geometric center.
+    `_crowd` settles idle figures; `_anim_move` sets `moving` node metadata to protect its tween.
   - `_settle_badges()` — count plates: front corner, moved in under their own figure when a front neighbour is
     taken, never on another stack's figure (body penalty, back-corner and raised spots).
   - `_under_figures()` — low obstacles fade where a figure stands over them.
@@ -521,6 +575,15 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- Paired campaigns need both world UID reset and gameplay seed reset per game. Audio pool availability/dedup
+  depends on timing: audio needs its own RNG. Never randomize a caller-supplied level-up generator. Other
+  presentation code still consumes global RNG; campaign reproducibility is limited to the headless harness.
+- Mark every player AI in the campaign harness, otherwise battles/visits can open modal UI and hang it. Its
+  `SilentView`/`SilentHUD` disable presentation while retaining the production controller and rules.
+- Godot can emit a script error alongside a zero-failure test summary and exit code zero. Inspect `SCRIPT ERROR`
+  lines as well as counts. Old exit-only resource leak warnings remain separate from runtime failures.
+- Tiny concave artifact glints intermittently failed triangulation. Explicit triangles plus a subpixel cutoff
+  remove that path; verify future changes with a windowed phase sweep.
 - Godot shaders: no `return` inside `fragment()`. In a canvas shader, `COLOR` already holds the sampled and
   modulated texture — multiplying by `COLOR` again squares the colour.
 - GDScript treats "inferred from Variant" as an error here: type such variables explicitly (`var t: String = ...`).

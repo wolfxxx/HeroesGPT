@@ -139,9 +139,23 @@ func _demo_setup() -> Dictionary:
 static func hex_pos(h: Vector2i) -> Vector2:
 	return Vector2(X0 + h.x * HEX_W + (HEX_W * 0.5 if h.y % 2 == 1 else 0.0), Y0 + h.y * ROW_STEP)
 
-## Where a stack's feet stand with its head on `head`: the middle of its footprint (two hexes for large ones).
+## Feet within the footprint (two hexes for large units), with a small stagger for aligned crowded rows.
 func stand_pos(st: Dictionary, head = null) -> Vector2:
 	var h: Vector2i = st["hex"] if head == null else head
+	var p := _footprint_center(st, h)
+	# Tall figures on successive rows can share exactly the same screen column (especially a wide flyer
+	# between two single-hex troops). Stagger their feet within their own footprint; combat hexes stay put.
+	if not st.get("machine", false) and st.get("alive", false):
+		for other in L.stacks:
+			if other == st or not other.get("alive", false) or other.get("machine", false):
+				continue
+			var op := _footprint_center(other, other["hex"])
+			if absf(op.x - p.x) < HEX_W * 0.35 and absf(op.y - p.y) > 1.0 and absf(op.y - p.y) <= ROW_STEP * 1.1:
+				p.x += 18.0 if h.y % 2 else -18.0
+				break
+	return p
+
+func _footprint_center(st: Dictionary, h: Vector2i) -> Vector2:
 	var p := hex_pos(h) + Vector2(0, 24)
 	if h.x < 0 or h.x >= BattleLogic.COLS:  # (the machines' back rank: a little further back, clear of the first column)
 		p.x += -30.0 if h.x < 0 else 30.0
@@ -254,6 +268,11 @@ func _build_scene() -> void:
 		s.scale = Vector2(sc, sc)
 		s.flip_h = side == 1
 		s.position = Vector2(110 if side == 0 else 1810, 175)
+		if hh["faction"] == "necropolis":
+			# Bring the dark armor and skeletal horse forward from the dark siege towers.
+			MapView.outline(s, 1.0)
+			s.material.set_shader_parameter("rim_strength", 0.55)
+			s.modulate = Color(1.3, 1.3, 1.3)
 		add_child(s)
 		var sz := Vector2(s.texture.get_size()) * sc
 		_hero_rects[side] = Rect2(s.position - sz * 0.5, sz).grow(-sz.x * 0.12)
@@ -372,6 +391,8 @@ func _crowd() -> void:
 		var st: Dictionary = n.get_node("Badge").st
 		if not n.has_meta("full_scale") or not st.get("alive", false) or st.get("machine", false):
 			continue
+		if not n.get_meta("moving", false):
+			n.position = n.position.move_toward(stand_pos(st), get_process_delta_time() * 180.0)
 		var full: Vector2 = n.get_meta("full_scale")
 		var vis := fig_vis_w(st["id"]) * full.x
 		var span := HEX_W * (2.0 if L.is_wide(st) else 1.0)
@@ -1228,6 +1249,7 @@ func _flush_log(ev: Dictionary) -> void:
 
 func _anim_move(st: Dictionary, path: Array) -> void:
 	var n := _unit(st)
+	n.set_meta("moving", true) # the crowd layout must not compete with the movement tween
 	var spr: Sprite2D = n.get_node("Sprite")
 	var cycle := Assets.has("creatures/%s_move0.png" % st["id"])  # 4-frame walk / flap / gallop (tools/art/cycle_paint.py)
 	if L.is_flyer(st):
@@ -1266,6 +1288,7 @@ func _anim_move(st: Dictionary, path: Array) -> void:
 		_pose(st, "")
 	_set_flip(spr, st["side"] == 1)
 	_face_enemies(st)
+	n.set_meta("moving", false)
 
 ## Loop the unit's 4 movement frames for `dur` seconds at `fps` (flyers).
 func _play_cycle(st: Dictionary, dur: float, fps: float) -> void:
