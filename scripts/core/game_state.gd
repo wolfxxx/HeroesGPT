@@ -109,7 +109,7 @@ func make_hero(hero_id: String, owner: int) -> Dictionary:
 		"knowledge": d["knowledge"], "level": 1, "xp": 0, "mana": 0, "movement": 1500, "max_movement": 1500,
 		"army": army, "spells": d.get("spells", []).duplicate(), "skills": d.get("skills", {}).duplicate(),
 		"artifacts": [], "backpack": [], "pos": Vector2i.ZERO,
-		# might heroes march with a ballista, magic heroes with a first aid tent (more at a Blacksmith)
+		# might heroes march with a ballista, magic heroes with a first aid tent (more at a smith or factory)
 		"machines": ["ballista"] if d["class"] in ["Knight", "Death Knight"] else ["first_aid_tent"],
 	}
 	h["max_movement"] = hero_max_movement(h)
@@ -132,6 +132,30 @@ func tavern_hero(hero_id: String, owner: int) -> Dictionary:
 	if GameState.army_is_empty(h["army"]):  # (a hero who fled comes with a few troops, as a fresh one)
 		h["army"] = make_hero(hero_id, owner)["army"]
 	return h
+
+## Shared by the faction Blacksmith and the neutral War Machine Factory. Machines occupy
+## their own equipment slots, never army slots; a destroyed machine can be bought again.
+func war_machine_reason(hero: Dictionary, player: Dictionary, id: String) -> String:
+	if not id in GameData.WAR_MACHINES:
+		return "This war machine is not for sale."
+	if hero.is_empty():
+		return "A hero must visit to take a war machine."
+	if hero.get("owner", -1) != player.get("index", -2):
+		return "This hero belongs to another player."
+	if id in hero.get("machines", []):
+		return "%s already has a %s." % [hero["name"], GameData.CREATURES[id]["name"]]
+	if not TownLogic.can_afford(player, GameData.CREATURES[id]["cost"]):
+		return "Not enough gold."
+	return ""
+
+func buy_war_machine(hero: Dictionary, player: Dictionary, id: String) -> bool:
+	if war_machine_reason(hero, player, id) != "":
+		return false
+	TownLogic.pay(player, GameData.CREATURES[id]["cost"])
+	if not hero.has("machines"):
+		hero["machines"] = []
+	hero["machines"].append(id)
+	return true
 
 func hero_stat(h: Dictionary, stat: String) -> int:
 	var v: int = h.get(stat, 0)

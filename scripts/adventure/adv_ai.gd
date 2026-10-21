@@ -153,6 +153,28 @@ func recruit_from_dwelling(hero: Dictionary, o: Dictionary) -> void:
 		o["available"] -= n
 
 # ---------------------------------------------------------------------------------------------
+## Plan and execute the same purchases so a fully equipped or cash-poor hero never loops at a factory.
+func factory_purchases(hero: Dictionary, player: Dictionary) -> Array:
+	var purchases := []
+	var budget: int = maxi(0, int(player["resources"].get("gold", 0)) - 1000)
+	var shooters := false
+	for stack in hero["army"]:
+		if stack != null and stack["count"] > 0 and GameData.CREATURES[stack["id"]]["shots"] > 0:
+			shooters = true
+	for id in GameData.WAR_MACHINES:
+		if id == "ammo_cart" and not shooters:
+			continue
+		var cost: int = GameData.CREATURES[id]["cost"]["gold"]
+		if cost <= budget and GameState.war_machine_reason(hero, player, id) == "":
+			purchases.append(id)
+			budget -= cost
+	return purchases
+
+func buy_from_factory(hero: Dictionary) -> void:
+	var player := rules.player_of(hero)
+	for id in factory_purchases(hero, player):
+		GameState.buy_war_machine(hero, player, id)
+
 func _strength(hero: Dictionary) -> float:
 	var s := float(GameState.army_strength(hero["army"]))
 	return s * (1.0 + 0.05 * (GameState.hero_stat(hero, "attack") + GameState.hero_stat(hero, "defense")))
@@ -307,6 +329,8 @@ func _object_value(hero: Dictionary, player: Dictionary, o: Dictionary, me: floa
 			return 1200.0 + c["ai_value"] * mini(o["available"], 10) * 0.3
 		"watchtower":
 			return 0.0 if hero["owner"] in o.get("visited_by", []) else 150.0
+		"war_machine_factory":
+			return 1400.0 if not factory_purchases(hero, player).is_empty() else 0.0
 		"monster":
 			var ms := float(GameData.CREATURES[o["creature"]]["ai_value"] * o["count"])
 			if me > ms * 1.6:

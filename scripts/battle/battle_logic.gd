@@ -959,6 +959,17 @@ func casualties(side: int) -> Dictionary:
 				out[s["id"]] = out.get(s["id"], 0) + lost
 	return out
 
+## Keep enemy stacks separate for Necromancy's per-stack rounding. Destroyed machines count;
+## tower masonry, surviving retreaters and creatures restored by resurrection do not.
+func necromancy_casualties(side: int) -> Array:
+	var out := []
+	for s in stacks:
+		if s["side"] == side and not s.get("tower", false):
+			var lost: int = start_counts.get(s["uid"], 0) - s["count"]
+			if lost > 0:
+				out.append({"id": s["id"], "count": lost})
+	return out
+
 func killed_hp(side: int) -> int:
 	## HP of creatures side lost (experience for the opponent)
 	var total := 0

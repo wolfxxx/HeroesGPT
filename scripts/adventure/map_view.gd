@@ -420,6 +420,9 @@ func _object_node(o: Dictionary) -> Node2D:
 			n.add_child(_sprite("map/shrine.png", Vector2.ZERO, 2.6 * TILE))
 		"windmill":
 			n.add_child(_sprite("map/windmill.png", Vector2.ZERO, 2.6 * TILE))
+		"war_machine_factory":
+			# Native-resolution painting, scaled by width; its doorway sits above the transparent bottom margin.
+			n.add_child(_sprite("map/war_machine_factory.png", Vector2(0, 26), 3.2 * TILE))
 		"watchtower":
 			n.add_child(_sprite("map/watchtower.png", Vector2.ZERO, 2.2 * TILE))
 		"learning_stone":
@@ -584,10 +587,10 @@ func refresh_object(uid: int) -> void:
 func refresh_town(uid: int) -> void:
 	rebuild_objects()
 
-func move_hero_step(uid: int, to_tile: Vector2i, dur: float) -> void:
+func move_hero_step(uid: int, to_tile: Vector2i, dur: float) -> Tween:
 	var n: Node2D = _hero_nodes.get(uid)
 	if n == null:
-		return
+		return null
 	var target := hero_foot(to_tile)
 	var spr: Sprite2D = n.get_node("Sprite")
 	var flip := spr.flip_h
@@ -629,6 +632,7 @@ func move_hero_step(uid: int, to_tile: Vector2i, dur: float) -> void:
 		if s2 is Sprite2D and s2.get_meta("step_token", 0) == token:
 			s2.rotation = 0.0
 			_set_hero_tex(s2, "heroes/map_%s.png" % fac, flip))
+	return tw
 
 ## Swap a hero's texture keeping the feet anchored, mirrored when facing left.
 func _set_hero_tex(spr: Sprite2D, rel: String, flip: bool) -> void:

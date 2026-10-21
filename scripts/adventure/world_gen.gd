@@ -28,7 +28,7 @@ static func town_footprint() -> Array:
 
 static func footprint_for(type: String) -> Array:
 	match type:
-		"mine", "dwelling", "shrine", "windmill", "watchtower", "learning_stone":
+		"mine", "dwelling", "shrine", "windmill", "watchtower", "learning_stone", "war_machine_factory":
 			return FOOT_BUILDING
 	return []
 
@@ -212,6 +212,11 @@ func _generate(settings: Dictionary) -> Dictionary:
 
 	# ---- objects ------------------------------------------------------------------------
 	var reach := _reachable(town_list[0]["pos"] + Vector2i(0, 1))
+	# Permanent neutral shops: place before loose treasure crowds out their building footprints.
+	for tp in starts:
+		var factory := _place_obj({"type": "war_machine_factory"}, tp, 7, 14, reach, false, 5)
+		if factory.is_empty():
+			_place_obj({"type": "war_machine_factory"}, tp, 5, n, reach, false, 5)
 	for i in nplayers:
 		var tp: Vector2i = starts[i]
 		_place_obj({"type": "mine", "mine": "sawmill", "owner": -1}, tp, 4, 9, reach)
@@ -554,6 +559,11 @@ func _place_obj(o: Dictionary, center: Vector2i, rmin: int, rmax: int, reach: Di
 					ok = false
 			if not ok:
 				continue
+		var factory_path: Array[Vector2i] = []
+		if o["type"] == "war_machine_factory":
+			factory_path = _factory_access(p)
+			if factory_path.is_empty():
+				continue
 		o["uid"] = GameState.next_uid()
 		o["pos"] = p
 		if o["type"] == "monster":
@@ -572,10 +582,34 @@ func _place_obj(o: Dictionary, center: Vector2i, rmin: int, rmax: int, reach: Di
 			covered[p + off] = o["uid"]
 		if foot.size() > 0:
 			keep_clear[idx(p + Vector2i(0, 1))] = 1
+		for q in factory_path:
+			keep_clear[idx(q)] = 1 # later buildings must not seal off the shop
+		for step in range(1, factory_path.size()):
+			var a := factory_path[step - 1]
+			var b := factory_path[step]
+			# A diagonal also needs a free side tile; protecting only the path cells can leave a pinched corner.
+			for q in [Vector2i(a.x, b.y), Vector2i(b.x, a.y)]:
+				if _passable(q):
+					keep_clear[idx(q)] = 1
 		if guarded:
 			_guard(o)
 		return o
 	return {}
+
+## Verify access with the actual diagonal rule and the proposed walls already solid.
+## The general placement flood admits corner-only gaps; a shop must be physically reachable.
+func _factory_access(pos: Vector2i) -> Array[Vector2i]:
+	var pathfinder := AStarGrid2D.new()
+	pathfinder.region = Rect2i(0, 0, w, h)
+	pathfinder.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE
+	pathfinder.update()
+	for y in h:
+		for x in w:
+			var p := Vector2i(x, y)
+			pathfinder.set_point_solid(p, not _passable(p))
+	for off in footprint_for("war_machine_factory"):
+		pathfinder.set_point_solid(pos + off, true)
+	return pathfinder.get_id_path(_town_positions()[0] + Vector2i(0, 1), pos)
 
 var _town_pos_cache := []
 func _town_positions() -> Array:

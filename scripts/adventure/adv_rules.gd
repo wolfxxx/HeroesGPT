@@ -447,6 +447,9 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 				ev["text"] = "You study the ancient runes. +1000 experience."
 				ev["xp"] = 1000
 				ev["sfx"] = "level_up"
+		"war_machine_factory":
+			ev["title"] = "War Machine Factory"
+			ev["factory"] = o["uid"]
 		"dwelling":
 			ev["title"] = GameData.CREATURES[o["creature"]]["plural"]
 			ev["dwelling"] = o["uid"]
@@ -579,12 +582,15 @@ func quick_resolve(setup: Dictionary) -> Dictionary:
 		if s:
 			killed_hp += s["count"] * GameData.CREATURES[s["id"]]["hp"]
 	var empty: Array = [null, null, null, null, null, null, null]
-	return {
+	var result := {
 		"winner": "attacker" if attacker_wins else "defender",
 		"attacker_army": out_win if attacker_wins else empty,
 		"defender_army": empty if attacker_wins else out_win,
 		"xp": killed_hp, "retreated": false, "context": setup.get("context", {}),
 	}
+	result.merge(Necromancy.calculate(ah if attacker_wins else dh, out_win, lose_army,
+		setup.get("attacker_player" if attacker_wins else "defender_player", -1)))
+	return result
 
 ## Applies a finished battle to the world. Returns an event dict for the UI.
 func apply_battle(result: Dictionary) -> Dictionary:
@@ -638,8 +644,6 @@ func apply_battle(result: Dictionary) -> Dictionary:
 	if att_won and not att.is_empty():
 		ev["hero"] = att["uid"]
 		ev["levels"] = gain_xp(att, int(result.get("xp", 0)))
-		if result.has("raised") and result["raised"] > 0:
-			GameState.add_to_army(att["army"], result.get("raised_id", "skeleton"), result["raised"])
 	elif not att.is_empty():
 		var winner_uid: int = ctx.get("defender", -1)
 		var dh: Dictionary = world["heroes"].get(winner_uid, {})
@@ -649,6 +653,11 @@ func apply_battle(result: Dictionary) -> Dictionary:
 			if fled != 0:
 				_loot(dh, att)
 		_kill_hero(att, fled == 0)
+	# Reward the winning hero on either side, after the surviving army has been restored.
+	var winner: Dictionary = world["heroes"].get(ev["hero"], {})
+	if not winner.is_empty() and int(result.get("raised", 0)) > 0:
+		if GameState.add_to_army(winner["army"], result.get("raised_id", "skeleton"), result["raised"]):
+			ev["raised"] = result["raised"]
 	rebuild()
 	check_eliminations()
 	return ev

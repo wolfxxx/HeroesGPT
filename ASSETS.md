@@ -56,6 +56,11 @@ existing corpse shading. First aid tent, ammo cart and catapult wrecks remain to
   (sheet `sulfur` of `button_icons_paint.py`, then `tools/art/map_pile.py`: smoke dropped, scaled to the old size, shadow).
 - `map/chest.png`, `map/campfire.png`, `map/artifact.png` (generic artifact pedestal/glow), `map/shrine.png` (magic shrine),
   `map/windmill.png`, `map/obelisk.png`, `map/dwelling_neutral.png`, `map/watchtower.png`.
+- `map/war_machine_factory.png` — neutral workshop with ballista, medical supplies and ammo wagon. Built-in
+  OpenAI imagegen, native 1536x1024 RGBA copied unmodified; exact prompt in `tools/art/war_machine_factory_prompt.md`.
+  No Blender anchor: `MapView._object_node` scales it to 3.2 tiles wide and offsets the transparent bottom margin
+  by 26px to put the doorway on the action tile. Standard 3x2 building footprint. The factory shop reuses the
+  existing machine portraits, gold icon and painted UI panels/buttons.
 - Decorations, transparent: `map/tree_oak_1..4.png`, `map/tree_pine_1..3.png`, `map/tree_dead_1..2.png`,
   `map/mountain_1..3.png` (large ~256x224), `map/rock_1..3.png`, `map/bush_1..2.png`, `map/flowers_1..2.png`, `map/snow_pine_1..2.png`.
 - Ground details `map/decor_<name>.png` (stump, log, toadstools, tuft, boulders, wildflowers, fern, twigs, pillar, bones,
@@ -129,6 +134,8 @@ existing corpse shading. First aid tent, ammo cart and catapult wrecks remain to
   five not used yet), painted as sheets by `tools/art/button_icons_paint.py` (imagegen/batch20).
 - `ui/panel.png` — 9-slice ornate stone/wood panel texture (256x256, 48px border).
 - `ui/button.png`, `ui/button_hover.png`, `ui/button_pressed.png` — 9-slice buttons (192x64, 20px border).
+  Hero portrait buttons reuse these for the raised/hover/held states; `ui/button_selected.png` gives the selected
+  adventure hero its brighter frame (also used for pressed/selected states by the general button theme).
 - `ui/frame_portrait.png` — ornate gold frame 160x160 (transparent centre).
 - `ui/main_menu_bg.png` — 1920x1080 epic key art.
 - `ui/logo.png` — game title logo "Heroes of the Shattered Crown", transparent.

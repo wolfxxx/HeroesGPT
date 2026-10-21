@@ -30,3 +30,6 @@ Music, sound effects and voice lines were generated with ElevenLabs.
 
 The ballista wreck (`assets/creatures/ballista_dead.png`) was generated with OpenAI imagegen from the project’s
 existing ballista sprite. Prompt and integration notes: `tools/art/ballista_wreck_prompt.md`.
+
+The War Machine Factory (`assets/map/war_machine_factory.png`) was generated with OpenAI imagegen.
+Prompt and integration notes: `tools/art/war_machine_factory_prompt.md`.

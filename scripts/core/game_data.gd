@@ -191,7 +191,7 @@ const SKILLS := {
 	"archery": {"name": "Archery", "desc": "+15% ranged damage per level."},
 	"offense": {"name": "Offense", "desc": "+10% melee damage per level."},
 	"armorer": {"name": "Armorer", "desc": "-7% damage taken per level."},
-	"necromancy": {"name": "Necromancy", "desc": "Raise 10% of slain enemies as skeletons per level."},
+	"necromancy": {"name": "Necromancy", "desc": "After victory, raise slain enemies as Skeletons: Basic 10%, Advanced 20%, Expert 30%. Requires army space or a Skeleton stack; a full army with Skeleton Warriors receives two thirds as many Warriors."},
 	"logistics": {"name": "Logistics", "desc": "+10% movement per level."},
 	"luck": {"name": "Luck", "desc": "+1 luck per level."},
 	"sorcery": {"name": "Sorcery", "desc": "+10% spell damage per level."},

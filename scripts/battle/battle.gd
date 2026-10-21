@@ -2012,21 +2012,8 @@ func _end_battle(winner: int) -> void:
 	_grid.queue_redraw()
 	var loser := 1 - winner
 	var xp := L.killed_hp(loser)
-	var raised := 0
-	var raise_id := "skeleton"
 	var wh = L.heroes[winner]
-	if wh and int(wh["skills"].get("necromancy", 0)) > 0:
-		var cas := L.casualties(loser)
-		var living := 0
-		for id in cas:
-			if not "undead" in GameData.CREATURES[id]["abilities"]:
-				living += cas[id]
-		var amp := 0.1 if TownLogic.player_has(L.players[winner], "necromancy_amplifier") else 0.0
-		amp += GameState.hero_stat(wh, "necromancy") / 100.0  # (a gravecloak, the lich king's mantle)
-		raised = int(living * (0.1 * int(wh["skills"]["necromancy"]) + amp))
-		if "zombie" in GameState.hero_flags(wh, "raise"):  # (as many zombies as the skeletons' health allows)
-			raise_id = "zombie"
-			raised = int(raised * GameData.CREATURES["skeleton"]["hp"] / float(GameData.CREATURES["zombie"]["hp"]))
+	var necro := Necromancy.calculate(wh, L.army_out(winner), L.necromancy_casualties(loser), L.players[winner])
 	var human_side := 0 if not L.ai_side[0] else (1 if not L.ai_side[1] else -1)
 	var human_won := human_side == winner
 	Audio.music("victory" if human_won or human_side < 0 else "defeat")
@@ -2066,8 +2053,11 @@ func _end_battle(winner: int) -> void:
 		m.body.add_child(row)
 	if wh:
 		m.add_text("%s gains %d experience." % [wh["name"], xp], 22)
-	if raised > 0:
-		m.add_text("Necromancy raises %d %s from the fallen." % [raised, GameData.CREATURES[raise_id]["plural"].to_lower()], 22)
+	var necro_text := Necromancy.message(necro)
+	if necro_text != "":
+		m.add_text(necro_text, 22)
+		if necro["raised"] > 0:
+			m.add_icons([[Assets.creature_portrait(necro["raised_id"]), "+%d" % necro["raised"]]])
 	m.add_buttons([["OK", true]])
 	m.set_meta("default", true)
 	await m.closed
@@ -2079,9 +2069,10 @@ func _end_battle(winner: int) -> void:
 		"winner": "attacker" if winner == 0 else "defender",
 		"attacker_army": L.army_out(0) if _retreated != 0 or _surrendered else [null, null, null, null, null, null, null],
 		"defender_army": L.army_out(1) if _retreated != 1 or _surrendered else [null, null, null, null, null, null, null],
-		"xp": xp, "retreated": _retreated >= 0, "raised": raised, "raised_id": raise_id, "fled": _retreated,
+		"xp": xp, "retreated": _retreated >= 0, "fled": _retreated,
 		"surrendered": _surrendered, "surrender_gold": _surrender_gold,
 	}
+	result.merge(necro)
 	if GameState.pending_battle.is_empty():
 		GameState.pending_battle = setup_d
 		if GameState.return_scene == GameState.SCENE_ADVENTURE and GameState.world.is_empty():

@@ -149,6 +149,47 @@ static func button(text: String, cb: Callable = Callable(), size := 22) -> Butto
 		b.pressed.connect(cb)
 	return b
 
+## Framed portrait action, with room on the right for optional status bars. Selection stays raised;
+## only holding the mouse presses the portrait down. Uses the same painted bevel as other buttons.
+static func portrait_button(tex: Texture2D, dimensions: Vector2, selected := false, right_gutter := 0.0) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = dimensions
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	if selected:
+		b.add_theme_stylebox_override("normal", _button_style("pressed"))
+	var down := _button_style("pressed")
+	if down is StyleBoxTexture and Assets.has("ui/button_pressed.png"):
+		down.texture = Assets.tex("ui/button_pressed.png")
+	for state in ["pressed", "hover_pressed"]:
+		b.add_theme_stylebox_override(state, down)
+	var pic := TextureRect.new()
+	pic.texture = tex
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	pic.clip_contents = true
+	pic.position = Vector2(8, 8)
+	pic.size = dimensions - Vector2(16 + right_gutter, 16)
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(pic)
+	b.set_meta("portrait", pic)
+	b.draw.connect(func():
+		var held := b.get_draw_mode() in [BaseButton.DRAW_PRESSED, BaseButton.DRAW_HOVER_PRESSED]
+		pic.position = Vector2(8, 8) + (Vector2.ONE if held else Vector2.ZERO)
+		pic.self_modulate = Color(0.78, 0.78, 0.78) if held else (Color(1.12, 1.12, 1.12) if b.is_hovered() else Color.WHITE))
+	return b
+
+## Shared daily-construction status for adventure castle cards and the town's Hall button.
+static func build_status_text(built: bool) -> String:
+	return "Already built today. Build again tomorrow." if built else "Not built today. Daily build unused."
+
+static func build_status_badge(built: bool) -> Control:
+	var mark := _BuildMark.new()
+	mark.built = built
+	mark.size = Vector2(24, 24)
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return mark
+
 static func icon(tex: Texture2D, size := Vector2(48, 48)) -> TextureRect:
 	var r := TextureRect.new()
 	r.texture = tex
@@ -175,3 +216,15 @@ static func count_word(n: int) -> String:
 	if n < 500: return "A swarm of"
 	if n < 1000: return "Zounds of"
 	return "A legion of"
+
+## Green hammer: daily build unused. Gold check: already built today. Shape also distinguishes the states.
+class _BuildMark extends Control:
+	var built := false
+	func _draw() -> void:
+		draw_circle(Vector2(12, 12), 11.5, Color(0.08, 0.06, 0.035, 0.97))
+		draw_arc(Vector2(12, 12), 11, 0, TAU, 32, UI.GOLD_DARK, 1.5, true)
+		if built:
+			draw_polyline(PackedVector2Array([Vector2(6, 12), Vector2(10, 16), Vector2(18, 7)]), UI.GOLD, 3, true)
+		else:
+			draw_line(Vector2(6, 19), Vector2(15, 9), Color(0.65, 0.46, 0.24), 3, true)
+			draw_colored_polygon(PackedVector2Array([Vector2(10, 5), Vector2(13, 2), Vector2(21, 10), Vector2(18, 13)]), Color(0.6, 0.9, 0.55))

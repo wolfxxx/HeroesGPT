@@ -5,6 +5,9 @@
 #   BATTLE VISUAL TEST: 16 checks, failures: 0
 #   BATTLE AI TEST: N checks, failures: 0
 #   ADVENTURE AI TEST: N checks, failures: 0
+#   ADVENTURE CAMERA TEST: N checks, failures: 0
+#   WAR MACHINE TEST: N checks, failures: 0
+#   NECROMANCY TEST: N checks, failures: 0
 #   CLICK TEST: N clicks, 0 without a path    + DRAG TEST ... plan unchanged: true   + PENDING TEST ... shown: true
 #   5                                           (visit test: five VISIT lines)
 #   ARTIFACT TEST: N checks, failures: 0
@@ -19,6 +22,9 @@ echo "--battle"; timeout 300 $G --headless --path . res://tools/battle_test.tscn
 echo "--battle-visual"; timeout 60 $G --headless --path . res://tools/battle_visual_test.tscn 2>&1 | grep -E "BATTLE VISUAL TEST|SCRIPT ERROR|FAIL" | tail -6
 echo "--battle-ai"; timeout 60 $G --headless --path . res://tools/battle_ai_test.tscn 2>&1 | grep -E "BATTLE AI TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--adventure-ai"; timeout 60 $G --headless --path . res://tools/adventure_ai_test.tscn 2>&1 | grep -E "ADVENTURE AI TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--adventure-camera"; timeout 60 $G --headless --path . res://tools/adventure_camera_test.tscn 2>&1 | grep -E "ADVENTURE CAMERA TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--war-machines"; timeout 120 $G --headless --path . res://tools/war_machine_test.tscn 2>&1 | grep -E "WAR MACHINE TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--necromancy"; timeout 60 $G --headless --path . res://tools/necromancy_test.tscn 2>&1 | grep -E "NECROMANCY TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--click"; timeout 300 $G --path . res://tools/click_test.tscn 2>&1 | grep -E "clicks|DRAG|PENDING|SCRIPT ERROR|FAIL" | tail -5
 echo "--visit"; timeout 300 $G --headless --path . res://tools/visit_test.tscn 2>&1 | grep -cE "VISIT"
 echo "--artifacts"; timeout 300 $G --headless --path . res://tools/artifact_test.tscn 2>&1 | grep -E "ARTIFACT TEST|FAIL|SCRIPT ERROR" | tail -6

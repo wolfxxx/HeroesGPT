@@ -162,8 +162,12 @@ func refresh() -> void:
 		if TownLogic.has_building(town, h):
 			hall = h
 			break
-	pics.add_child(_pic_button(_building_pic(hall), GameData.building_name(town["faction"], hall),
-		"Build in %s (B)" % town["name"], _open_build))
+	var hall_button := _pic_button(_building_pic(hall), GameData.building_name(town["faction"], hall),
+		"Build in %s (B)\n%s" % [town["name"], UI.build_status_text(town["built_today"])], _open_build)
+	var build_mark := UI.build_status_badge(town["built_today"])
+	build_mark.position = Vector2(hall_button.custom_minimum_size.x - 32, 8)
+	hall_button.add_child(build_mark)
+	pics.add_child(hall_button)
 	var fort := "castle" if TownLogic.has_building(town, "castle") else ("citadel" if TownLogic.has_building(town, "citadel") else "fort")
 	pics.add_child(_pic_button(_building_pic(fort), GameData.building_name(town["faction"], fort) if TownLogic.has_building(town, fort) else "Dwellings",
 		"All creature dwellings: recruit (R)", _open_recruit_all))
@@ -202,12 +206,9 @@ func refresh() -> void:
 		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row2.add_child(l)
 	else:
-		var p := TextureButton.new()
-		p.texture_normal = Assets.hero_portrait(hero["id"])
-		p.ignore_texture_size = true
-		p.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		p.custom_minimum_size = Vector2(92, 92)
-		p.tooltip_text = "%s, level %d %s" % [hero["name"], hero["level"], hero["class"]]
+		var p := UI.portrait_button(Assets.hero_portrait(hero["id"]), Vector2(92, 92))
+		p.tooltip_text = "%s, level %d %s\nClick to open hero details" % [hero["name"], hero["level"], hero["class"]]
+		p.pressed.connect(_open_hero_screen)
 		row2.add_child(p)
 		var hs := ArmyStrip.new()
 		hs.upgrade_town = town
@@ -315,6 +316,22 @@ func _creature_cell(tier: int) -> Button:
 
 func _on_army_changed() -> void:
 	pass
+
+func _open_hero_screen() -> void:
+	if hero.is_empty():
+		return
+	Audio.sfx("click", -6)
+	var m := HeroScreen.open(self, hero)
+	var r = await m.closed
+	if r == "dismiss":
+		var owner_player: Dictionary = world["players"][hero["owner"]]
+		if owner_player["heroes"].size() <= 1 and owner_player["towns"].is_empty():
+			await Modal.message(self, "Dismiss", "You cannot dismiss your last hero.").closed
+		elif await Modal.confirm(self, "Dismiss Hero", "Dismiss %s? The hero and the army will leave you." % hero["name"]).closed:
+			AdvRules.new(world)._kill_hero(hero)
+			GameState.pending_town.erase("hero_uid")
+			hero = {}
+	refresh()
 
 # ---------------------------------------------------------------------------------------------
 # Buildings on the backdrop
@@ -950,13 +967,7 @@ func _open_smith() -> void:
 	var cr := HoverInfo.cost_row(c["cost"], player["resources"])
 	cr.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(cr)
-	var why := ""
-	if hero.is_empty():
-		why = "A hero must visit the town to take a war machine."
-	elif id in hero.get("machines", []):
-		why = "%s already has a %s." % [hero["name"], c["name"]]
-	elif not TownLogic.can_afford(player, c["cost"]):
-		why = "Not enough gold."
+	var why := GameState.war_machine_reason(hero, player, id)
 	if why != "":
 		var w := UI.label(why, 19, Color(1, 0.6, 0.5))
 		w.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -965,12 +976,9 @@ func _open_smith() -> void:
 	btns.get_child(0).disabled = why != ""
 	m.set_meta("cancel", "")
 	if await m.closed == "buy":
-		TownLogic.pay(player, c["cost"])
-		if not hero.has("machines"):
-			hero["machines"] = []
-		hero["machines"].append(id)
-		Audio.sfx("build", -4)
-		refresh()
+		if GameState.buy_war_machine(hero, player, id):
+			Audio.sfx("build", -4)
+			refresh()
 
 func _exit() -> void:
 	GameState.change_scene(GameState.SCENE_ADVENTURE)

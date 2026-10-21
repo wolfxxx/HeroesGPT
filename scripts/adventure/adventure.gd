@@ -211,7 +211,11 @@ func _process(delta: float) -> void:
 	var hn: Node2D = view.hero_node(_follow) if _follow >= 0 else null
 	if hn:
 		# glide with the figure as it walks: a target that moves smoothly, not one step a tile
-		center_on_world(hn.position - Vector2(0, TILE * 0.5 - 6))
+		var focus := hn.position - Vector2(0, TILE * 0.5 - 6)
+		var hero: Dictionary = world["heroes"].get(_follow, {})
+		# On entering sight, hold at the first visible tile until the sprite emerges from fog.
+		if not hero.is_empty() and (not rules.player_of(hero)["is_ai"] or _visible_to_human(Vector2i((focus / TILE).floor()))):
+			center_on_world(focus)
 		cam.position = cam.position.lerp(_cam_target, minf(1.0, delta * 6.0))
 	else:
 		cam.position = cam.position.lerp(_cam_target, minf(1.0, delta * 10.0))
@@ -516,6 +520,16 @@ func _tile_info(t: Vector2i):
 			HoverInfo.line(v, "Unclaimed: visit to claim it." if o["owner"] < 0 else "Owned by %s." % world["players"][o["owner"]]["name"],
 				Color(0.8, 0.75, 0.65))
 			return v
+		"war_machine_factory":
+			var v := HoverInfo.box("War Machine Factory")
+			HoverInfo.line(v, "Buy war machines for the visiting hero.")
+			for id in GameData.WAR_MACHINES:
+				var c: Dictionary = GameData.CREATURES[id]
+				var owned: bool = id in hero.get("machines", [])
+				HoverInfo.line(v, "%s — %d gold%s" % [c["name"], c["cost"]["gold"], " (owned)" if owned else ""],
+					Color(0.65, 0.85, 0.55) if owned else UI.GOLD, 18)
+			HoverInfo.line(v, "Open to all heroes. Stock never runs out.", Color(0.8, 0.75, 0.65), 18)
+			return v
 		"dwelling":
 			var c: Dictionary = GameData.CREATURES[o["creature"]]
 			var v := HoverInfo.creature(o["creature"], -1, "%s dwelling" % c["name"])
@@ -680,9 +694,7 @@ func _execute_move() -> void:
 	busy = true
 	hero["asleep"] = false
 	view.clear_path()
-	_follow = hero["uid"]
 	await move_hero(hero, _plan, true)
-	_follow = -1
 	busy = false
 	if not is_inside_tree():
 		return
@@ -706,7 +718,6 @@ func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
 	var reach: int = plan["reach"]
 	var player := rules.player_of(hero)
 	var human: bool = not player["is_ai"]
-	var visible_move := animate or _visible_to_human(hero["pos"])
 	for i in range(1, reach + 1):
 		var p: Vector2i = path[i]
 		var last := i == path.size() - 1
@@ -720,19 +731,31 @@ func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
 		_move_hero_tile(hero, p)
 		if p.x != prev.x:
 			hero["face_left"] = p.x < prev.x
-		if visible_move or _visible_to_human(p):
-			view.move_hero_step(hero["uid"], p, 0.14 if human else 0.09)
-			if human or _visible_to_human(p):
+		var from_visible := _visible_to_human(prev)
+		var to_visible := _visible_to_human(p)
+		if human or to_visible:
+			if not human and _follow != hero["uid"]:
+				# Show even a short enemy walk far from the current view, then track its sprite.
+				center_on(prev if from_visible else p, true)
+			_follow = hero["uid"]
+		else:
+			if from_visible:
+				center_on(prev, _follow != hero["uid"])  # show departure, stop at the last known tile
+			_follow = -1
+		if animate or from_visible or to_visible:
+			var step := view.move_hero_step(hero["uid"], p, 0.14 if human else 0.09)
+			if human or to_visible:
 				Audio.sfx("footstep_horse", -12, 0.12)
-				if human and _follow != hero["uid"]:
-					center_on(p)
-			await get_tree().create_timer(0.14 if human else 0.09).timeout
+			# Finish the actual position tween before instant hidden steps can move this node again.
+			if step:
+				await step.finished
 			if not is_inside_tree():
+				_follow = -1
 				return ""
 		else:
 			var n := view.hero_node(hero["uid"])
 			if n:
-				n.position = view.foot_of(p)
+				n.position = view.hero_foot(p)
 		rules.reveal(player, p, rules.hero_scout_radius(hero))
 		if human:
 			_refresh_fog()
@@ -745,6 +768,7 @@ func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
 			hero.erase("dest")
 			if occ.get("kind", "") != "":
 				return await _interact_with(hero, occ, human)
+	_follow = -1
 	return ""
 
 func _move_hero_tile(hero: Dictionary, p: Vector2i) -> void:
@@ -757,6 +781,7 @@ func _visible_to_human(p: Vector2i) -> bool:
 	return rules.is_explored(human_player(), p)
 
 func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
+	_follow = -1  # visits/battles can rebuild hero nodes or replace this scene
 	match occ.get("kind", ""):
 		"object":
 			var o: Dictionary = world["objects"][occ["uid"]]
@@ -840,6 +865,11 @@ func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 			var lv := rules.resolve_chest(hero, "gold" if rules.player_of(hero)["resources"]["gold"] < 10000 else "xp", c["gold"], c["xp"])
 			if lv > 0:
 				await _handle_level_ups(hero)
+	elif ev.has("factory"):
+		if human:
+			await WarMachineShop.open(self, hero, rules.player_of(hero), func(): hud.refresh())
+		else:
+			ai.buy_from_factory(hero)
 	elif ev.has("dwelling"):
 		if human:
 			await hud.open_dwelling(hero, world["objects"][ev["dwelling"]])

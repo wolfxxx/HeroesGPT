@@ -13,8 +13,14 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
 
 ## Shared classes
 - `UI` (scripts/ui/ui.gd) — theme + widget factory. Set `theme = UI.theme()` on your root Control.
+  `portrait_button` gives adventure/town hero portraits a shared painted frame, hover/press feedback and optional
+  selected state/right gutter; its `portrait` metadata exposes the inset image for the adventure card's bars/sleep tint.
+  `build_status_badge` / `build_status_text` share the daily-build hammer/check and tooltip between adventure castle
+  cards and the town's Hall button. The badge's `_BuildMark` drawing lives here and ignores mouse input.
 - `Modal` (scripts/ui/modal.gd) — awaitable dialogs: `var r = await Modal.choice(self, title, text, options).closed`.
 - `ArmyStrip` (scripts/ui/army_strip.gd) — 7 army slots; strips sharing a group dict exchange stacks.
+- `HeroScreen` (scripts/ui/hero_screen.gd) — shared hero details, army and artifact dialog, opened by adventure
+  hero cards and the town's visiting-hero portrait. Each caller handles dismissal and refreshes its own UI.
 - `TownLogic` (scripts/town/town_logic.gd) — town/player rules + dict schemas (READ ITS HEADER).
 
 ## Scenes
@@ -35,18 +41,58 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
 day -> week = (day-1)/7+1, day_of_week = (day-1)%7+1, month = (day-1)/28+1.
 Tiles are 64px; objects have an action tile `pos` and an optional footprint (WorldGen.footprint_for).
 
+## Adventure camera and movement
+`adventure.gd.move_hero` owns `_follow` for both human commands and AI paths. Each step checks the human player's
+existing explored grid. Visible AI movement centers immediately, then `_process` follows the sprite smoothly;
+the selected human hero stays unchanged. Entering sight holds the first visible tile until the sprite emerges;
+leaving sight releases follow at the last explored tile. Hidden steps skip animation and cannot redirect the
+camera. `_interact_with` releases follow before visits/battles can rebuild nodes or replace the scene; normal
+route completion also releases it. `_start_human_turn` restores the human hero's view through normal selection.
+`MapView.move_hero_step` returns its position `Tween`; callers await `finished`, not a timer of the same duration.
+Otherwise a late tween update can overwrite subsequent instant hidden movement and leave a sprite at the fog edge.
+No persistent camera state or fog-rule changes; existing saves work after restarting.
+
 ## Artifacts
 `GameData.ARTIFACTS` (tiers treasure/minor/major/relic, set pieces with `"set"`, combinations with `"parts"`; the
 bonus keys and flags are listed in its header comment) and `GameData.ARTIFACT_TIERS`. Rules in `GameState`:
 `hero_stat` (numbers), `hero_flags` (immunities, raise), `artifact_slots`, `can_wear`, `give_artifact` / `swap_artifact`
 (both return the name of a combination they completed), `merge_combinations`, `split_combination`,
 `join_combination` (a hero's `"apart"` list keeps split sets from re-merging). Effects are applied in
-`BattleLogic.max_hp / speed / spell_damage / immune`, `battle.gd` (necromancy), `AdvRules` (scouting, daily gold and
+`BattleLogic.max_hp / speed / spell_damage / immune`, `Necromancy` (post-battle raising), `AdvRules` (scouting, daily gold and
 mana, weekly first-level growth). Placement by tier: `WorldGen._place_artifacts`. Design: `docs/ARTIFACTS_PROPOSAL.md`.
+
+## War machine shops
+`GameData.WAR_MACHINES` lists the three purchasable types, with prices in `CREATURES`; `SMITH_MACHINE` keeps the
+town Blacksmith faction-specific. `GameState.war_machine_reason` / `buy_war_machine` share validation and payment
+between the Blacksmith, factory and AI, using the hero's existing `machines` array (one per type, outside the army).
+`WorldGen` places neutral `war_machine_factory` objects before other sites, trying one near each start and a wider
+fallback if needed. `_factory_access` checks a path with the proposed walls in place; placement reserves the path
+and its diagonal side tiles against later building footprints. `MapView` renders the factory painting at 3.2 tiles
+wide. `AdvRules.visit` emits a `factory` event without consuming/capturing the site; `adventure.gd` opens
+`WarMachineShop` (`scripts/ui/war_machine_shop.gd`) for a human, or calls `AdvAI.buy_from_factory`.
+The three-card modal refreshes prices/owned states and the HUD after each purchase. AI shares its planned shopping
+list with target valuation, keeps 1000 gold, and only buys a cart for shooters. Existing battle, hero-screen and
+save systems already use `machines`; no save schema change. Existing saves keep their map, new games gain factories.
+
+## Necromancy
+`scripts/battle/necromancy.gd` (`Necromancy.calculate`) previews the reward against the winner's surviving army;
+it does not mutate it. Played battles supply separate lost stacks from `BattleLogic.necromancy_casualties`, including
+undead and destroyed war machines, excluding fortification towers. Instant battles supply their defeated army.
+Rates are 10/20/30%, plus worn bonuses and each owned Necromancy Amplifier, capped at 100%; count and creature-health
+limits are applied per stack with a minimum of one. With no free slot or basic stack, an existing upgraded stack
+receives two thirds as many. The existing custom Mantle raises Zombies (or Plague Zombies by the same slot rule).
+`battle.gd._end_battle` shows the actual count/type with a portrait, or explains no room/no casualties.
+Results carry `raised`, `raised_id`, `necromancy_reason`. `AdvRules.apply_battle` restores survivors first and awards
+the troops to either winning hero, including a town defender. `quick_resolve` uses the same calculator. Skills are
+read before post-battle level-ups and loot; no new persistent fields or save migration. Existing saves benefit on
+future battles after restarting; past missed rewards cannot be reconstructed from the stored world.
 
 ## Scene flow
 Main menu -> New Game -> sets `GameState.new_game_settings`, clears `GameState.world`, changes to adventure, which
 generates the world. Adventure -> town: `open_town(uid)`; town "Exit" -> adventure.
+`AdventureHUD._town_card` and `town_screen.refresh` read `built_today` for the shared UI badge and tooltip.
+Town refreshes its Hall button immediately after building; returning to adventure or refreshing the HUD after a
+new day rebuilds the castle cards from current state.
 Adventure -> battle: `GameState.start_battle({...})`; battle -> `GameState.finish_battle(result)`; adventure applies
 `GameState.battle_result` in `_post_ready`. Battles with no human side are resolved instantly (`AdvRules.quick_resolve`).
 AI turns run inside the adventure scene and resume after a battle scene change.
@@ -58,8 +104,21 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
   `battle_ai_test` (15 tactical checks), `adventure_ai_test` (14 spending/defense/target checks),
+  `adventure_camera_test` (33 movement/visibility/turn-camera checks),
+  `war_machine_test` (purchases, factory persistence, AI, generated access and battle ammo),
+  `necromancy_test` (46 checks of raising rules, slots, casualties and rewards on both sides),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
+- `tools/adventure_camera_test.tscn` — real adventure scene/camera assertions for visible and hidden movement,
+  entry/exit at fog boundaries, short routes, different heroes, visit cleanup, human following and End Turn through
+  actual AI choice/pathing into the next day. Headless by default; run in a window with `-- --capture` for screenshots
+  in `shots/adventure_camera/`, then restore `project.godot`. Uses a generated test world, never the user's save.
+- `tools/war_machine_test.tscn` — headless checks for prices/duplicates/funds/ownership, old heroes lacking
+  `machines`, repeat visits by either player, serialization, machine deployment and ammo supply, AI spending,
+  and factory count/access/roof clicks across 24 maps (32/36/48/64, two/four players, three seeds).
+- `tools/necromancy_test.tscn` — rates, small battles, undead/machines, full and upgraded armies, no-room feedback,
+  stacked amplifiers/artifacts, Mantle health cap, separate casualty stacks, field/town attacker/defender rewards,
+  serialization, and instant resolution on both sides. Does not touch the user's save file.
 - `tools/battle_visual_test.tscn` — 16 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck`
   in a window to hold the same siege layout for screenshot comparison. Battle `_acting_uid` tracks the turn being
   animated (rules can already be on the next turn); `_figures_overlap` samples sprite alpha above the ground shadow.

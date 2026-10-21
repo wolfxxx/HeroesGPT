@@ -459,37 +459,28 @@ func _empty_slot(h: float) -> Control:
 	p.add_theme_stylebox_override("panel", st)
 	return p
 
-## A hero in the list: portrait with its movement (green) and spell points (blue) as bars beside it, and the name.
+## A hero action button: framed portrait with movement (green) and spell points (blue) beside it.
 func _hero_card(h: Dictionary) -> Control:
-	var b := Button.new()
-	b.custom_minimum_size = Vector2(COL_W, SLOT_H)
-	b.toggle_mode = true
-	b.button_pressed = h["uid"] == world.get("selected_hero", -1)
-	b.focus_mode = Control.FOCUS_NONE
-	b.tooltip_text = "%s, level %d %s\nMovement %d / %d, spell points %d / %d" % [h["name"], h["level"], h["class"],
-		h["movement"], h["max_movement"], h["mana"], GameState.max_mana(h)]
-	b.pressed.connect(func(): adv.select_hero(h["uid"]))
-	var on := UI.selected_plate(4)
-	b.add_theme_stylebox_override("pressed", on)
-	b.add_theme_stylebox_override("hover_pressed", on)
-	# the face band of the portrait (the name is in the tooltip and the status window), then the two bars
 	var bw := 6.0
-	var p := TextureRect.new()
-	p.texture = Assets.hero_portrait(h["id"])
-	p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	p.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	p.clip_contents = true
-	p.position = Vector2(5, 5)
-	p.size = Vector2(COL_W - 10 - 2 * bw - 8, SLOT_H - 10)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.add_child(p)
+	var b := UI.portrait_button(Assets.hero_portrait(h["id"]), Vector2(COL_W, SLOT_H),
+		h["uid"] == world.get("selected_hero", -1), 2 * bw + 6)
+	b.tooltip_text = "%s, level %d %s\nMovement %d / %d, spell points %d / %d\nClick to open hero details" % [h["name"], h["level"], h["class"],
+		h["movement"], h["max_movement"], h["mana"], GameState.max_mana(h)]
+	b.pressed.connect(func():
+		if adv.busy:
+			return
+		Audio.sfx("click", -6)
+		adv.select_hero(h["uid"])
+		open_hero_screen(h))
+	# the face band of the portrait (the name is in the tooltip and the status window), then the two bars
+	var p: TextureRect = b.get_meta("portrait")
 	var x := p.position.x + p.size.x + 3
 	for bar in [[float(h["movement"]) / maxf(1.0, h["max_movement"]), Color(0.35, 0.82, 0.3)],
 			[float(h["mana"]) / maxf(1.0, GameState.max_mana(h)), Color(0.35, 0.58, 1.0)]]:
 		var c := _bar(bar[0], bar[1], bw)
 		c.vertical = true
-		c.position = Vector2(x, 5)
-		c.size = Vector2(bw, SLOT_H - 10)
+		c.position = Vector2(x, 8)
+		c.size = Vector2(bw, SLOT_H - 16)
 		b.add_child(c)
 		x += bw + 3
 	if h.get("asleep", false):  # dimmed, with the moon over the portrait
@@ -509,12 +500,14 @@ func _bar(frac: float, col: Color, width: float) -> Control:
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return c
 
-## A town in the list: its picture from the map with the name on a band across the bottom.
+## A town action button with its picture and a badge for today's construction allowance.
 func _town_card(t: Dictionary) -> Control:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(COL_W, SLOT_H)
 	b.focus_mode = Control.FOCUS_NONE
-	b.tooltip_text = "%s (%s): %d gold a day" % [t["name"], GameData.FACTIONS[t["faction"]]["name"], TownLogic.daily_income(t)]
+	var built: bool = t["built_today"]
+	var build_status := UI.build_status_text(built)
+	b.tooltip_text = "%s (%s): %d gold a day\n%s" % [t["name"], GameData.FACTIONS[t["faction"]]["name"], TownLogic.daily_income(t), build_status]
 	b.pressed.connect(func():
 		Audio.sfx("click", -6)
 		adv.open_town(t["uid"]))
@@ -527,6 +520,9 @@ func _town_card(t: Dictionary) -> Control:
 	pic.size = Vector2(COL_W - 8, SLOT_H - 6)
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(pic)
+	var mark := UI.build_status_badge(built)
+	mark.position = Vector2(COL_W - 28, SLOT_H - 28)
+	b.add_child(mark)
 	return b
 
 ## A square panel button with a painted icon (and a tooltip naming it and its key).

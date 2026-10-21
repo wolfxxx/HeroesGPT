@@ -16,7 +16,130 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Current session authorised (2026-10-21):** the user requested one systematic session covering the test baseline,
+- **Current checkpoint (2026-10-21), this commit:** `Add factories and fix hero controls, necromancy, and camera follow`.
+  The user requested committing and pushing all work so far to `wolfxxx/HeroesGPT`, branch `main`; the previous
+  pushed commit was `b81b0c7`. This checkpoint includes all eight changes detailed below, their regression tools,
+  the factory painting and its provenance, and the updated architecture/asset/credit docs. Use `git log -1` for
+  this commit's hash. Final full suite passed (`shots/adventure_camera/tests.log`); the screenshots listed below
+  were inspected during implementation. Screenshot files/logs remain local under ignored `shots/`; reproducible
+  regression tools are tracked. No new judge score. Existing saves gain the fixes after saving and restarting;
+  factories require a new map. Next: section 8 findings; further commits/pushes require the user's instruction.
+- **Enemy-movement camera fix (2026-10-21), included in this checkpoint:** the user reported that visible enemies
+  walked without the camera following. Only `_execute_move` (human input) previously set `_follow`.
+  `adventure.gd.move_hero` now owns following for both sides, checking visibility on every step. Visible AI moves
+  immediately come into view, then the camera tracks the animated sprite without changing the selected hero.
+  Entering explored terrain acquires the camera; leaving it stops at the last visible tile. Fully hidden movement
+  neither redirects the camera nor animates. Visits, occupied destinations and completed routes release follow;
+  the existing human-turn selection returns the camera to your hero. Visibility uses the existing permanent
+  explored map; no fog/scouting or save-format changes. Works in existing games after saving and restarting.
+  Screenshot inspection exposed a timer/tween race that could leave a departing sprite stuck at the fog edge:
+  `MapView.move_hero_step` now returns its position tween, and movement awaits `finished` before hidden steps.
+  New `tools/adventure_camera_test.tscn` is in the full suite. Its windowed `-- --capture` run passed 33 checks,
+  covering visible/hidden walks, both fog crossings, one-step and zero-step routes, multiple heroes, interactions,
+  human movement and real End Turn -> AI target/path -> next day. Viewed captures in `shots/adventure_camera/`:
+  `before_enemy`, `enemy_start`, `enemy_walking`, `entering_sight`, `leaving_sight`, `after_hidden_steps`,
+  `actual_ai_turn`, `your_turn`; log `shots/adventure_camera_capture.log`. Full suite passed
+  (`shots/adventure_camera/tests.log`): compile, 40 battles, 16 battle visual, 15 battle AI, 14 adventure AI,
+  33 camera, 227 factory, 46 Necromancy, 31 clicks/drag/queued click, five visits, 306 artifacts and `SIM DONE`.
+  No new art or judge score. Next: section 8 findings.
+- **Necromancy repair (2026-10-21), included in this checkpoint:** the user reported an Expert hero receiving no
+  raised troops. Found four concrete gaps: undead casualties were excluded; winning defenders never received the
+  calculated reward; full armies with Skeleton Warriors silently failed to add basic Skeletons; instant AI battles
+  omitted raising entirely. `scripts/battle/necromancy.gd` now shares the calculation across both battle paths,
+  applying 10/20/30%, additive owned Amplifiers/artifacts, 100% cap, per-stack health/count limits and minimum one.
+  Undead and destroyed machines count; towers, restored enemies and surviving retreaters do not. A full army with
+  an upgraded stack gets two thirds as many; a free slot prefers the base creature. The existing custom Mantle
+  continues to raise Zombies, with the same health and upgrade-slot rules. Rules reference:
+  https://heroes.thelazy.net/index.php/Necromancy (original/SoD, not HotA's reduced rates).
+  `BattleLogic.necromancy_casualties` keeps stacks separate; `AdvRules.apply_battle` gives the reward to either
+  winning hero after restoring survivors. Victory UI shows the received type/count/portrait or a clear no-room /
+  no-casualty explanation. The skill description now spells out all three ranks and the army-space rule.
+  `tools/necromancy_test.tscn` passed 46 checks, including field/town defense and both instant-resolution winners;
+  it is in `tools/run_tests.sh`. Full suite passed (`shots/necromancy/tests.log`): compile, 40 battles, 16 visual,
+  15 battle AI, 14 adventure AI, 227 factory, 46 Necromancy, 31 clicks/drag/queued click, five visits, 306 artifact
+  checks and `SIM DONE`.
+  Local `shots/necromancy/capture.tscn -- --case=attacker|defender|no_room` stages the final casualty state, runs the
+  real result dialog, clicks OK, lets the adventure scene apply the result, then inspects the army. All three flows
+  passed; viewed `attacker_result/army.png`, `defender_result/army.png`, `no_room_result.png`: 100 fallen Skeletons
+  give a full army 20 Skeleton Warriors (30 -> 50), while an incompatible full army explains why it gets none.
+  Read-only save inspection found only an older day-1 Basic Kragor, so the user's live army/encounter is not known;
+  an optional clarification was requested. No save was modified. **Save current play and restart to load the fix;
+  it works in existing games for future battles, not retroactively.** No new art or judge score. Next: section 8 findings.
+- **War Machine Factory (2026-10-21), included in this checkpoint:** the user requested the authentic adventure
+  shop after discussing faction-specific Blacksmiths. New maps now place neutral factories, trying one near each
+  starting region, selling Ballista (2500 gold), First Aid Tent (750), and Ammo Cart (1000). Stock is unlimited;
+  each hero can own one of each, replace a destroyed machine, and revisit. Catapults are not sold. Town Blacksmith
+  inventory remains faction-specific. Original/SoD prices: https://heroes.thelazy.net/index.php/War_Machine_Factory.
+  `WarMachineShop` is in `scripts/ui/war_machine_shop.gd`; shared validation/payment is in `GameState`, called by
+  both shops and `AdvAI` (1000-gold reserve, carts only for shooters, no pointless revisits). Existing hero slots,
+  battle deployment/ammo and save serialization handle purchases. Gold updates in both modal and HUD immediately.
+  `WorldGen._factory_access` verifies routes with proposed walls, reserving path cells AND diagonal side tiles so
+  later building footprints cannot isolate a factory. New `MapView` sprite: `assets/map/war_machine_factory.png`,
+  generated with built-in imagegen; native alpha retained, prompt in `tools/art/war_machine_factory_prompt.md`.
+  **Existing saves keep their layouts: start a new game to find factories.** No save migration/schema change.
+  New `tools/war_machine_test.tscn` (in the full suite) passed 227 checks: transactions, repeat visits by both sides,
+  save-format round trip, equipment/battle ammo, AI, and 24 generated maps including all menu sizes and legacy 32.
+  Full suite passed (`shots/war_machine_factory/tests.log`): compile, 40 battles, 16 visual, 15 battle AI, 14 adventure
+  AI, 227 machine checks, 31 map clicks/drag/queued click, five visits, 306 artifact checks, `SIM DONE`.
+  Actual input driver `shots/war_machine_factory/capture.tscn` verifies roof click -> walk -> shop -> tent/cart buys
+  -> owned buttons -> Close -> hero equipment -> poor repeat visit. Inspected `map.png`, `info.png`, `shop.png`,
+  `tent_bought.png`, `all_owned.png`, `equipment.png`, `no_gold.png`; gold/ownership and all three cards are readable.
+  `info.png` holds the controller to inspect the real info-panel builder without desktop cursor interference.
+  The existing artifact-twinkle triangulation warning recurred in `flow.log` (now `map_view.gd:709`); unrelated to
+  factory rendering. No new judge round/score. Next: section 8 findings.
+- **Hall build-status badge (2026-10-21), included in this checkpoint:** the Hall picture button inside town now
+  shows the same green hammer / gold check as the adventure castle card, with the explicit daily-build tooltip.
+  The badge is above the caption, works for all Hall tiers, and updates with the existing refresh after building.
+  Shared drawing and wording now live in `UI.build_status_badge` / `UI.build_status_text` (`UI._BuildMark` moved
+  from `AdventureHUD`); both callers use the same implementation. No construction rules or assets changed.
+  Actual mouse input in local `shots/hall_build_status/capture.tscn` opened the Hall via its badge, selected
+  Marketplace, clicked Build, reopened the Hall after building and verified the next-day reset through the rules.
+  Inspected `built.png`, `built_tooltip.png`, `hall_after_build.png` and `states.png` (unused/built/next-day crops).
+  Full suite passed (`shots/hall_build_status/tests.log`): compilation, 40 battles, 16 visual checks, 15 battle AI
+  checks, 14 adventure AI checks, 26 map clicks/drag/queued click, five visits, 307 artifact checks and `SIM DONE`.
+  Next: section 8 findings.
+- **Town build-status badge (2026-10-21), included in this checkpoint:** at the user's request, each castle card
+  beside the adventure menu now shows a green hammer when its daily build is unused, or a gold check after
+  construction. The tooltip explicitly says "Not built today" / "Already built today". This reports
+  `town.built_today`, not affordability or building prerequisites; existing construction/day rules are unchanged.
+  `AdventureHUD._town_card` adds the non-interactive `_BuildMark` overlay, so clicking the badge still enters town.
+  Local capture driver `shots/town_build_status/capture.tscn` verified entry by clicking the badge, a successful
+  marketplace build through `TownLogic.build`, return via Exit, and reset through `AdvRules.new_day`. Inspected
+  `unused.png`, `built.png`, `next_day.png`, both tooltip shots and the `states.png` crops. `flow.log` includes the
+  successful flow and the previously recorded, separate artifact-twinkle polygon error at `map_view.gd:706`.
+  Full suite passed (`shots/town_build_status/tests.log`): compilation, 40 battles, 16 visual checks, 15 battle AI
+  checks, 14 adventure AI checks, 26 map clicks/drag/queued click, five visits, 307 artifact checks and `SIM DONE`.
+  Next: section 8 findings.
+- **Portrait button styling (2026-10-21), included in this checkpoint:** both clickable hero portraits now use
+  `UI.portrait_button` with the existing painted gold bevel, an 8px inset, hover brightening, a hand cursor and
+  a darker, slightly inset portrait while held down. The adventure card keeps its movement/mana bars and a
+  bright selected frame, but is a momentary action button rather than a toggle; town uses the same frame at
+  92px square. No art was added. Actual input captures in `shots/portrait_buttons/` show both screens at idle,
+  hover, mouse-down, details open and after Close; inspected full frames and `states.png` crops confirm the
+  raised border and press feedback. Local capture driver: `capture.tscn -- --case=adventure|town` in that folder.
+  Full suite passed (`shots/portrait_buttons/tests.log`): compilation, 40 battles, 16 visual checks, 15 battle AI
+  checks, 14 adventure AI checks, 26 map clicks/drag/queued click, five visits, 307 artifact checks and `SIM DONE`.
+- **Castle portrait fix (2026-10-21), included in this checkpoint:** the visiting hero's portrait in
+  `town_screen.gd` had no pressed handler. It now opens the same `HeroScreen` as the adventure menu, with a
+  matching tooltip; closing it refreshes the town's army strips. Dismiss uses the existing confirmation and
+  adventure removal rules, clears the visitor and pending hero reference, and refreshes the empty slot.
+  Actual mouse input and inspected screenshots in `shots/town_hero_click/`: `flow_0.png` shows hero details over
+  the castle, `flow_1.png` returns to town; `dismiss_flow_2.png` retains the hero after No, `_5.png` shows the
+  empty slot after Yes, and `_7.png` returns to adventure with no hero. The previously recorded artifact-twinkle
+  polygon error recurred on returning to adventure; it is separate from this interaction fix. Full suite passed
+  (`shots/town_hero_click/tests.log`): compilation, 40 battles, 16 visual checks, 15 battle AI checks, 14 adventure
+  AI checks, 26 map clicks/drag/queued click, five visits, 307 artifact checks and `SIM DONE`. Next: section 8 findings.
+- **Adventure portrait fix (2026-10-21), included in this checkpoint:** the user reported that a hero click in the
+  adventure menu appeared to do nothing while the castle card opened its town. `AdventureHUD._hero_card`
+  previously only selected the hero. One click now selects it and opens its details; the tooltip states this,
+  and clicks while the adventure controller is busy are ignored. Verified by actual input and inspected
+  screenshots: `shots/hero_click/hero.png` opens Sir Aldric's details; `flow_1.png` returns to the map after Close;
+  `flow_2.png` enters the castle on the next click. Full suite passed (`shots/hero_click/tests.log`): compilation,
+  40 battles, 16 visual checks, 15 battle AI checks, 14 adventure AI checks, 26 map clicks/drag/queued click,
+  five visits, 307 artifact checks and `SIM DONE`.
+  One screenshot run also emitted an artifact-twinkle polygon triangulation error at `map_view.gd:706`;
+  the click flow succeeded. That separate rendering issue is recorded for follow-up and was not changed here.
+- **Round 47 session authorised (2026-10-21, historical):** the user requested one systematic session covering the test baseline,
   battle readability, remaining visual fixes and measured battle/adventure AI work, with a commit and push after
   each verified fix to `HeroesGPT`; a start on war-machine wrecks or hot-seat is optional. This authorisation
   supersedes the per-commit question in section 6 for this session. No teams; at most one visual judge at a time.
@@ -384,7 +507,7 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 - **Artifacts** (2026-10-20): data `GameData.ARTIFACTS` / `ARTIFACT_TIERS`; rules `GameState.hero_stat`,
   `hero_flags`, `artifact_slots`, `can_wear`, `give_artifact`, `swap_artifact`, `merge_combinations`,
   `split_combination`, `join_combination`; battle `BattleLogic.max_hp / speed / spell_damage / immune`, necromancy in
-  `battle.gd`; map `AdvRules.hero_scout_radius`, `new_day` (gold, mana, muster growth); placement
+  `scripts/battle/necromancy.gd`; map `AdvRules.hero_scout_radius`, `new_day` (gold, mana, muster growth); placement
   `WorldGen._place_artifacts`; hero screen `hero_screen.gd` (`_placed`, `_artifact_tip`, `_Socket.tier_col / linked /
   rpressed`); map picture `MapView._object_node` + `_ArtifactGlow`; test `tools/artifact_test.gd`.
 - **Rules change**: the ammo cart never takes a turn (`battle_logic.gd` `_new_round` and `upcoming`), as in HoMM3.
