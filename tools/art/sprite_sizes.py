@@ -3,14 +3,18 @@ python tools/art/sprite_sizes.py  ->  assets/creatures/sizes.json  {"pikeman.png
 vis_w also counts semi-transparent parts (bone wings, capes, pike shafts; alpha > 120) above the feet, where the
 shadow lies: battle.gd caps it so a stack doesn't spill over its neighbours.
 battle.gd scales units to a per-tier on-screen figure height using these. Re-run after re-rendering creatures."""
-import os, json
+import os, json, sys
 import numpy as np
 from PIL import Image
 
 D = "assets/creatures"
-out = {}
+only = sys.argv[1:]
+# Optional filenames preserve hand-tuned measurements of unrelated sprites.
+out = json.load(open(f"{D}/sizes.json")) if only else {}
+if set(only) - set(os.listdir(D)):
+    raise SystemExit("Unknown sprite filename")
 for f in sorted(os.listdir(D)):
-    if f.endswith(".png"):
+    if f.endswith(".png") and (not only or f in only):
         a = np.asarray(Image.open(f"{D}/{f}").convert("RGBA"))[..., 3]
         ys, xs = np.nonzero(a > 200)
         y0, y1 = ys.min(), ys.max()

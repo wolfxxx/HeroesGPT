@@ -2,7 +2,7 @@
 # Full test pass for a round (about 4 minutes). Expected results:
 #   CHECK DONE, failures: 0
 #   BATTLE TEST: 40 battles ended of 40, failures: 0
-#   BATTLE VISUAL TEST: 13 checks, failures: 0
+#   BATTLE VISUAL TEST: 16 checks, failures: 0
 #   BATTLE AI TEST: N checks, failures: 0
 #   ADVENTURE AI TEST: N checks, failures: 0
 #   CLICK TEST: N clicks, 0 without a path    + DRAG TEST ... plan unchanged: true   + PENDING TEST ... shown: true

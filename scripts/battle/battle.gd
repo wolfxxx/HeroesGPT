@@ -424,13 +424,17 @@ func _pose(st: Dictionary, pose: String, hold := 0.0) -> bool:
 	var anc := Assets.anchor(rel)
 	var base: Vector2 = n.get_meta("base_scale", s.scale)
 	var k := 1.0
+	if pose == "dead" and st.get("machine", false):
+		# Wrecks can be authored at native image-generator resolution. Keep the idle
+		# machine's footprint instead of scaling a low, wide wreck by its height.
+		s.scale = base * fig_vis_w(st["id"]) / maxf(1.0, fig_vis_w(st["id"] + "_dead"))
 	if pose != "" and not pose.begins_with("move") and pose != "dead":
 		var cap := HEX_W * (2.15 if L.is_wide(st) else 1.25)
 		var vw := fig_vis_w("%s_%s" % [st["id"], pose]) * base.x
 		if vw > cap:
 			k = maxf(0.78, cap / vw)
 	# (the idle breathing animates the scale: it pauses while a narrowed pose shows)
-	var br = n.get_meta("breath", null)
+	var br = n.get_meta("breath") if n.has_meta("breath") else null
 	if br is Tween and br.is_valid():
 		if k < 1.0:
 			br.pause()

@@ -1,7 +1,7 @@
 extends Node
 ## Fixed siege layouts for regressions and screenshots, independent of auto-battle timing.
 ## --headless res://tools/battle_visual_test.tscn runs assertions.
-## With -- --shot=shots/x.png --case=crowd|distant|corpses, holds that layout for Shot.
+## With -- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck, holds that layout for Shot.
 
 var battle: Node2D
 var failures := 0
@@ -30,6 +30,7 @@ func _run() -> void:
 		match Shot.args.get("case", "crowd"):
 			"distant": _focus("pikeman")
 			"corpses": _corpses()
+			"wreck": _wreck()
 			"lightning":
 				# Capture the real spell animation near its peak, on a fixed target.
 				await get_tree().create_timer(maxf(0.1, float(Shot.args.get("delay", "3")) - 0.15)).timeout
@@ -60,6 +61,12 @@ func _run() -> void:
 	_check(corpse.modulate.r > 0.75, "corpse does not multiply its paint down to charcoal")
 	_check(corpse.material.get_shader_parameter("saturation") < 0.3, "corpse is desaturated")
 	_check(not battle._unit(_stack("bone_dragon")).get_node("Badge").visible, "corpse has no count badge")
+	_wreck()
+	await get_tree().create_timer(0.7).timeout
+	var wreck: Sprite2D = battle._unit(_stack("ballista")).get_node("Sprite")
+	_check(wreck.texture.resource_path.ends_with("ballista_dead.png"), "destroyed ballista uses its wreck")
+	_check(is_zero_approx(wreck.rotation), "wreck lies level instead of rotating the intact machine")
+	_check(wreck.get_rect().size.x * wreck.scale.x < 230.0, "native-resolution wreck fits the machine footprint")
 	print("BATTLE VISUAL TEST: %d checks, failures: %d" % [checks, failures])
 	battle.queue_free()
 	await get_tree().process_frame
@@ -99,6 +106,13 @@ func _corpses() -> void:
 		s["alive"] = false
 		s["count"] = 0
 		battle._anim_death(s)
+
+func _wreck() -> void:
+	_focus("pikeman")
+	var s := _stack("ballista")
+	s["alive"] = false
+	s["count"] = 0
+	battle._anim_death(s)
 
 func _check(ok: bool, label: String) -> void:
 	checks += 1

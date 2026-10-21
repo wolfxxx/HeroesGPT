@@ -58,7 +58,18 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   these changes fix demonstrated tactical errors and stalled combat. The eight-round hold limit resolves the
   reproduced pairing 91 standoff. Raw logs: `shots/session47/ai-{direct-complete,heldout-final,frozen-final}.log`.
   Full suite passes: 40/40 battle soak, 15 tactical checks, 14 adventure AI checks, map interaction/visits,
-  307 artifact checks and all-AI soak. This commit is 47c; previous pushed change is `bc013e6`.
+  307 artifact checks and all-AI soak. Committed/pushed as `7add0df` (47c), after `bc013e6` (47b).
+- **Round 47d, optional wreck work started:** the ballista now has a real broken-machine sprite at
+  `assets/creatures/ballista_dead.png`, generated with built-in imagegen from the intact sprite (exact prompt in
+  `tools/art/ballista_wreck_prompt.md`). It remains level on the ground, at the idle machine's width, with no
+  count badge or live ring. Native alpha preserved; width/anchor metadata added. `battle.gd._pose` supports native
+  resolution machine wrecks and no longer requests missing breathing metadata from machines. The visual fixture
+  now has 16 checks and `--case=wreck`; all pass. `shots/session47/wreck-final.png` inspected in game after import;
+  low grey debris remains in the ballista's place. Full final suite passed (`shots/session47/final-tests.log`).
+  This asset was added after judge47 and inspected separately; it is not part of that judge's score.
+  This commit is 47d; last pushed AI change is `7add0df`. The first four requested stages are complete, and one of
+  four machine wrecks is implemented. Next: remaining three wrecks, strategic AI measurement, and judge47's
+  remaining visual findings; hot-seat is still unimplemented. Further commits require the user's instruction.
 - **Repository continuation (2026-10-21):** at the user's request, further development in this checkout belongs to
   `wolfxxx/HeroesGPT`, with `origin` pointing there. The original `wolfxxx/Heroes` repository is the source and must
   remain untouched by this continuation. Preserve the existing `main` history. At migration the last gameplay commit was
@@ -328,35 +339,30 @@ The AI's choices read as sensible on screen (holding back, hitting the Angel aft
 
 The siege drawbridge reads as a stray plank, but it is part of the painted siege wall art; it was left alone.
 
-### The four bigger topics the user raised (recommendations given, awaiting a go-ahead)
-Suggested order: **artifacts → AI → hot-seat multiplayer → war-machine wrecks** (the last can go in any round).
+### The four bigger topics (current status after round 47)
+Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the remaining wrecks independent.
 
-1. **Artifacts and combinations — BUILT 2026-10-20** (see section 2 and `docs/ARTIFACTS_PROPOSAL.md`). Today: 11 plain stat artifacts in
-   `GameData.ARTIFACTS` and no tiers, sets or special effects. Proposal: about 30–40 artifacts in HoMM3's tiers
-   (treasure / minor / major / relic) that let a hero specialise (might, magic schools, logistics, economy,
-   necromancy), plus 2–3 **combination artifacts** the HoMM3 way: when all parts are worn they merge into one item
-   with a stronger effect (for example Dragon Sword + Shield + Helm → "Dragonheart Arms"). A set bonus while the
-   pieces stay separate would be the RPG way, not HoMM3's — flag it if the user prefers that. The proposal
-   (38 artifacts in four tiers, three combinations) is in `docs/ARTIFACTS_PROPOSAL.md`, **awaiting the user's
-   answers to its four questions** before anything is built.
-2. **Computer opponent — IN PROGRESS (round 44: tournament harness + first battle-AI changes, see section 2).** `scripts/adventure/adv_ai.gd` (~220 lines) is greedy: value ÷ distance per hero this
-   turn, a fixed build order, fixed strength ratios, no defending threatened towns, no multi-turn plans, no troop
-   transfers between heroes, no map spells, and it likely sees through the fog (it reads the whole object list).
-   `scripts/battle/battle_ai.gd` (~150 lines) scores the best strike or shot now minus the retaliation; it never
-   waits or defends, doesn't block shooters and doesn't bait retaliations. First step: an AI-vs-AI tournament
-   harness (extend `tools/sim_test`) that records win rates, so changes are proven; then battle AI, then map AI
-   and the existing Easy/Normal/Hard setting.
+1. **Artifacts and combinations — BUILT.** The approved `docs/ARTIFACTS_PROPOSAL.md` is implemented: 38 ordinary
+   artifacts plus three combinations, four tiers, guarded map placement, hero equipment/backpack, merging and
+   splitting, and battle/adventure effects. There are no pending proposal questions.
+2. **Computer opponent — tactical/local-defense pass COMPLETE; broader strategy remains.** Battle AI scores
+   damage, surviving retaliation, shooter blocking and collateral; it waits/defends with ranged support for at most
+   eight rounds. Adventure AI recruits under immediate threat and assigns a nearby viable defender, while ordinary
+   expansion remains value divided by route cost. Remaining work: multi-turn objectives, troop transfers between
+   heroes, map-spell planning, fog-information policy, difficulty behavior, and a strategic win-rate benchmark.
+   The battle tournament and 29 new battle/adventure decision checks are in place. Round47 is statistically
+   close to the prior AI overall; keep that limitation when proposing further tuning.
 3. **Multiplayer.** None today (`world_gen.gd`: `"is_ai": i != 0`). Step 1, hot-seat (players sharing one
    computer, as HoMM3): choose human/computer per player on New Game, a "pass to the next player" screen,
    human-vs-human battles. Step 2, online play, is its own large project: an authoritative host, deterministic
    seeded randomness in battle and on the map, disconnects, saving. Keep these rules from now on: all game state
    stays in saveable dictionaries, all randomness goes through a seeded generator, screens never change the rules'
    state directly (the split of `adv_rules`/`battle_logic` from the views already helps).
-4. **War-machine wrecks.** The ballista, first aid tent, ammo cart and catapult have no destroyed picture. The
-   battle already swaps to `creatures/<id>_dead.png` when it exists, so painting a broken version of each with
-   `tools/art/pose_paint.py` is about one session.
+4. **War-machine wrecks — STARTED.** Ballista is implemented and visually checked in round47d. First aid tent,
+   ammo cart and catapult still use the old rotated-sprite fallback. Add `<id>_dead.png`, an anchor and a measured
+   width for each; the battle loader now scales native-resolution wrecks to their idle footprint.
 
-## 9. Where the recent systems live (rounds 29–40)
+## 9. Where the recent systems live
 
 - **Map edge**: `scripts/adventure/fog.gdshader` draws the shroud, the slate void past the edge and a rocky ridge
   (`rock_h` height map: warped power-diagram boulders + crags; `ridge` lighting; `band`/`enc` set how far it runs
@@ -408,3 +414,6 @@ Suggested order: **artifacts → AI → hot-seat multiplayer → war-machine wre
   artifact); battle and town hover shots work. Not investigated.
 - Blender: never remove data blocks one by one in loops (use `bpy.data.batch_remove`); MCP calls over ~2 min report
   "No data received" while the job continues.
+
+- Round47 art gotcha: measure only changed files (`python tools/art/sprite_sizes.py ballista_dead.png`); a full
+  remeasurement replaces older hand-tuned Bone Dragon sizes. Machine nodes have no breathing tween.

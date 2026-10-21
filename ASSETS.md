@@ -34,6 +34,12 @@ Drawn by the image model from the painted idle sprite on a magenta backdrop (`to
 scaled to the idle figure, with a synthetic cast shadow. Battle swaps to them during attacks, on damage, and
 leaves the `_dead` sprite on the hex as a corpse.
 
+**First machine wreck (round47):** `creatures/ballista_dead.png` is a native 1655x950 RGBA sprite, generated with
+built-in imagegen from `ballista.png`; exact prompt in `tools/art/ballista_wreck_prompt.md`. Alpha is unmodified,
+anchor is the solid bottom centre, and battle scales its painted width to the idle ballista's footprint. It uses
+existing corpse shading. First aid tent, ammo cart and catapult wrecks remain to be made. Measure a new sprite with
+`python tools/art/sprite_sizes.py ballista_dead.png` to preserve unrelated hand-tuned entries in `sizes.json`.
+
 ## Heroes
 - `heroes/portraits/<hero_id>.png` — 256x256 painted portrait (ids in `GameData.HEROES`).
 - `heroes/map_<faction>.png` — mounted hero on horse, 3/4 top-down view for the adventure map, transparent, 160x160, facing right.

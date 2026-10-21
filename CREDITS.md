@@ -27,3 +27,6 @@ Each is used under the license listed; models were re-posed, re-lit, recoloured 
 **Non-commercial only:** wraith - handpainted- lowpoly. Replace these before any commercial release.
 
 Music, sound effects and voice lines were generated with ElevenLabs.
+
+The ballista wreck (`assets/creatures/ballista_dead.png`) was generated with OpenAI imagegen from the project’s
+existing ballista sprite. Prompt and integration notes: `tools/art/ballista_wreck_prompt.md`.

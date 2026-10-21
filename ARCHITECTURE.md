@@ -60,7 +60,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `battle_ai_test` (15 tactical checks), `adventure_ai_test` (14 spending/defense/target checks),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
-- `tools/battle_visual_test.tscn` — 13 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning`
+- `tools/battle_visual_test.tscn` — 16 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck`
   in a window to hold the same siege layout for screenshot comparison. Battle `_acting_uid` tracks the turn being
   animated (rules can already be on the next turn); `_figures_overlap` samples sprite alpha above the ground shadow.
 - `tools/ai_tournament.tscn` — the current battle AI against the frozen baseline (`tools/ai/battle_ai_baseline.gd`):
@@ -95,3 +95,7 @@ Window must not be headless (rendering needed). Screens are saved at the window 
   `portrait_bg.py`, `icons2d.py` (spell icons, icon frames), `town_crop.py` (town layers + layout json),
   `terrain.py` (terrain textures), `ui_art.py` (panels, buttons, logo).
 - Audio: `tools/audio/gen_audio.py {sfx|music|voice}` — ElevenLabs (key from ELEVENLABS_API_KEY).
+
+- Machine wrecks: `battle.gd._pose` scales `<machine>_dead.png` by its painted width relative to the idle sprite;
+  missing death sprites retain the existing fallback. First implemented: ballista. `tools/art/sprite_sizes.py`
+  accepts optional filenames to update only those metadata entries. Prompt/provenance: `tools/art/ballista_wreck_prompt.md`.
