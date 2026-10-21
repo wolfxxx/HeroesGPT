@@ -1,10 +1,10 @@
 extends Node
 ## Paired generated-map campaigns with sides swapped, using production movement/AI/instant combat.
 ## --pairs=8 --days=28 --start=0; --self compares the frozen AI with itself (paired delta must be zero).
+## --baseline=res://tools/ai/adventure_ai_checkpoint.gd compares against 4f126ec; --trace=shots/run.jsonl logs turns.
 ## Strategic score is army value + 5000/town + 5 days of mine income + half gold + 100/hero level.
 ## Score is a proxy at the day limit; report actual eliminations separately, never call score leads wins.
 const Driver = preload("res://tools/ai/campaign_driver.gd")
-const Baseline = preload("res://tools/ai/adventure_ai_baseline.gd")
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -14,17 +14,32 @@ func _run() -> void:
 	var days := 28
 	var first := 0
 	var control := false
+	var baseline_path := "res://tools/ai/adventure_ai_baseline.gd"
+	var trace_path := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--pairs="): pairs = int(arg.substr(8))
 		if arg.begins_with("--days="): days = int(arg.substr(7))
 		if arg.begins_with("--start="): first = int(arg.substr(8))
 		if arg == "--self": control = true
+		if arg.begins_with("--baseline="): baseline_path = arg.substr(11)
+		if arg.begins_with("--trace="): trace_path = arg.substr(8)
 	if pairs < 1 or days < 1 or first < 0:
 		push_error("Expected --pairs >= 1, --days >= 1 and --start >= 0")
 		get_tree().quit(1)
 		return
 	var driver := Driver.new()
 	add_child(driver)
+	var baseline = load(baseline_path)
+	if baseline == null or not baseline.can_instantiate():
+		push_error("Cannot load campaign baseline: " + baseline_path)
+		get_tree().quit(1)
+		return
+	if trace_path != "":
+		driver.trace = FileAccess.open(trace_path, FileAccess.WRITE)
+		if driver.trace == null:
+			push_error("Cannot open campaign trace: " + trace_path)
+			get_tree().quit(1)
+			return
 	var differences := []
 	var wins := [0, 0, 0]
 	var battles := 0
@@ -36,7 +51,8 @@ func _run() -> void:
 				"faction": "haven" if pair % 2 == 0 else "necropolis"})
 			for p in state["players"]: p["is_ai"] = true
 			driver.configure(state)
-			var policies: Array = [Baseline.new(driver.rules), Baseline.new(driver.rules)]
+			driver.run_label = "%d/%d" % [pair, side]
+			var policies: Array = [baseline.new(driver.rules), baseline.new(driver.rules)]
 			if not control: policies[side] = AdvAI.new(driver.rules)
 			seed(88000 + pair)
 			for day in days:
@@ -45,6 +61,7 @@ func _run() -> void:
 					state["current_player"] = p["index"]
 					driver.ai = policies[p["index"]]
 					await driver.ai.run_turn(driver, p)
+					driver.record_turn(p)
 				if state["players"].any(func(p): return not p["alive"]): break
 				driver.rules.new_day()
 			var a := _score(state, side)

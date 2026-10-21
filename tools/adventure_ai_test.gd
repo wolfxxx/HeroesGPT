@@ -9,11 +9,14 @@ var ai: AdvAI
 func _ready() -> void:
 	_spending()
 	_defense()
+	_counterattack()
 	_targets()
 	_coordination()
 	_transfers()
+	_reinforcement_targets()
 	_randomness()
 	await _meeting_turn()
+	await _counterattack_turn()
 	GameState.world = {}
 	print("ADVENTURE AI TEST: %d checks, failures: %d" % [checks, fails])
 	get_tree().quit(1 if fails else 0)
@@ -35,7 +38,7 @@ func _reset() -> void:
 	for i in 2:
 		var explored := PackedByteArray()
 		explored.resize(terrain.size())
-		world["players"].append({"index": i, "is_ai": true, "heroes": [], "towns": [],
+		world["players"].append({"index": i, "is_ai": true, "alive": true, "heroes": [], "towns": [],
 			"explored": explored,
 			"resources": {"gold": 500, "wood": 0, "ore": 0, "mercury": 0, "sulfur": 0, "crystal": 0, "gems": 0}})
 	GameState.world = world
@@ -95,7 +98,7 @@ func _defense() -> void:
 	_reset()
 	var town := _town(0, Vector2i(8, 8))
 	var hero := _hero(0, town["pos"], 100)
-	var enemy := _hero(1, Vector2i(11, 8), 40)
+	var enemy := _hero(1, Vector2i(11, 8), 80)
 	_object(Vector2i(7, 8), "chest")
 	_ok(ai.choose(hero).is_empty(), "defender holds the threatened gate rather than chasing treasure")
 	# A second nearby hero must not be sent to exchange troops with the existing defender.
@@ -123,6 +126,29 @@ func _defense() -> void:
 	rules.rebuild()
 	choice = ai.choose(hero)
 	_ok(choice.get("target", {}).get("uid", -1) != town["uid"], "defense route respects lethal entrance guards")
+
+func _counterattack() -> void:
+	_reset()
+	var town := _town(0, Vector2i(8, 8))
+	var hero := _hero(0, town["pos"], 100)
+	var enemy := _hero(1, Vector2i(11, 8), 20)
+	_object(Vector2i(7, 8), "chest")
+	_ok(ai.choose(hero).get("target", {}).get("uid", -1) == enemy["uid"], "strong defender intercepts a reachable raider instead of remaining pinned")
+	hero["movement"] = 50
+	_ok(ai.choose(hero).is_empty(), "defender holds if it cannot finish the interception today")
+	hero["movement"] = hero["max_movement"]
+	var second := _hero(1, Vector2i(12, 9), 10)
+	_ok(ai.choose(hero).is_empty(), "interception cannot expose the gate to a second raider")
+	world["heroes"].erase(second["uid"])
+	var enemy_town := _town(1, enemy["pos"])
+	enemy_town["garrison"][0] = {"id": "angel", "count": 30}
+	rules.rebuild()
+	_ok(ai.choose(hero).is_empty(), "interception accounts for an enemy town garrison")
+	enemy_town["garrison"][0] = null
+	var guard := _object(Vector2i(11, 7), "monster")
+	guard.merge({"creature": "bone_dragon", "count": 100})
+	rules.rebuild()
+	_ok(ai.choose(hero).is_empty(), "interception cannot bypass lethal guards beside its target")
 
 func _targets() -> void:
 	_reset()
@@ -218,6 +244,71 @@ func _randomness() -> void:
 	Audio._last_played.clear()
 	Audio.sfx("click")
 	_ok(randi() == expected, "sound pitch does not consume gameplay randomness")
+
+func _reinforcement_targets() -> void:
+	_reset()
+	var leader := _hero(0, Vector2i(8, 8), 100)
+	var helper := _hero(0, Vector2i(6, 8), 60)
+	var target := _town(1, Vector2i(13, 8))
+	target["garrison"][0] = {"id": "pikeman", "count": 90}
+	_ok(ai.choose(helper).get("kind", "") == "meet", "substantial nearby army joins when its troops unlock a conquest")
+	helper["pos"] = Vector2i(7, 8)
+	rules.rebuild()
+	_ok(ai.exchange_troops(helper, leader) == 59 * 80, "assault delivery transfers troops and leaves one with the donor")
+	_ok(ai.choose(leader).get("target", {}).get("uid", -1) == target["uid"], "reinforced leader now selects the previously unsafe town")
+	leader["army"][0]["count"] = 100
+	helper["army"][0]["count"] = 60
+	target["garrison"][0]["count"] = 300
+	_ok(ai.choose(helper).get("kind", "") != "meet", "does not dismantle a second army for an unwinnable assault")
+	target["garrison"][0]["count"] = 90
+	helper["pos"] = Vector2i(1, 1)
+	rules.rebuild()
+	_ok(ai.choose(helper).get("kind", "") != "meet", "assault support still respects the short delivery range")
+	var town := _town(0, leader["pos"])
+	town["buildings"].append("dwelling_1u")
+	var player: Dictionary = world["players"][0]
+	player["resources"]["gold"] = 10000
+	leader["army"] = [{"id": "pikeman", "count": 10}, {"id": "halberdier", "count": 5}]
+	for id in ["archer", "griffin", "swordsman", "monk", "cavalier"]:
+		leader["army"].append({"id": id, "count": 1})
+	town["garrison"][0] = {"id": "angel", "count": 1}
+	var cost := TownLogic.upgrade_cost("pikeman", "halberdier", 10)
+	ai._reinforce(leader, town, player)
+	_ok(leader["army"][0] == {"id": "halberdier", "count": 15}, "paid upgrades merge identical stacks without losing creatures")
+	_ok(leader["army"][1] == {"id": "angel", "count": 1} and town["garrison"][0] == null,
+		"freed slot accepts town reinforcements in the same visit")
+	_ok(player["resources"]["gold"] == 10000 - cost["gold"], "merge does not duplicate upgrade charges")
+	var dwelling := _object(Vector2i(10, 8), "dwelling")
+	dwelling.merge({"creature": "skeleton", "available": 50, "owner": -1})
+	_ok(ai.dwelling_recruits(leader, dwelling) == 0 and ai._object_value(leader, player, dwelling, ai._strength(leader)) == 0,
+		"full incompatible army never plans a useless dwelling visit")
+	leader["army"][1] = null
+	dwelling["creature"] = "angel"
+	_ok(ai.dwelling_recruits(leader, dwelling) == 0, "dwelling planning checks rare resource costs as well as gold")
+	player["resources"]["gems"] = 1
+	_ok(ai.dwelling_recruits(leader, dwelling) == 1, "dwelling plans the exact affordable count")
+	ai.recruit_from_dwelling(leader, dwelling)
+	_ok(leader["army"][1] == {"id": "angel", "count": 1} and dwelling["available"] == 49
+		and player["resources"]["gems"] == 0, "dwelling execution matches preview and pays resources")
+
+func _counterattack_turn() -> void:
+	_reset()
+	var hero := _hero(0, Vector2i(8, 8), 100)
+	_town(0, hero["pos"])
+	_town(1, Vector2i(22, 14))
+	var enemy := _hero(1, Vector2i(9, 8), 1)
+	var gold := _object(Vector2i(10, 9), "resource")
+	gold.merge({"res": "gold", "amount": 5000})
+	var player: Dictionary = world["players"][0]
+	player["ai_day"] = world["day"]
+	var driver = preload("res://tools/ai/campaign_driver.gd").new()
+	add_child(driver)
+	driver.configure(world)
+	await driver.ai.run_turn(driver, player)
+	_ok(not world["heroes"].has(enemy["uid"]), "production town defender defeats the adjacent raider")
+	_ok(not world["objects"].has(gold["uid"]), "a victory without casualties still permits further movement")
+	driver.queue_free()
+	await get_tree().process_frame
 
 func _meeting_turn() -> void:
 	_reset()

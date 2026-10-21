@@ -16,10 +16,53 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Session48 checkpoint (2026-10-21), this commit:** `Add campaign benchmarks, AI coordination, and visual fixes`.
+- **Session49 checkpoint (2026-10-21), this commit:** `Improve AI counterattacks and campaign reinforcement`.
+  The user requested committing and pushing the tested AI improvements below to `origin/main`. Previous pushed
+  checkpoint: **`4f126ec`** (`Add campaign benchmarks, AI coordination, and visual fixes`); use `git log -1` for
+  this checkpoint's hash. No new art, visual changes, judge run or score.
+  - Diagnosis: JSONL traces of 84-day campaigns show large armies pinned in their own towns by much weaker
+    raiders. Example pair 211: a strength-117576 defender took no action on 13 of the final 14 days; pair 212
+    had defenders stationary throughout those 14 days. Turns without action are observations, not proof of a
+    bug by themselves; focused scenarios confirmed the unconditional hold policy. See `shots/session49/before*.jsonl`
+    and `tools/campaign_trace_report.py`. Some games also simply needed more than 42 days to finish.
+  - `AdvAI._counterattack` now lets a resident defender intercept a much weaker raider when the entire route
+    fits today's movement, destination guards/garrisons are safe, and the remaining garrison can cover other
+    reachable threats. Otherwise it holds as before. The progress guard also recognizes XP gained in a victory:
+    defeating an adjacent weak enemy without casualties no longer discards the rest of the hero's movement.
+  - `_reinforce` upgrades and merges identical carried stacks before collecting town troops, freeing slots,
+    then merges again after new upgrades. Costs and creature counts are preserved. `dwelling_recruits` shares
+    the exact affordable/carryable count between target selection and purchase (all resources, seven slots).
+    Substantial nearby armies may deliver when their transferable troops make a previously unsafe enemy town
+    attack viable (`_unlocks_assault`); ordinary short courier behavior remains. Delivery is still at most half
+    a day's travel, one creature stays with the donor, and defense takes priority. No new save fields/rules.
+  - Measured against the **frozen pushed policy**, `tools/ai/adventure_ai_checkpoint.gd` from `4f126ec`, not the
+    older session47 baseline. Development: counterattack alone, 12 pairs at 84 days, 17 wins / 4 losses / 3
+    unresolved, score +54.91 +/- 34.32 (2 SE); combined reinforcement version before the XP-progress fix,
+    16 development pairs, 22 / 4 / 6, +57.30 +/- 23.36. No tuning followed fresh-map validation.
+  - **Final validation, 48 fresh paired maps / 96 games, start=400**, same maps with sides swapped:
+    **42 days: 48 wins / 11 losses / 37 unresolved, score +42.29 +/- 12.99 (2 SE)**;
+    **84 days: 66 wins / 13 losses / 17 unresolved, score +54.01 +/- 14.53 (2 SE)**.
+    Logs: `shots/session49/conquest-validation42.log`, `conquest-validation84.log`. This demonstrates a gain
+    under the current benchmark: size-36 maps, two players, Haven/Necropolis, production instant AI battles.
+    It does not establish human-battle balance or cover larger maps/four players. Score leads are not wins.
+    The two day limits reuse the same pairs, not independent samples. Checkpoint self-control on two pairs
+    remains exactly 0.00 +/- 0.00 (`control.log`). Frozen baselines must remain unchanged.
+  - **54 focused adventure checks pass**, including real interception/continued movement, protecting a gate
+    from a second threat, lethal guards, assault deliveries, slot freeing and exact resource payment.
+    **Full suite passed** (`shots/session49/tests.log`): compile, 40 battles, 25 visual, 15 battle AI,
+    51 adventure AI, 63 campaign week, zero-difference baseline control, 4096 glow phases, 33 camera,
+    227 factory, 46 Necromancy, 31 clicks/drag/queued click, five visits, 306 artifacts and `SIM DONE`.
+    The focused recheck passed 54 after adding three more guard/delivery assertions; production code was unchanged.
+    New tools: tournament `--baseline` and `--trace`; driver movement/XP/army and end-turn kingdom JSONL events;
+    Python trace summarizer. No new visual changes required screenshots in this session.
+  - Next: playtest the improved opponent against a human; investigate the 17 unresolved validation games and
+    validate larger/four-player maps before broader strength claims. Spell/army strength estimates remain
+    approximate, and fog-information policy/map spells/difficulty remain open. War-machine wrecks and hot-seat
+    are separate future work. This checkpoint's commit/push is authorized; future commits require the user's instruction.
+- **Session48 pushed checkpoint (2026-10-21), `4f126ec`:** `Add campaign benchmarks, AI coordination, and visual fixes`.
   The user authorized committing/pushing this tested checkpoint, then investigating long AI campaigns and
   improving conquest/reinforcement decisions. Previous pushed commit: **`35ed2e6`**; use `git log -1` for this
-  checkpoint's hash. No new assets, judge run or score. Captures/logs are local under ignored `shots/session48/`.
+  checkpoint's hash at that time. No new assets, judge run or score. Captures/logs are local under ignored `shots/session48/`.
   - `tools/campaign_week_test.tscn` passes **63 checks** through the production adventure controller: seven legal
     daily builds and resets, recruitment, walking to the factory and equipping all machines, a guard battle with
     Expert Necromancy, enemy turns, day-eight growth and midweek save/load of the full world. This is a scripted
@@ -513,11 +556,12 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 1. **Artifacts and combinations — BUILT.** The approved `docs/ARTIFACTS_PROPOSAL.md` is implemented: 38 ordinary
    artifacts plus three combinations, four tiers, guarded map placement, hero equipment/backpack, merging and
    splitting, and battle/adventure effects. There are no pending proposal questions.
-2. **Computer opponent — tactical/local-defense pass COMPLETE; initial strategic pass local.** Battle AI scores
+2. **Computer opponent — tactical/local-defense, coordination and conquest improvements in this checkpoint.** Battle AI scores
    damage, surviving retaliation, shooter blocking and collateral; it waits/defends with ranged support for at most
    eight rounds. Adventure AI recruits under immediate threat and assigns a nearby viable defender, while ordinary
    expansion remains value divided by route cost. Session48 adds target persistence/coordination, bounded troop
-   deliveries, paid upgrades and a paired campaign benchmark. Overall strength gain is unproven (results in §2).
+   deliveries, paid upgrades and a paired campaign benchmark. Session49 fixes passive defenders, improves
+   reinforcement/assault coordination and shows a clear gain against that checkpoint in the benchmark (§2).
    Remaining work: better conquest/reinforcement priorities, map-spell planning, fog policy and difficulty.
    Adventure AI still enumerates world targets regardless of fog. Keep the frozen baseline and use fresh map
    pairs for comparisons; strategic scores and eliminations measure different outcomes.
@@ -533,6 +577,11 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Conquest work (session49):** `AdvAI._counterattack` relieves threatened towns; `_unlocks_assault` evaluates
+  substantial deliveries; `_merge_stacks` frees duplicate army slots; `dwelling_recruits` shares purchase
+  eligibility. `run_turn` recognizes XP as progress. Frozen `4f126ec` policy: `tools/ai/adventure_ai_checkpoint.gd`.
+  Tournament `--baseline` selects either frozen revision; `--trace` writes the driver's JSONL events.
+  `python tools/campaign_trace_report.py <trace> --after=42` reports late targets, inactivity and unused garrisons.
 - **Strategic campaign work (session48):** `AdvAI.choose` owns the optional target assignment; `_leader`,
   `_transfer_value`, `_transfer`, `exchange_troops` handle legal nearby deliveries. `adventure.gd._interact_with`
   executes AI meetings. `tools/ai/campaign_driver.gd` runs production turns/visits/instant battles without UI;
@@ -575,6 +624,13 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- A zero-cost adjacent victory may leave army value unchanged. XP gain is still real turn progress; otherwise
+  AI throws away its remaining movement. Do not remove the no-progress guard entirely (repeat visits can loop).
+- Defense must distinguish holding against a close match from safely intercepting a weak raider. Always check
+  the full current-day route, guards, enemy-town garrisons and other threats before leaving the gate.
+- Campaign traces are JSONL, with Vector2i coordinates serialized as strings. Move events precede the AI's
+  after-move town reinforcement; end-turn armies include it. Old traces omit XP deltas. No-action counts alone
+  cannot distinguish deliberate holding from a missing target. No traces or user saves are committed.
 - Paired campaigns need both world UID reset and gameplay seed reset per game. Audio pool availability/dedup
   depends on timing: audio needs its own RNG. Never randomize a caller-supplied level-up generator. Other
   presentation code still consumes global RNG; campaign reproducibility is limited to the headless harness.

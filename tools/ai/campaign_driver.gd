@@ -2,6 +2,8 @@ extends "res://scripts/adventure/adventure.gd"
 ## Headless adapter: execute the production movement, visits, AI and instant-battle path.
 ## Rendering and modal game-over announcements alone are disabled. All players must be AI.
 var battles := 0
+var trace: FileAccess
+var run_label := ""
 
 func _ready() -> void:
 	pass
@@ -30,6 +32,40 @@ func _check_game_over() -> bool:
 func _start_battle(setup: Dictionary, _involves_human: bool) -> String:
 	battles += 1
 	return await super._start_battle(setup, false)
+
+func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
+	var before: Vector2i = hero["pos"]
+	var movement: int = hero["movement"]
+	var army := GameState.army_strength(hero["army"])
+	var xp: int = hero["xp"]
+	var target: Dictionary = plan["target"]
+	var result := await super.move_hero(hero, plan, animate)
+	if trace:
+		_record({"event": "move", "hero": hero["uid"], "owner": hero["owner"], "from": before,
+			"to": hero["pos"], "goal": plan["path"].back(), "kind": plan["kind"],
+			"target": target.get("type", plan["kind"]), "target_uid": target.get("uid", -1),
+			"cost": movement - hero["movement"], "army_change": GameState.army_strength(hero["army"]) - army,
+			"xp_change": hero["xp"] - xp})
+	return result
+
+func record_turn(player: Dictionary) -> void:
+	if not trace: return
+	var heroes := []
+	for hid in player["heroes"]:
+		var h: Dictionary = world["heroes"][hid]
+		heroes.append({"uid": hid, "pos": h["pos"], "strength": ai._strength(h), "army": h["army"],
+			"movement": h["movement"], "goal": h.get("ai_goal", {})})
+	var towns := []
+	for tid in player["towns"]:
+		var t: Dictionary = world["towns"][tid]
+		towns.append({"uid": tid, "pos": t["pos"], "garrison": GameState.army_strength(t["garrison"]),
+			"available": t["available"], "buildings": t["buildings"]})
+	_record({"event": "turn", "owner": player["index"], "resources": player["resources"], "heroes": heroes, "towns": towns})
+
+func _record(event: Dictionary) -> void:
+	event["run"] = run_label
+	event["day"] = world["day"]
+	trace.store_line(JSON.stringify(event))
 
 class SilentView extends MapView:
 	func rebuild_objects() -> void: pass

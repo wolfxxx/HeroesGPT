@@ -57,14 +57,20 @@ No persistent camera state or fog-rule changes; existing saves work after restar
 `AdvAI.choose` scores safe reachable objectives, favors its existing viable target by 20%, and discounts recent
 assignments to another nearby hero for consumable/capturable sites. Repeatable shops and friendly towns remain
 available to everyone. Optional `hero.ai_goal={pos:Vector2i,day:int}` persists through saves and is revalidated
-on each decision; stale reservations expire. Defense overrides ordinary errands.
+on each decision; stale reservations expire. Defense overrides ordinary errands. `_counterattack` allows a
+resident defender to remove a weaker reachable raider without abandoning the gate to other uncovered threats.
+It checks the current movement budget, destination guards and an enemy's town garrison before committing.
 
 `_leader` identifies the strongest army/hero. A small secondary army can deliver troops within half a day's
 journey. `adventure.gd._interact_with` calls `exchange_troops` only at a normal friendly meeting. `_transfer`
-obeys army slot limits and retains one creature; `_transfer_value` previews on deep copies. A changed army counts
-as progress even when an adjacent meeting consumes no movement. `_reinforce` pays normal town upgrade costs.
-Map-spell planning and fog-aware strategic knowledge remain unimplemented. Campaign results are in HANDOFF.md;
-functional coordination tests pass, but overall strength gain is unproven.
+obeys army slot limits and retains one creature; `_transfer_value` previews on deep copies. `_unlocks_assault`
+also allows substantial nearby deliveries when the added troops make an enemy town within two days' travel
+viable to attack; delivery itself still has the half-day limit. A changed army or gained XP counts as progress
+when an adjacent meeting/victory consumes no movement. `_reinforce` pays ordinary upgrade costs, merges identical
+stacks before collecting troops to free slots, then merges again after upgrading the additions. `dwelling_recruits`
+shares the exact affordable/carryable count between selection and purchase, including rare resources.
+Map-spell planning and fog-aware strategic knowledge remain unimplemented. Campaign results in HANDOFF.md show
+a gain against `4f126ec` on fresh size-36/two-player maps with instant AI battles; broader balance is untested.
 
 `AdvRules.roll_level_up(hero, rng=null)` honors a supplied generator for both stats and skill options; otherwise
 it uses the global gameplay stream. No reseeding from wall-clock time. Other presentation randomness still needs
@@ -131,7 +137,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
-  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (35 spending/defense/coordination/transfer/RNG checks),
+  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (54 spending/defense/coordination/transfer/RNG checks),
   `campaign_week_test` (63 integrated week/save checks), `adventure_tournament --self --pairs=2` (RNG control),
   `artifact_glow_test` (4096 phase draws in a window, inspect errors),
   `adventure_camera_test` (33 movement/visibility/turn-camera checks),
@@ -154,6 +160,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `user://campaign_week_test_<pid>.dat`, compares the complete world and removes only that test file.
 - `tools/ai/campaign_driver.gd` — headless subclass of the adventure controller. Suppresses drawing, camera
   visibility and game-over popups; all players must be AI. Runs real turns and instant battles, counts battles.
+  Optional JSONL tracing records moves (positions, target, movement/army/XP deltas) and end-turn resources,
+  heroes and town garrisons/recruit pools. Recording does not call policy decisions or consume randomness.
 - `tools/adventure_tournament.tscn` — paired generated maps, sides swapped, current policy versus the frozen
   `tools/ai/adventure_ai_baseline.gd` from `35ed2e6`. Example: `Godot --headless --path .
   res://tools/adventure_tournament.tscn -- --pairs=48 --start=200 --days=42`. `--self` uses baseline on both sides
@@ -161,6 +169,13 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   half treasury gold + 100/hero level + five days' mine income (wood/ore valued 100, rare resources 250).
   Report paired normalized score delta with two standard errors and actual wins/losses/unresolved separately.
   Many games hit the limit: a score advantage is not an elimination. Shared rules are the same for both policies.
+  `--baseline=res://tools/ai/adventure_ai_checkpoint.gd` selects the frozen `4f126ec` coordination policy;
+  original `adventure_ai_baseline.gd` remains the default and unchanged. `--trace=shots/run.jsonl` enables
+  diagnostics (create its parent directory first). Session49 validation: `--pairs=48 --start=400 --days=84`
+  with the checkpoint baseline; repeat with `--days=42` for the earlier cutoff on the same maps.
+- `tools/campaign_trace_report.py <trace> --after=42` — standard-library summary of late actions, no-action hero
+  turns, final armies/positions and unused garrisons. No-action turns may be intentional defense; the report
+  provides evidence for investigation, not an automatic stall verdict. Old traces have no XP delta.
 - `tools/artifact_glow_test.tscn` — render 32 glows over 128 frames, sampling appearance/disappearance thresholds
   and the wider cycle. Run windowed for actual renderer verification; `-- --shot=shots/x.png --delay=1` holds a
   labelled phase sheet. Restore `project.godot` after any windowed run (the full suite's exit trap does this).

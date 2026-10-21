@@ -37,12 +37,14 @@ func run_turn(adv, player: Dictionary) -> String:
 				break
 			var before: int = hero["movement"]
 			var army_before := GameState.army_strength(hero["army"])
+			var xp_before: int = hero["xp"]
 			var r: String = await adv.move_hero(hero, choice, false)
 			if r == "battle":
 				return "battle"
 			if not adv.is_inside_tree():
 				return "battle"
-			if world["heroes"].has(hid) and world["heroes"][hid]["movement"] == before and GameState.army_strength(hero["army"]) == army_before:
+			if world["heroes"].has(hid) and world["heroes"][hid]["movement"] == before \
+					and GameState.army_strength(hero["army"]) == army_before and hero["xp"] == xp_before:
 				hero["movement"] = 0
 				break
 			# Hero standing in own town: reinforce.
@@ -138,6 +140,11 @@ func hire_hero(player: Dictionary, town: Dictionary) -> Dictionary:
 	return hero
 
 func _reinforce(hero: Dictionary, town: Dictionary, _player: Dictionary) -> void:
+	# Upgrading a base stack can merge it with an upgraded stack already carried, freeing an army slot.
+	for stack in hero["army"]:
+		if stack:
+			TownLogic.upgrade_stack(town, _player, stack)
+	_merge_stacks(hero["army"])
 	for i in 7:
 		var s = town["garrison"][i]
 		if s and GameState.add_to_army(hero["army"], s["id"], s["count"]):
@@ -145,6 +152,18 @@ func _reinforce(hero: Dictionary, town: Dictionary, _player: Dictionary) -> void
 	for stack in hero["army"]:
 		if stack:
 			TownLogic.upgrade_stack(town, _player, stack)
+	_merge_stacks(hero["army"])
+
+func _merge_stacks(army: Array) -> void:
+	var first := {}
+	for i in army.size():
+		if army[i] == null: continue
+		var id: String = army[i]["id"]
+		if first.has(id):
+			army[first[id]]["count"] += army[i]["count"]
+			army[i] = null
+		else:
+			first[id] = i
 
 ## Consolidate at an ordinary adjacent friendly meeting, retaining one creature with the courier.
 ## Preview on copies first: seven-slot limits must never cause lost troops or pointless trips.
@@ -195,12 +214,19 @@ func exchange_troops(a: Dictionary, b: Dictionary) -> int:
 func recruit_from_dwelling(hero: Dictionary, o: Dictionary) -> void:
 	var player := rules.player_of(hero)
 	var c: Dictionary = GameData.CREATURES[o["creature"]]
-	var n: int = o["available"]
-	for r in c["cost"]:
-		n = mini(n, player["resources"].get(r, 0) / c["cost"][r])
+	var n := dwelling_recruits(hero, o)
 	if n > 0 and GameState.add_to_army(hero["army"], o["creature"], n):
 		TownLogic.pay(player, c["cost"], n)
 		o["available"] -= n
+
+## Use the same affordable, carryable count when planning a visit and when buying.
+func dwelling_recruits(hero: Dictionary, o: Dictionary) -> int:
+	var player := rules.player_of(hero)
+	var c: Dictionary = GameData.CREATURES[o["creature"]]
+	var n: int = o["available"]
+	for r in c["cost"]:
+		n = mini(n, player["resources"].get(r, 0) / c["cost"][r])
+	return n if n > 0 and GameState.add_to_army(hero["army"].duplicate(true), o["creature"], n) else 0
 
 # ---------------------------------------------------------------------------------------------
 ## Plan and execute the same purchases so a fully equipped or cash-poor hero never loops at a factory.
@@ -245,7 +271,7 @@ func choose(hero: Dictionary) -> Dictionary:
 		var leader: Dictionary = world["heroes"][leader_uid]
 		var delivery := _transfer_value(leader, hero["army"], true)
 		# Do not dismantle a useful second army or chase the leader across the map.
-		if delivery > 400 and _strength(hero) < _strength(leader) * 0.35:
+		if delivery > 400 and (_strength(hero) < _strength(leader) * 0.35 or _unlocks_assault(leader, delivery)):
 			var meeting := rules.plan(hero, leader["pos"])
 			if not meeting["path"].is_empty() and meeting["costs"].back() <= hero.get("max_movement", 1500) * 0.5:
 				cands.append([leader["pos"], delivery * 1.2])
@@ -321,6 +347,22 @@ func choose(hero: Dictionary) -> Dictionary:
 		hero["ai_goal"] = {"pos": best["path"].back(), "day": world["day"]}
 	return best
 
+## A substantial second army joins only when its actual transferable troops unlock a nearby conquest.
+## Otherwise it keeps its independent task. Meetings still have the existing half-day travel limit.
+func _unlocks_assault(leader: Dictionary, delivery: int) -> bool:
+	var strength := _strength(leader)
+	var combined := strength * (1.0 + float(delivery) / maxf(1.0, GameState.army_strength(leader["army"])))
+	for town in world["towns"].values():
+		if town["owner"] < 0 or town["owner"] == leader["owner"]: continue
+		var defender := GameState.army_strength(town["garrison"]) * 1.25
+		var resident := rules.hero_at(town["pos"])
+		if not resident.is_empty(): defender += _strength(resident)
+		if strength > defender * 1.4 or combined <= defender * 1.4 or not _safe_gate(leader, town): continue
+		var plan := rules.plan(leader, town["pos"])
+		if not plan["path"].is_empty() and plan["costs"].back() <= leader.get("max_movement", 1500) * 2:
+			return true
+	return false
+
 ## Largest hostile army that can reach the gate next turn, following the actual terrain/occupancy path.
 func _town_threat(town: Dictionary) -> float:
 	var threat := 0.0
@@ -354,6 +396,9 @@ func _defense(hero: Dictionary) -> Dictionary:
 		var resident := rules.hero_at(town["pos"])
 		if not resident.is_empty():
 			if resident["uid"] == hero["uid"] and _strength(hero) + garrison >= threat * 1.1:
+				var intercept := _counterattack(hero, town)
+				if not intercept.is_empty():
+					return intercept
 				return {"hold": true}
 			continue
 		var defender := -1
@@ -373,6 +418,34 @@ func _defense(hero: Dictionary) -> Dictionary:
 				best_plan = plan
 		if defender == hero["uid"]:
 			return best_plan
+	return {}
+
+## Remove a reachable raider instead of letting a much weaker army pin the defender indefinitely.
+## Keep the gate held if another hostile army could take it while this hero is away.
+func _counterattack(hero: Dictionary, town: Dictionary) -> Dictionary:
+	var threats := []
+	for enemy in world["heroes"].values():
+		if enemy["owner"] == hero["owner"]: continue
+		var route := rules.plan(enemy, town["pos"])
+		if not route["path"].is_empty() and route["costs"].back() <= enemy.get("max_movement", enemy["movement"]):
+			threats.append(enemy)
+	var garrison := GameState.army_strength(town["garrison"]) * 1.25
+	for enemy in threats:
+		var danger := _strength(enemy)
+		# A hero standing in a town fights with its garrison, not just the visible army.
+		for target_town in world["towns"].values():
+			if target_town["pos"] == enemy["pos"]:
+				danger += GameState.army_strength(target_town["garrison"]) * 1.25
+		for guard in rules.guards(enemy["pos"]):
+			danger = maxf(danger, GameData.CREATURES[guard["creature"]]["ai_value"] * guard["count"])
+		if _strength(hero) <= danger * 1.6: continue
+		var uncovered := false
+		for other in threats:
+			if other != enemy and _strength(other) * 1.4 > garrison: uncovered = true
+		if uncovered: continue
+		var plan := rules.plan(hero, enemy["pos"])
+		if not plan["path"].is_empty() and plan["reach"] == plan["path"].size() - 1:
+			return plan
 	return {}
 
 func _object_value(hero: Dictionary, player: Dictionary, o: Dictionary, me: float) -> float:
@@ -402,12 +475,10 @@ func _object_value(hero: Dictionary, player: Dictionary, o: Dictionary, me: floa
 		"learning_stone":
 			return 0.0 if hero["uid"] in o.get("visited", []) else 1500.0
 		"dwelling":
-			if o["available"] <= 0:
-				return 0.0
+			var n := dwelling_recruits(hero, o)
+			if n <= 0: return 0.0
 			var c: Dictionary = GameData.CREATURES[o["creature"]]
-			if player["resources"]["gold"] < c["cost"].get("gold", 0) * 2:
-				return 0.0
-			return 1200.0 + c["ai_value"] * mini(o["available"], 10) * 0.3
+			return 1200.0 + c["ai_value"] * mini(n, 10) * 0.3
 		"watchtower":
 			return 0.0 if hero["owner"] in o.get("visited_by", []) else 150.0
 		"war_machine_factory":
