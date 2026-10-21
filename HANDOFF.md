@@ -11,7 +11,7 @@ overall 9.4), branch `main`, remote `https://github.com/wolfxxx/HeroesGPT.git` (
 adventure map with heroes, mines, monsters and fog; two factions (Haven, Necropolis) with painted town screens,
 building and recruiting; hex battles with 14 creatures, war machines, spells and sieges; a computer opponent;
 music and sound. All art is 3D library models rendered in Blender and then painted over by an image model, plus
-painted icons and UI. The work has gone in **rounds**: an independent judge agent scores 32 screenshots against
+painted icons and UI. The work has gone in **rounds**: an independent judge agent scores 33 screenshots against
 the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
@@ -31,6 +31,13 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   Full suite passed with the new checks; three live siege runs (two Necropolis, one Haven), six frames in
   `shots/session47/live_siege_*`, were captured and the three late frames inspected. Baseline battle-AI tournament reconfirmed: 319/600
   wins (53%), +1.9 points army kept (+-1.0), 0 unfinished; `shots/session47/ai-before.log`.
+- **Round 47b, visual polish:** lightning is a narrow 220px local strike with no storm cloud; the showcase
+  artifacts keep an extra tile above town towers; spellbook page headings both use 28px red ink; disabled
+  backpack arrows keep their frame and a readable grey symbol. Compilation and all 13 visual assertions pass.
+  Captures `shots/session47/lightning.png`, `shots/judge47/adventure_artifacts.png` and `hero_screen.png`
+  inspected: the target is clear, all five artifacts remain visible and the cape is separated from the town.
+  Both spellbook headings inspected in `shots/judge47/battle_spellbook.png`. Full suite passed;
+  33 judge 47 frames captured at 1600x900, independent review underway. Last pushed fix: `8136683` (47a); this commit contains 47b.
 - **Repository continuation (2026-10-21):** at the user's request, further development in this checkout belongs to
   `wolfxxx/HeroesGPT`, with `origin` pointing there. The original `wolfxxx/Heroes` repository is the source and must
   remain untouched by this continuation. Preserve the existing `main` history. The last gameplay commit is
@@ -38,7 +45,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   scores and findings below. This migration changes only the handoff and Git destination; no gameplay or assets
   changed and no game tests were rerun. Resume from the open findings and AI work in section 8.
 - **Artifacts and combination artifacts are built** (the user approved `docs/ARTIFACTS_PROPOSAL.md` as proposed:
-  merging as in HoMM3, relics also on random maps, our own names). 41 artifacts in four tiers plus three
+  merging as in HoMM3, relics also on random maps, our own names). 41 artifacts in four tiers including three
   combinations, effects in battle and on the map, tiered placement with guards, the hero screen (tier-coloured
   sockets, combinations across their slots, right-click to split or join), each artifact's own picture on the map,
   30 new painted icons, AI valuation, and `tools/artifact_test` (307 checks). Committed and pushed; judge 41 ran on
@@ -130,7 +137,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 | Compile-check every script | `sh tools/check.sh` → `CHECK DONE, failures: 0` |
 | Full test pass (~4 min) | `sh tools/run_tests.sh` (expected output is in its header) |
 | One screenshot | `Godot --path . -- --shot=shots/x.png --scene=res://scenes/battle.tscn --delay=3 --setup=demo` |
-| Judge screenshot set | `sh tools/judge_round.sh N` → `shots/judgeN/` (32 shots, 1600x900) |
+| Judge screenshot set | `sh tools/judge_round.sh N` → `shots/judgeN/` (33 shots, 1600x900) |
 
 Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space, images saved at 1600x900;
 `--setup=artifacts` lays an artifact of each tier beside the first hero):
@@ -332,7 +339,7 @@ Suggested order: **artifacts → AI → hot-seat multiplayer → war-machine wre
   - `_under_figures()` — low obstacles fade where a figure stands over them.
   - `_Shadow` — rings; a struck stack's ring flares in its own side colour.
   - `_QueueIcon` — turn queue; machines and towers drawn whole with a name band.
-  - `_Burst` (bolt) — lightning from a storm cloud, drawn on the rings layer, under the figures.
+  - `_Burst` (bolt) — narrow 220px lightning strike above its target, on the rings layer under figures; no cloud.
   - Damage labels vanish at once (no fade) — `_float_text`.
 - **Artifacts** (2026-10-20): data `GameData.ARTIFACTS` / `ARTIFACT_TIERS`; rules `GameState.hero_stat`,
   `hero_flags`, `artifact_slots`, `can_wear`, `give_artifact`, `swap_artifact`, `merge_combinations`,

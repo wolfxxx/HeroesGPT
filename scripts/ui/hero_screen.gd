@@ -328,7 +328,7 @@ static func _backpack(m: Modal, h: Dictionary, redo: Callable) -> Control:
 		b.custom_minimum_size = Vector2(30, SOCK)
 		b.focus_mode = Control.FOCUS_NONE
 		b.disabled = off + d < 0 or off + d > pack.size() - BACKPACK
-		b.modulate.a = 0.35 if b.disabled else 1.0  # (all of it fits on one page: the arrows plainly off)
+		# Disabled style and grey arrow communicate state without double-dimming the control.
 		b.pressed.connect(func():
 			m.set_meta("bp", off + d)
 			Audio.sfx("click", -6)
@@ -505,7 +505,7 @@ class _Arrow extends Control:
 	func _draw() -> void:
 		var c := size * 0.5
 		var pts := PackedVector2Array([c + Vector2(-6 * dir, -11), c + Vector2(-6 * dir, 11), c + Vector2(7 * dir, 0)])
-		draw_colored_polygon(pts, UI.GOLD if live else Color(0.38, 0.32, 0.24))
+		draw_colored_polygon(pts, UI.GOLD if live else Color(0.55, 0.51, 0.43))
 
 ## The formation buttons' little picture: three stacks spread apart, or close together.
 class _Formation extends Control:

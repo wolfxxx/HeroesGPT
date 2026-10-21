@@ -59,14 +59,14 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
-- `tools/battle_visual_test.tscn` — 13 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses`
+- `tools/battle_visual_test.tscn` — 13 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning`
   in a window to hold the same siege layout for screenshot comparison. Battle `_acting_uid` tracks the turn being
   animated (rules can already be on the next turn); `_figures_overlap` samples sprite alpha above the ground shadow.
 - `tools/ai_tournament.tscn` — the current battle AI against the frozen baseline (`tools/ai/battle_ai_baseline.gd`):
   `Godot --headless --path . res://tools/ai_tournament.tscn -- --games=300` (600 battles, ~15 s); prints the win rate
   and the paired difference in army kept, with its error bar. Measure every battle-AI change with it; refreeze the
   baseline (copy battle_ai.gd over it, class `BattleAIBaseline`) only after a change is accepted.
-- `sh tools/judge_round.sh N` — the 32 judge screenshots (`tools/judge_shots.sh`) into shots/judgeN, size-checked;
+- `sh tools/judge_round.sh N` — the 33 judge screenshots (`tools/judge_shots.sh`) into shots/judgeN, size-checked;
   the judge agent's prompt is `tools/judge_prompt.md`.
 - `tools/sim_test.tscn` — all-AI soak test: `Godot --path . res://tools/sim_test.tscn -- --seconds=80`
   (prints `SIM day ...` summaries and `SIMBATTLE` lines).

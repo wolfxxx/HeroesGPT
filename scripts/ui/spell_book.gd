@@ -156,7 +156,7 @@ class _Book extends Control:
 		var p1: Rect2 = SpellBook.PAGES[1]
 		# the school shown (the tabs pick it) over the left page, how many of its spells are known over the right
 		_text(SpellBook.SCHOOL[school], Rect2(p0.position, Vector2(p0.size.x, 44)), 28, SpellBook.INK_RED, true)
-		_text("%d %s known" % [list.size(), "spell" if list.size() == 1 else "spells"], Rect2(p1.position, Vector2(p1.size.x, 44)), 24, SpellBook.INK_RED, true)
+		_text("%d %s known" % [list.size(), "spell" if list.size() == 1 else "spells"], Rect2(p1.position, Vector2(p1.size.x, 44)), 28, SpellBook.INK_RED, true)
 		_rule(p0)
 		_rule(p1)
 		_text("%s  ·  spell points %d / %d" % [hero["name"], hero["mana"], GameState.max_mana(hero)], Rect2(p0.position.x, p0.end.y - 36, p0.size.x, 32), 21)

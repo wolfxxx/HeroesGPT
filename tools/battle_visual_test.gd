@@ -30,6 +30,12 @@ func _run() -> void:
 		match Shot.args.get("case", "crowd"):
 			"distant": _focus("pikeman")
 			"corpses": _corpses()
+			"lightning":
+				# Capture the real spell animation near its peak, on a fixed target.
+				await get_tree().create_timer(maxf(0.1, float(Shot.args.get("delay", "3")) - 0.15)).timeout
+				var target := _stack("lich")
+				battle._anim_spell({"spell": "lightning_bolt", "side": 0, "targets": [target],
+					"hex": target["hex"], "dmg": {}, "killed": {}})
 		return
 	await get_tree().create_timer(0.7).timeout
 	_check(_alpha("vampire") > 0.99, "active Vampire stays opaque")

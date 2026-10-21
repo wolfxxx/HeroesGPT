@@ -1444,7 +1444,6 @@ func _anim_spell(ev: Dictionary) -> void:
 		if sp == "lightning_bolt":
 			var burst := _Burst.new()  # the bolt from the sky; the painted sparks are the impact, at the feet
 			burst.bolt = true
-			burst.slant = 1.0 if (c.x > 960 and c.x < 1400) or c.x < 560 else -1.0  # (clear of the name plates)
 			burst.position = c + Vector2(0, 62)
 			_rings.add_child(burst)  # (behind the figures: the bolt passes behind the stacks between it and the sky)
 			p = c + Vector2(0, 40)
@@ -2444,7 +2443,6 @@ class _Burst extends Node2D:
 	var color := Color.WHITE
 	var radius := 70.0
 	var bolt := false
-	var slant := 1.0  # the bolt comes down slanted from this side (the field's outer edge), not through the stacks above
 	var t := 0.0
 	var _seeds := []
 	func _ready() -> void:
@@ -2457,36 +2455,19 @@ class _Burst extends Node2D:
 		queue_redraw()
 	func _draw() -> void:
 		var a := 1.0 - t
-		if bolt and t < 0.8:  # (the cloud lingers a little after the bolt)
-			# (from a dark storm cloud just under the turn queue: from higher up it seemed to come out of the queue's frame)
-			# straight down onto the target, as the classic's bolt (a slant crossed the stacks around it)
-			var top_y := minf(-160.0, 215.0 - global_position.y)
-			var p := Vector2(0.0, top_y)
-			var a0 := clampf((0.8 - t) / 0.3, 0.0, 1.0)  # (solid while it flashes, then gone)
-			for c in [[-68.0, 10.0, 44.0], [-24.0, -10.0, 54.0], [28.0, -8.0, 52.0], [72.0, 10.0, 42.0], [-40.0, 20.0, 44.0],
-					[6.0, 22.0, 50.0], [46.0, 20.0, 42.0]]:
-				draw_set_transform(p + Vector2(c[0], c[1]), 0, Vector2(1, 0.62))
-				draw_circle(Vector2.ZERO, c[2], Color(0.16, 0.17, 0.24) if a0 >= 1.0 else Color(0.16, 0.17, 0.24, a0))
-			for c in [[-34.0, 38.0, 38.0], [12.0, 42.0, 44.0], [52.0, 36.0, 30.0]]:  # its underside lit by the bolt
-				draw_set_transform(p + Vector2(c[0], c[1]), 0, Vector2(1, 0.28))
-				draw_circle(Vector2.ZERO, c[2], Color(0.7, 0.85, 1.0, 0.95 * maxf(0.0, 1.0 - t * 2.0)))
-			draw_set_transform(Vector2.ZERO)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = get_instance_id()  # (the same zig-zag every frame of its flash)
-			var pts := PackedVector2Array([p + Vector2(0, 24)])
-			var q: Vector2 = pts[0]
-			for i in 11:
-				q = q.lerp(Vector2.ZERO, 1.0 / (11 - i)) + Vector2(rng.randf_range(-34, 34), rng.randf_range(-10, 10)) * (1.0 if i < 10 else 0.0)
-				pts.append(q)
+		if bolt and t < 0.5:
+			# A narrow vertical strike close to its target; a full-height bolt and cloud
+			# obscured unrelated upper rows and made the victim ambiguous.
+			var pts := PackedVector2Array([Vector2(0, -220), Vector2(-9, -187),
+				Vector2(12, -162), Vector2(-7, -132), Vector2(10, -104),
+				Vector2(-8, -76), Vector2(6, -42), Vector2.ZERO])
 			var a2 := maxf(0.0, 1.0 - t * 2.0)
-			for line in [pts]:
-				var wk := 1.0
-				draw_polyline(line, Color(0.45, 0.65, 1.0, 0.22 * a2), 40.0 * wk)  # outer glow
-				draw_polyline(line, Color(0.6, 0.8, 1.0, 0.55 * a2), 18.0 * wk)
-				draw_polyline(line, Color(0.88, 0.96, 1.0, a2), 9.0 * wk)
-				draw_polyline(line, Color(1, 1, 1, a2), 4.5 * wk)
-			draw_set_transform(Vector2.ZERO, 0, Vector2(1, 0.35))  # impact flash on the ground
-			draw_circle(Vector2.ZERO, 70.0 * (1.0 - t), Color(0.9, 0.95, 1.0, 0.45 * a2))
+			draw_polyline(pts, Color(0.45, 0.65, 1.0, 0.22 * a2), 22.0)
+			draw_polyline(pts, Color(0.6, 0.8, 1.0, 0.55 * a2), 10.0)
+			draw_polyline(pts, Color(0.88, 0.96, 1.0, a2), 5.0)
+			draw_polyline(pts, Color(1, 1, 1, a2), 2.5)
+			draw_set_transform(Vector2.ZERO, 0, Vector2(1, 0.35))
+			draw_circle(Vector2.ZERO, 42.0 * (1.0 - t), Color(0.9, 0.95, 1.0, 0.45 * a2))
 			draw_set_transform(Vector2.ZERO)
 		if bolt:
 			return

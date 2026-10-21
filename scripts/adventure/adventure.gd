@@ -135,7 +135,7 @@ static func _shot_artifacts(w: Dictionary) -> void:
 	for o in w["objects"].values():
 		taken[o["pos"]] = true
 	for t in w["towns"].values():
-		for dy in range(-3, 2):
+		for dy in range(-4, 2):  # leave sky above the painted towers: a cape must not read as their flag
 			for dx in range(-3, 4):
 				taken[t["pos"] + Vector2i(dx, dy)] = true
 	var picks := ["banner_of_the_muster", "orb_of_embers", "cape_of_courage", "soldiers_shortsword", "dragonskull_helm"]
