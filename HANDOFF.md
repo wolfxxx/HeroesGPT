@@ -2,7 +2,7 @@
 
 Read this first, then `ARCHITECTURE.md` (code map), `ASSETS.md` (every asset path and the art pipeline) and
 `CREDITS.md`. This file is written so that another person or another AI assistant can pick the work up exactly
-where it stopped. Last updated 2026-10-21 (HeroesGPT repository continuation; latest visual review: judge 46,
+where it stopped. Last updated 2026-10-21 (HeroesGPT repository continuation; latest visual review: judge 47,
 overall 9.4), branch `main`, remote `https://github.com/wolfxxx/HeroesGPT.git` (public repo).
 
 ## 1. The project in one paragraph
@@ -37,10 +37,31 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   Captures `shots/session47/lightning.png`, `shots/judge47/adventure_artifacts.png` and `hero_screen.png`
   inspected: the target is clear, all five artifacts remain visible and the cape is separated from the town.
   Both spellbook headings inspected in `shots/judge47/battle_spellbook.png`. Full suite passed;
-  33 judge 47 frames captured at 1600x900, independent review underway. Last pushed fix: `8136683` (47a); this commit contains 47b.
+  33 judge 47 frames captured at 1600x900 and independently reviewed. Last pushed visual fix: `bc013e6` (47b).
+- **Judge 47 complete:** menu 9.2, adventure 9.4, town 9.4, dialogs 9.7, battle **9.3 (+0.2)**, overall **9.4**.
+  One judge inspected all 33 regular frames, four supplemental fixtures and seven judge46 comparisons. It confirmed
+  the focused-unit fade, unrelated opacity, corpse tone, lightning target, cape spacing, headings and arrows.
+  Remaining findings are in section 8; still images do not prove every animation/hover transition.
+- **Round 47c, AI correctness:** battle spells consider empty blast centres and wide creatures' second hex;
+  Liches score living collateral including allies; retaliation counts wounded survivors; blocked shooters do not
+  count as ranged support. Melee-only armies advance, and holding for ranged fire ends after eight rounds to avoid
+  the healed-ballista standoff. No combat rules or creature stats changed. `tools/battle_ai_test.tscn` has 15
+  tactical/end-to-end assertions. The initial fixtures reproduced five failures before the fixes.
+  Adventure AI recruits before economic construction when a hostile hero can reach a town next turn, saves only
+  for legally possible buildings, holds a viable gate defense or sends one capable nearby hero, skips spent
+  watchtowers and no-op friendly-town meetings, and includes a visiting enemy hero's garrison in attack safety.
+  `tools/adventure_ai_test.tscn`: 14 checks, six failed before the fix and all pass afterwards. Defense uses real
+  path costs and refuses lethal entrance guards. This is a local defense heuristic, not a full strategic planner.
+  Final tournaments: vs pre-session AI (bc013e6), 301/600 wins, +0.5 army-kept points (+-0.7);
+  fresh pairings 300–599, 303/600 wins, +0.5 (+-0.8). All 1,200 battles ended. Against the original frozen baseline:
+  309/600 wins, +1.8 (+-1.0), all ended. **No statistically clear general strength gain over the pre-session AI**;
+  these changes fix demonstrated tactical errors and stalled combat. The eight-round hold limit resolves the
+  reproduced pairing 91 standoff. Raw logs: `shots/session47/ai-{direct-complete,heldout-final,frozen-final}.log`.
+  Full suite passes: 40/40 battle soak, 15 tactical checks, 14 adventure AI checks, map interaction/visits,
+  307 artifact checks and all-AI soak. This commit is 47c; previous pushed change is `bc013e6`.
 - **Repository continuation (2026-10-21):** at the user's request, further development in this checkout belongs to
   `wolfxxx/HeroesGPT`, with `origin` pointing there. The original `wolfxxx/Heroes` repository is the source and must
-  remain untouched by this continuation. Preserve the existing `main` history. The last gameplay commit is
+  remain untouched by this continuation. Preserve the existing `main` history. At migration the last gameplay commit was
   `f50213e` (round 46 repairs); the repository setup commit also includes the previously uncommitted judge 46
   scores and findings below. This migration changes only the handoff and Git destination; no gameplay or assets
   changed and no game tests were rerun. Resume from the open findings and AI work in section 8.
@@ -191,13 +212,26 @@ magenta key for pink fringes (recolour them, as was done for the Luck clover).
 | 44 | 9.2 | 9.4 | 9.4 | 9.7 | 8.9 | 9.3 |
 | 45 | 9.2 | 9.3 | 9.4 | 9.7 | 9.0 | 9.3 |
 | 46 | 9.2 | 9.4 | 9.4 | 9.7 | 9.1 | 9.4 |
+| 47 | 9.2 | 9.4 | 9.4 | 9.7 | 9.3 | 9.4 |
 
-Trend: gains have flattened at 9.2 for three rounds. Battle is the weakest area; the next big step most likely comes
-from battle (crowded siege melees, the lightning effect) or from new gameplay (section 8), not more small polish.
+Trend: overall holds at 9.4; battle improved from 9.1 to 9.3 in round 47. Remaining siege silhouette crowding and
+strategic AI are more substantial next steps than further small dialog polish.
 
 ## 8. What's next
 
-### Open findings from judge 46 (overall 9.4 — a new high; battle 9.1)
+### Open findings from judge 47 (overall 9.4; battle 9.3)
+1. Other participants in siege melees remain crowded even though the focused Vampire is now clear
+   (`battle_siege_later`, x790–1040/y560–720). Preserve depth order; examine silhouette separation next.
+2. Lightning targeting is clear, but its uniform double stroke and blunt top look drawn rather than painted
+   (`session47/lightning`, x1325–1355/y395–500). Taper/irregularity is a future visual refinement.
+3. Lakes have blurred decal-like edges (`adventure_close` bottom centre; `adventure_overview` right centre).
+4. Necropolis battle hero blends into the dark towers (siege shots, upper right).
+5. Construction thumbnail heights vary around wrapped prices (`town_build_rich`, Mage Guild/upgrades).
+6. War-machine labels vary in size in the siege turn queue.
+7. Starting-bonus descriptions are cramped (`newgame`, lower left).
+
+### Judge 46 findings (historical; 1–5, 7–8 addressed and verified in round 47)
+The monster-density observation (6) remains a possible map-design review, not an automatic request to change rules.
 1. The siege-gate knot DID recur in judge 46's run (Vampires, whose turn it is, lying across the Angel; Ghosts on the
    Angel's head; Bone Dragon over the Cavaliers). Round 46's note that it "does not recur" was wrong: it recurs in
    some runs, not all. Needs a real fix (e.g. keep a stack's figure from overlapping a neighbour's, or a stronger

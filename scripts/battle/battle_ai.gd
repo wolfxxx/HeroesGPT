@@ -20,12 +20,21 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 		return {"type": "defend"}
 	if L.can_shoot(s):
 		var best := {}
-		var bv := -1.0
+		var bv := -INF
 		for e in enemies:
 			var v := _value_of_damage(L, e, _avg(L.damage_range(s, e, true)))
 			if L.cdata(e)["shots"] > 0:
 				v *= SHOOT_SHOOTERS  # silence enemy shooters first
 			v *= 1.0 + THREAT_TARGET * _danger(L, e, s["side"])
+			if L.has_ab(s, "death_cloud"):
+				var around := []
+				for cell in L.cells(e):
+					around += BattleLogic.neighbors(cell)
+				for other in L.stacks_on(around):
+					if other == e or L.has_ab(other, "undead"):
+						continue
+					var splash := _value_of_damage(L, other, maxf(1.0, _avg(L.damage_range(s, other, true)) * 0.5))
+					v += splash if other["side"] != s["side"] else -1.2 * splash
 			if v > bv:
 				bv = v
 				best = e
@@ -60,9 +69,10 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 			# (none if it has already struck back this round: as the classic computer, strike it now with the stack
 			# that would otherwise suffer the retaliation)
 			if not L.has_ab(s, "no_retaliation") and dmg < L.total_hp(e) and e["retaliations"] > 0:
-				var left_frac := 1.0 - dmg / float(L.total_hp(e))
 				var tmp: Dictionary = e.duplicate()
-				tmp["count"] = maxi(1, int(e["count"] * left_frac))
+				# A wounded survivor still retaliates: floor(count * remaining_fraction)
+				# systematically discarded one living creature and encouraged costly attacks.
+				tmp["count"] = maxi(1, ceili((L.total_hp(e) - dmg) / float(L.max_hp(e))))
 				score -= RETALIATION * _value_of_damage(L, s, _avg(L.damage_range(tmp, s, false)))
 			# prefer staying put when already adjacent
 			if h == s["hex"]:
@@ -76,7 +86,9 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 	# No strike this turn. As the classic computer: unless the enemy has the stronger shooters (or we must storm the
 	# walls), hold just outside the reach of the enemy's melee stacks, so they come to us and we strike first;
 	# otherwise advance, by the least exposed way.
-	var hold: bool = HOLD and _shoot_power(L, s["side"]) >= _shoot_power(L, 1 - s["side"]) * HOLD_RATIO \
+	var ranged_power := _shoot_power(L, s["side"])
+	var hold: bool = HOLD and L.round_num <= HOLD_ROUNDS and ranged_power > 0.0 \
+		and ranged_power >= _shoot_power(L, 1 - s["side"]) * HOLD_RATIO \
 		and not (L.siege > 0 and s["side"] == 0)
 	var threat := _threats(L, s, reach)
 	# Advance toward the juiciest enemy.
@@ -132,13 +144,14 @@ const SHOOTER_BLOCK := 1.4
 const RETALIATION := 1.0
 const HOLD := true
 const HOLD_RATIO := 0.8
+const HOLD_ROUNDS := 8  # commit after a prolonged exchange; opposing tents can cancel all ballista damage
 const WAIT := true
 
 ## Shooting strength of a side: the value of its stacks that can still shoot (towers included).
 static func _shoot_power(L: BattleLogic, side: int) -> float:
 	var v := 0.0
 	for o in L.alive_stacks(side, true):
-		if L.cdata(o)["shots"] > 0 and o["shots"] > 0:
+		if L.can_shoot(o):
 			v += L.cdata(o)["ai_value"] * o["count"]
 	return v
 
@@ -229,16 +242,24 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 						bv = v
 						best = {"spell": sp, "hex": a["hex"]}
 			"area":
+				# An empty hex can catch two separated stacks or avoid an adjacent ally.
+				# Include both cells of wide creatures; stacks_on deduplicates their damage.
+				var centers := {}
 				for e in enemies:
+					for cell in L.cells(e):
+						for hex in [cell] + BattleLogic.neighbors(cell):
+							if BattleLogic.in_bounds(hex):
+								centers[hex] = true
+				for hex in centers:
 					var v := 0.0
-					for s in L.stacks_on([e["hex"]] + BattleLogic.neighbors(e["hex"])):
+					for s in L.stacks_on([hex] + BattleLogic.neighbors(hex)):
 						if L.immune(s["side"], sp):
 							continue
 						var val := _value_of_damage(L, s, L.spell_damage(side, sp))
 						v += val if s["side"] != side else -1.2 * val
 					if v > bv:
 						bv = v
-						best = {"spell": sp, "hex": e["hex"]}
+						best = {"spell": sp, "hex": hex}
 			"all_living":
 				var v := 0.0
 				for s in L.alive_stacks():

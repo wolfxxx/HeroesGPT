@@ -21,9 +21,9 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
 | Scene | Scripts | Notes |
 |---|---|---|
 | scenes/main_menu.tscn (main) | scripts/menu/ | menu, new-game setup, quick battle |
-| scenes/adventure.tscn | scripts/adventure/ | `WorldGen` (random map), `AdvRules` (pathing, visits, day/week, battles), `AdvAI`, `MapView` (terrain shader, sprites, fog, the mountain border `_build_border`), `AdventureHUD`; `fog.gdshader` also draws the void and rocky ridge past the map edge |
+| scenes/adventure.tscn | scripts/adventure/ | `WorldGen` (random map), `AdvRules` (pathing, visits, day/week, battles), `AdvAI` (town spending and path-aware local defense), `MapView` (terrain shader, sprites, fog, the mountain border `_build_border`), `AdventureHUD`; `fog.gdshader` also draws the void and rocky ridge past the map edge |
 | scenes/town.tscn | scripts/town/ | town screen; building art positions come from `assets/town/layout_<faction>.json` (fallback `TownLayout`) |
-| scenes/battle.tscn | scripts/battle/ | `BattleLogic` (pure rules, emits events), `BattleAI`, battle.gd (animation/UI; readability helpers `_see_through`, `_crowd`, `_settle_badges`, `_under_figures` run every frame — see HANDOFF.md §9) |
+| scenes/battle.tscn | scripts/battle/ | `BattleLogic` (pure rules, emits events), `BattleAI` (blast centres, collateral, retaliation, bounded ranged holding), battle.gd (animation/UI; readability helpers `_see_through`, `_crowd`, `_settle_badges`, `_under_figures` run every frame — see HANDOFF.md §9) |
 
 ## World dict (GameState.world) — owned by adventure code
 ```
@@ -57,15 +57,24 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
+  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (14 spending/defense/target checks),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
 - `tools/battle_visual_test.tscn` — 13 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning`
   in a window to hold the same siege layout for screenshot comparison. Battle `_acting_uid` tracks the turn being
   animated (rules can already be on the next turn); `_figures_overlap` samples sprite alpha above the ground shadow.
 - `tools/ai_tournament.tscn` — the current battle AI against the frozen baseline (`tools/ai/battle_ai_baseline.gd`):
-  `Godot --headless --path . res://tools/ai_tournament.tscn -- --games=300` (600 battles, ~15 s); prints the win rate
+  `Godot --headless --path . res://tools/ai_tournament.tscn -- --games=300` (600 battles; allow several minutes); prints the win rate
   and the paired difference in army kept, with its error bar. Measure every battle-AI change with it; refreeze the
   baseline (copy battle_ai.gd over it, class `BattleAIBaseline`) only after a change is accepted.
+  `--start=300` selects fresh pairings. `--baseline=res://path/to/snapshot.gd` compares directly with another
+  revision (remove its `class_name` declaration to avoid a global-name collision). Round47 uses a local snapshot
+  of `bc013e6:scripts/battle/battle_ai.gd` at `shots/session47/battle_ai_before.gd`; the original frozen baseline
+  stays unchanged. Unfinished battles print their pairing/side/remaining stacks for reproduction.
+- `AdvAI._town_threat` follows real routes within an enemy's next-day movement budget. `_defense` holds a viable
+  resident or selects the nearest capable hero able to arrive today; `_safe_gate` checks entrance guards.
+  `_next_building` reuses town legality with tomorrow's build flag; `_recruit` shares ordinary/emergency recruitment.
+  No extra persistent world fields or save migration are needed.
 - `sh tools/judge_round.sh N` — the 33 judge screenshots (`tools/judge_shots.sh`) into shots/judgeN, size-checked;
   the judge agent's prompt is `tools/judge_prompt.md`.
 - `tools/sim_test.tscn` — all-AI soak test: `Godot --path . res://tools/sim_test.tscn -- --seconds=80`

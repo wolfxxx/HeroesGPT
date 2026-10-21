@@ -6,22 +6,33 @@ extends Node
 ##   Godot_console.exe --headless --path . res://tools/ai_tournament.tscn -- --games=60
 ## Both battles of a pairing use the same dice, so two identical AIs split exactly 50%. A change counts as better
 ## when the paired figure (how much more of the same army it keeps) is above zero by more than its +- (two
-## standard errors); use --games=300 (600 battles, about 15 seconds).
+## standard errors); use --games=300 (600 battles; allow several minutes).
 
 const KINDS := ["open", "heroes", "siege"]
+var baseline: Script = preload("res://tools/ai/battle_ai_baseline.gd")
 
 func _ready() -> void:
 	var games := 60
+	var first := 0
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--games="):
 			games = int(a.substr(8))
+		elif a.begins_with("--start="):
+			first = int(a.substr(8))
+		elif a.begins_with("--baseline="):
+			baseline = load(a.substr(11))
+	if baseline == null or games < 1:
+		push_error("Provide a loadable AI script and a positive --games count")
+		get_tree().quit(1)
+		return
+	print("Pairings %d..%d; baseline %s" % [first, first + games - 1, baseline.resource_path])
 	var wins := {"new": 0, "base": 0, "draw": 0}
 	var diffs := []
 	var kept := {"new": 0.0, "base": 0.0}
 	var by_kind := {}
 	for k in KINDS:
 		by_kind[k] = {"new": 0, "base": 0, "n": 0}
-	for g in games:
+	for g in range(first, first + games):
 		var kind: String = KINDS[g % KINDS.size()]
 		var setup := _pairing(g, kind)
 		var pk := [[0.0, 0.0], [0.0, 0.0]]  # [army][ai]: the share of that army each AI kept (0 current, 1 baseline)
@@ -30,6 +41,7 @@ func _ready() -> void:
 			var r := _fight(setup, 5000 + g, new_side)  # (the same dice both times: only the AIs differ)
 			by_kind[kind]["n"] += 1
 			if r["winner"] < 0:
+				print("  unfinished pairing=%d kind=%s current_side=%d remaining=%s" % [g, kind, new_side, r["remaining"]])
 				wins["draw"] += 1
 			elif r["winner"] == new_side:
 				wins["new"] += 1
@@ -117,12 +129,12 @@ func _fight(p: Dictionary, seed: int, new_side: int) -> Dictionary:
 			continue
 		var cur: bool = s["side"] == new_side
 		if not L.hero_cast[s["side"]]:
-			var sp: Dictionary = BattleAI.decide_spell(L, s["side"]) if cur else BattleAIBaseline.decide_spell(L, s["side"])
+			var sp: Dictionary = BattleAI.decide_spell(L, s["side"]) if cur else baseline.decide_spell(L, s["side"])
 			if not sp.is_empty():
 				L.cast(s["side"], sp["spell"], sp["hex"])
 				if L.is_over() >= 0 or not s["alive"]:
 					continue
-		var act: Dictionary = BattleAI.decide(L, s) if cur else BattleAIBaseline.decide(L, s)
+		var act: Dictionary = BattleAI.decide(L, s) if cur else baseline.decide(L, s)
 		match act["type"]:
 			"shoot": L.do_shoot(s, act["target"])
 			"melee": L.do_melee(s, act["target"], act["from"])
@@ -133,7 +145,12 @@ func _fight(p: Dictionary, seed: int, new_side: int) -> Dictionary:
 			_: L.do_defend(s)
 		if act["type"] != "wait":
 			L.roll_good_morale(s)
-	return {"winner": L.is_over(), "kept": [_value(L, 0) / maxf(1.0, start[0]), _value(L, 1) / maxf(1.0, start[1])]}
+	var remaining := []
+	if L.is_over() < 0:
+		for stack in L.alive_stacks():
+			remaining.append("%d:%s@%s" % [stack["side"], stack["id"], stack["hex"]])
+	return {"winner": L.is_over(), "remaining": remaining,
+		"kept": [_value(L, 0) / maxf(1.0, start[0]), _value(L, 1) / maxf(1.0, start[1])]}
 
 func _value(L: BattleLogic, side: int) -> float:
 	var v := 0.0
