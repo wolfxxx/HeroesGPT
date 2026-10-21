@@ -56,8 +56,12 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 ## Tools (see HANDOFF.md for the workflow and expected outputs)
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
-  rules), `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
+  rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
+  `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
+- `tools/battle_visual_test.tscn` — 13 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses`
+  in a window to hold the same siege layout for screenshot comparison. Battle `_acting_uid` tracks the turn being
+  animated (rules can already be on the next turn); `_figures_overlap` samples sprite alpha above the ground shadow.
 - `tools/ai_tournament.tscn` — the current battle AI against the frozen baseline (`tools/ai/battle_ai_baseline.gd`):
   `Godot --headless --path . res://tools/ai_tournament.tscn -- --games=300` (600 battles, ~15 s); prints the win rate
   and the paired difference in army kept, with its error bar. Measure every battle-AI change with it; refreeze the

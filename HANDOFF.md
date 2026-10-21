@@ -16,6 +16,21 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Current session authorised (2026-10-21):** the user requested one systematic session covering the test baseline,
+  battle readability, remaining visual fixes and measured battle/adventure AI work, with a commit and push after
+  each verified fix to `HeroesGPT`; a start on war-machine wrecks or hot-seat is optional. This authorisation
+  supersedes the per-commit question in section 6 for this session. No teams; at most one visual judge at a time.
+- **Baseline verified:** compilation 0 failures; 40/40 battles ended, 0 failures; 26 map clicks all found paths,
+  drag preserved its plan, queued click worked; 5 visit checks; 307 artifact checks passed; all-AI soak `SIM DONE`.
+- **Round 47a, battle readability:** removed persistent feet-holes that faded unrelated melee clusters. Fading now
+  tests actual painted silhouette overlap with active/hovered/struck figures, using the displayed turn instead of
+  the rules' already-advanced turn. The focused figure stays solid; overlapping figures fade to 0.32 in front or
+  0.45 behind. Corpses use muted mid-grey shading rather than a 50% black multiplier. Fixed siege regression scene
+  `tools/battle_visual_test.tscn`: 13 assertions passed; screenshots `shots/session47/{crowd,distant,corpses}.png`
+  inspected. The active Vampire is distinct, unrelated Angel/Dragon are solid, corpses lie grey under living units.
+  Full suite passed with the new checks; three live siege runs (two Necropolis, one Haven), six frames in
+  `shots/session47/live_siege_*`, were captured and the three late frames inspected. Baseline battle-AI tournament reconfirmed: 319/600
+  wins (53%), +1.9 points army kept (+-1.0), 0 unfinished; `shots/session47/ai-before.log`.
 - **Repository continuation (2026-10-21):** at the user's request, further development in this checkout belongs to
   `wolfxxx/HeroesGPT`, with `origin` pointing there. The original `wolfxxx/Heroes` repository is the source and must
   remain untouched by this continuation. Preserve the existing `main` history. The last gameplay commit is
@@ -308,9 +323,9 @@ Suggested order: **artifacts → AI → hot-seat multiplayer → war-machine wre
   (seeded, varied sizes, pairs, boulders), drawn over the fog at z 51 with `border_rock.gdshader` turning their
   grass skirts to ochre rock. The camera may run 2 tiles past the edge (`adventure.gd`, `margin`).
 - **Battle readability** (`scripts/battle/battle.gd`):
-  - `_see_through()` — feet-holes in a figure standing in front of a stack; a figure covering the stack in play
-    (active / hovered / struck) fades evenly via the `body_alpha` uniform of `scripts/ui/sprite_outline.gdshader`;
-    the active stack gets a pulsing halo (`team` uniform).
+  - `_see_through()` / `_figures_overlap()` — only painted figures overlapping a focused stack fade via
+    `body_alpha`; no permanent feet-holes in unrelated stacks. `_acting_uid` follows the displayed turn through
+    animations. The active stack gets a pulsing halo (`team`); `corpse_tone` softens corpse contrast.
   - `_crowd()` — wide-winged figures and figures in 3+ / 4+ stack melees draw smaller.
   - `_settle_badges()` — count plates: front corner, moved in under their own figure when a front neighbour is
     taken, never on another stack's figure (body penalty, back-corner and raised spots).

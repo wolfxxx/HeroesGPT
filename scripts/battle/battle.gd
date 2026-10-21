@@ -80,6 +80,7 @@ var _retreated := -1
 var _surrendered := false  # (with _retreated: that side paid to leave with its army)
 var _surrender_gold := 0
 var _ended := false
+var _acting_uid := -1  # the turn being displayed; rules may already have advanced while its events animate
 var _mouse := Vector2.ZERO
 var _hero_rects := [Rect2(), Rect2()]
 var _info_key := ""   # what the hover panel shows: "s<uid>" a stack, "h<side>" a hero, "" nothing
@@ -647,6 +648,7 @@ func _next() -> void:
 	if s == null:
 		_end_battle(L.is_over())
 		return
+	_acting_uid = s["uid"]
 	_refresh_queue()
 	_reset_info()
 	_update_info()  # stats may have changed: show the panel under the cursor again, up to date
@@ -1395,10 +1397,11 @@ func _anim_death(st: Dictionary) -> void:
 		var home: Vector2 = s.get_meta("home", Vector2.ZERO)
 		s.position = home + Vector2(0, -16)
 		var tw0 := s.create_tween().set_parallel(true)
-		tw0.tween_property(s, "modulate", Color(0.5, 0.5, 0.5), 0.5)  # (dark: never read as a living stack)
+		tw0.tween_property(s, "modulate", Color(0.82, 0.82, 0.82), 0.5)
 		var cm := s.material as ShaderMaterial
-		if cm:  # (and grey, low in contrast: the classic's dull heaps)
-			cm.set_shader_parameter("saturation", 0.25)
+		if cm:  # low contrast mid-grey, without crushing the painted body into charcoal
+			cm.set_shader_parameter("saturation", 0.18)
+			cm.set_shader_parameter("corpse_tone", 0.65)
 		tw0.tween_property(s, "position", home, 0.22).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		var dust := _Dust.new()
 		dust.position = n.position + Vector2(0, -4)
@@ -1737,56 +1740,56 @@ func _follow_rings() -> void:
 		r.visible = r.on and n.is_visible_in_tree()
 		r.modulate.a = n.modulate.a
 
-## Where a figure in front rises well over a stack standing behind it (the row above), it turns see-through around
-## that stack's feet: the one behind keeps its ring, legs and badge readable instead of seeming to stand on the other.
-## The stack in play (the active one, the one under the pointer, one being struck) shows whole: a figure that covers
-## much of it fades evenly over its whole body (never one in play itself).
+## Test the painted silhouettes, not their transparent margins or their hex widths. Samples stay above the ground
+## shadow and use each sprite's transform, including its current pose, breathing scale and horizontal flip.
+func _figures_overlap(n: Node2D, focused: Node2D) -> bool:
+	var a: Sprite2D = n.get_node("Sprite")
+	var b: Sprite2D = focused.get_node("Sprite")
+	var top := float(focused.get_meta("top", 120.0)) * float(focused.get_meta("crowd", 1.0))
+	var half := HEX_W * (0.7 if L.is_wide(focused.get_node("Badge").st) else 0.38)
+	var body := Rect2(focused.global_position - Vector2(half, top), Vector2(half * 2.0, maxf(1.0, top - 18.0)))
+	var overlap := body.intersection(a.global_transform * a.get_rect())
+	if not overlap.has_area():
+		return false
+	var hits := 0
+	for y in 9:
+		for x in 9:
+			var p := overlap.position + overlap.size * Vector2((x + 0.5) / 9.0, (y + 0.5) / 9.0)
+			if a.is_pixel_opaque(a.to_local(p)) and b.is_pixel_opaque(b.to_local(p)):
+				hits += 1
+				if hits >= 3:
+					return true
+	return false
+
+## Only figures actually overlapping a focused stack fade. Unrelated melee clusters remain opaque. The active
+## figure always stays solid; use the displayed turn, since BattleLogic has already resolved animation events.
 func _see_through() -> void:
 	var focus := {}
-	var cur = L.current()
-	if cur != null:
-		focus[cur["uid"]] = true
+	if units.has(_acting_uid) and units[_acting_uid].get_node("Badge").st.get("alive", false):
+		focus[_acting_uid] = true
 	var hs = L.stack_at(_hover) if _hover.x >= 0 else null
 	if hs != null:
 		focus[hs["uid"]] = true
 	var now := Time.get_ticks_msec()
-	var info := []
 	for k in units:
 		var n: Node2D = units[k]
-		if n.get_node("Badge").st.get("alive", false):
-			if _ring(n).hit_until > now:
-				focus[k] = true
-			info.append([n, n.global_position, float(n.get_meta("top", 120.0)), HEX_W * (0.95 if L.is_wide(n.get_node("Badge").st) else 0.5), focus.has(k),
-				cur != null and cur["uid"] == k])
+		if n.get_node("Badge").st.get("alive", false) and _ring(n).hit_until > now:
+			focus[k] = true
 	for k in units:
 		var n: Node2D = units[k]
-		var holes := PackedVector4Array()
 		var fade := 1.0
-		for f in info:
-			if f[0] != n:
-				continue
-			for bk in info:
-				var dy: float = f[1].y - bk[1].y
-				# (a much bigger figure just behind the stack whose turn it is: its wings and body fill the space
-				# around that stack's figure, which drowned in them; it fades too)
-				if bk != f and bk[5] and not f[4] and -dy >= 20.0 and -dy < bk[2] * 0.9 and f[2] > bk[2] * 1.15 \
-						and absf(f[1].x - bk[1].x) < (f[3] + bk[3]) * 0.6:
-					fade = 0.55
-					continue
-				if bk == f or dy < 20.0 or f[2] - dy < 36.0 or absf(f[1].x - bk[1].x) > (f[3] + bk[3]) * 0.75:
-					continue
-				if bk[4] and not f[4]:
-					# (it covers a good part of the stack in play: well up its body and across its middle)
-					if f[2] - dy >= 0.3 * bk[2] and absf(f[1].x - bk[1].x) < (f[3] + bk[3]) * 0.7:
-						fade = 0.55
-				elif holes.size() < 4:
-					holes.append(Vector4(bk[1].x, bk[1].y - 26.0, bk[3] * 0.95, 52.0))
+		var alive: bool = n.get_node("Badge").st.get("alive", false)
+		if alive and not focus.has(k):
+			for uid in focus:
+				var other: Node2D = units[uid]
+				if _figures_overlap(n, other):
+					fade = minf(fade, 0.32 if n.position.y >= other.position.y else 0.45)
 		var m := n.get_node("Sprite").material as ShaderMaterial
 		if m == null:
 			continue
 		# the stack whose turn it is: a bright halo pulsing outside its gold outline (as the classic's pulsing
 		# outline), so it stands out in a crowd too
-		var act: bool = cur != null and cur["uid"] == k
+		var act: bool = alive and _acting_uid == k
 		if act:
 			m.set_shader_parameter("team", Color(1.0, 0.93, 0.6, 0.55 + 0.4 * sin(now * 0.006)))
 		if n.get_meta("lit", false) != act:
@@ -1798,14 +1801,6 @@ func _see_through() -> void:
 		if to != was:
 			n.set_meta("body_alpha", to)
 			m.set_shader_parameter("body_alpha", to)
-		var key := str(holes)
-		if n.get_meta("holes_key", "") == key:
-			continue
-		n.set_meta("holes_key", key)
-		m.set_shader_parameter("hole_count", holes.size())
-		while holes.size() < 4:
-			holes.append(Vector4(0, 0, 1, 1))
-		m.set_shader_parameter("holes", holes)
 
 ## A low obstacle (a thorn bush, boulders) lies on the ground under the figures: where a figure standing in front rises
 ## over it (a lance, a wing, a head) the obstacle fades, so it never seems to sit on the figure (a bush on a lance tip).

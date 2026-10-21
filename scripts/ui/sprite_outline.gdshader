@@ -7,14 +7,10 @@ uniform vec4 ink : source_color = vec4(0.09, 0.06, 0.03, 0.95);
 uniform vec4 rim : source_color = vec4(1.0, 0.86, 0.6, 1.0);
 uniform float rim_strength = 0.35;
 uniform float saturation = 1.15;
+uniform float corpse_tone = 0.0;
 // optional owner-colour ring outside the ink (heroes on the map): alpha 0 = off
 uniform vec4 team : source_color = vec4(0.0);
 
-// see-through windows (battle): ellipses in canvas space (centre x, y, radius x, y) where the figure fades to
-// hole_alpha, so a stack standing behind it stays readable
-uniform vec4 holes[4];
-uniform int hole_count = 0;
-uniform float hole_alpha = 0.4;
 // the whole figure faded evenly (battle: it stands in front of the stack in play)
 uniform float body_alpha = 1.0;
 
@@ -40,6 +36,7 @@ void fragment() {
 	vec3 col = c.rgb;
 	float l = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(vec3(l), col, saturation);
+	col = mix(col, vec3(0.38 + 0.42 * l), corpse_tone);
 	col = mix(col, rim.rgb, rimf);
 	float oa = ink.a * clamp(m - a, 0.0, 1.0);
 	float alpha = a + oa * (1.0 - a);
@@ -55,10 +52,5 @@ void fragment() {
 		rgb = (rgb * alpha + team.rgb * ta * (1.0 - alpha)) / max(a2, 0.0001);
 		alpha = a2;
 	}
-	float keep = 1.0;
-	for (int i = 0; i < hole_count; i++) {
-		vec2 d = (world - holes[i].xy) / holes[i].zw;
-		keep = min(keep, mix(hole_alpha, 1.0, smoothstep(0.5, 1.0, length(d))));
-	}
-	COLOR = vec4(rgb, alpha * keep * body_alpha) * vcol;
+	COLOR = vec4(rgb, alpha * body_alpha) * vcol;
 }
