@@ -185,3 +185,40 @@ four-player 316 (438), 260 empty (352), all 8 decided, mean end day 28.3 (40.9).
 games end sooner. A garrison still cannot hold against a much stronger main army: against a human who brings the
 strongest army to the capital, the town falls unless a hero gets back in time.
 Logs: ignored `shots/session54/{dev2_v*,dev4_v*,recheck2,final36,final48,tdr*}.log`.
+
+## Session55: calling heroes back to threatened towns (nothing kept)
+
+Question: should heroes come home, or several together, when a town is threatened (playtest finding 2, "heroes
+came one at a time")? `town_defense_report` gained a RECALL summary: for each capture, could the owner's heroes have
+held the town (heroes + garrison x1.25 >= the reachable threat x1.1) with one hero back within a day, all heroes
+within a day together, one hero within two days, or all within two days. Current policy in every seat, development
+maps (`shots/session55/tdr{2,4}.log`):
+
+| Maps | Captures | One hero, 1 day | All, 1 day | One hero, 2 days | All, 2 days | Last-town captures (heroes could hold) |
+|---|---|---|---|---|---|---|
+| Two-player 1800–1823, 28 days | 326 | 54 | +15 | +36 | +26 | 34 (1) |
+| Four-player 1830–1837, 56 days | 316 | 39 | +18 | +35 | +21 | 33 (2) |
+
+So returning heroes could save many ordinary towns, but almost never the last one: by the time a player's last
+town falls its armies are already gone. A trace of map 1809 (`shots/session55/t1809.jsonl`) shows the commonest
+pattern: two heroes of about equal strength (4248 and 4176) swap the same two empty towns every day from day 11 to 16
+and never fight. After taking a town a hero stays only if it is 1.1x the threat (`_defense`), while the AI attacks
+a town only at 1.4x its defence, so a hero of equal strength in the gate would already deter that raider.
+
+Frozen comparison `tools/ai/adventure_ai_session54.gd` (the policy at `349549d`); control 0.00 ± 0.00 on both sets.
+Development maps as session54 (two-player 1800–1823, 28 days; four-player 1830–1837, 56 days):
+
+| Change (in `_defense`) | Dev 2p | Dev 4p |
+|---|---|---|
+| A resident hero holds at 0.75x the threat (deterrence) instead of 1.1x | +3.56 ± 26.94 (22/20/6) | -16.67 ± 12.60 (4/28/0) |
+| Threats within two days instead of one | -8.99 ± 29.80 (19/23/6) | -13.43 ± 16.01 (3/26/3) |
+| Holds at 0.9x | +9.27 ± 18.70 (23/18/7) | -4.17 ± 15.11 (7/25/0) |
+| A hero comes back to hold at 0.9x (was 1.1x) | -3.75 ± 17.00 (20/21/7) | -5.64 ± 8.43 (6/25/1) |
+| Both at 0.9x | +0.76 ± 20.23 (21/20/7) | 0.00 ± 17.82 (8/24/0) |
+
+**Nothing kept**, no validation run: every variant is neutral or worse, and the two most defensive ones (0.75x hold,
+two-day horizon) are clearly worse on four-player maps. A combined defence (several heroes adding to the garrison)
+was not built: the report puts its gain at 15–18 captures of over 300 and no last towns. This repeats session52's
+finding: against another AI, a hero kept home costs more tempo than the town it saves. The AI-vs-AI benchmark may
+undervalue defence against a human, who brings one strong army; measuring that needs a different opponent or a
+playtest. Logs: ignored `shots/session55/{dev2_v*,dev4_v*,tdr2,tdr4,t1809}.log`.

@@ -16,6 +16,13 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session55 AI round: calling heroes back (2026-10-23), committed with this HANDOFF update, nothing kept in the AI:** the user chose
+  "heroes come home or join up when a strong army approaches". `town_defense_report` now prints a RECALL line:
+  returning heroes could have held about 40% of captured towns but almost never a player's last town (1 of 34
+  two-player, 2 of 33 four-player). Five `_defense` variants (lower hold/recall margins, a two-day horizon) against
+  the frozen session54 policy (`tools/ai/adventure_ai_session54.gd`, control 0.00) were neutral or worse, the most
+  defensive clearly worse on four-player maps (`docs/AI_COORDINATION.md` "Session55"). `adv_ai.gd` is unchanged.
+  Open: the AI-vs-AI benchmark may undervalue defence against a human's single strong army.
 - **Session54 AI round: town garrisons (2026-10-22), committed with this HANDOFF update:** the user chose playtest finding 2 (the AI's
   capital taken empty). New diagnostic `tools/ai/town_defense_report.tscn` showed most captured towns were empty and
   reachable by the capturer. Kept, after measuring eight variants (`docs/AI_COORDINATION.md` "Session54"): a hero
@@ -849,7 +856,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 - **Town garrisons (session54):** `AdvAI._collect_garrison` / `_garrison_keep` (garrison kept against a next-turn
   threat), `_counterattack` margin 1.3x; frozen previous policy `tools/ai/adventure_ai_session52.gd`; diagnostic
-  `tools/ai/town_defense_report.tscn` (`--maps= --players= --size= --days= --policy= --verbose --trace=`).
+  `tools/ai/town_defense_report.tscn` (`--maps= --players= --size= --days= --policy= --verbose --trace=`; its RECALL
+  line, session55, counts captures returning heroes could have prevented). Frozen session54 policy (`349549d`):
+  `tools/ai/adventure_ai_session54.gd`.
 - **Hot-seat (session53):** seats on New Game `main_menu._refresh_seats`, per-colour choices `_edit` /
   `_choice` / `_set_choice` / `_fix_seats` / `_taken_heroes`; generation
   `WorldGen.generate` (`humans`, `_player_name`, per-human `start_hero`, `seat_hero` / `seat_bonus`); viewpoint

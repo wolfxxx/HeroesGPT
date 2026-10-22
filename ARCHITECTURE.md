@@ -141,7 +141,8 @@ whole units only, at most 25% of the hero's strength, at least one creature kept
 A hero collecting a garrison (`_reinforce`, and `choose`'s value of a town's troops) goes through `_collect_garrison`:
 when `_town_threat` finds an army able to reach the gate next turn and the garrison can hold it (x1.25 >= threat x1.4),
 `_garrison_keep` leaves that much and the hero takes the rest, most valuable first. `_counterattack` strikes a raider
-at 1.3x, the margin of any attack on a hero. Frozen `1dfa88b` policy: `tools/ai/adventure_ai_session52.gd`.
+at 1.3x, the margin of any attack on a hero. Frozen `1dfa88b` policy: `tools/ai/adventure_ai_session52.gd`;
+frozen `349549d` policy: `tools/ai/adventure_ai_session54.gd`.
 
 `_plan_with_passage` helps only the strongest army when its normal route is blocked. It temporarily relaxes
 eligible friendly occupancy in the AStar grid, restores the grid, then returns a transient `yield` plan for a
@@ -283,7 +284,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   step-aside moves. These are observations/previews, not an execution of the turn.
 - `tools/ai/town_defense_report.tscn` — one policy in every seat on generated maps (production driver); every town
   capture with what the owner left at the end of its last turn (garrison, hero at the gate, strongest enemy within
-  one and two days, strongest own hero able to return, garrison taken / hero walked out that turn) and a summary.
+  one and two days, own heroes able to return within one and two days, alone and together, garrison taken / hero
+  walked out that turn), a summary and a RECALL line (captures returning heroes could have prevented, last towns).
   `-- --maps=1800,1801 --players=2 --size=36 --days=28 --policy=res://tools/ai/adventure_ai_session52.gd --verbose
   --trace=shots/x.jsonl`. Diagnostic only, not in the suite.
 - `tools/campaign_resume_test.tscn` — paired diagnostic continuations of the unresolved session50 snapshots.

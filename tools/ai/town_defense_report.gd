@@ -35,7 +35,8 @@ func _run() -> void:
 	add_child(driver)
 	if driver_trace != "": driver.trace = FileAccess.open(driver_trace, FileAccess.WRITE)
 	var totals := {"captures": 0, "empty": 0, "exposed_empty": 0, "could_hold": 0, "held_lost": 0, "ended": 0,
-		"end_days": 0, "towns_left_empty_exposed": 0, "owner_turns": 0, "swept": 0, "walked_out": 0}
+		"end_days": 0, "towns_left_empty_exposed": 0, "owner_turns": 0, "swept": 0, "walked_out": 0,
+		"last": 0, "last_could_hold": 0, "together1": 0, "single2": 0, "together2": 0, "seen2": 0}
 	print("CONFIG maps=%s players=%d size=%d days=%d policy=%s" % [maps, players, map_size, days, policy_path])
 	for m in maps:
 		GameState._uid = 1000
@@ -74,19 +75,36 @@ func _run() -> void:
 						if l["back"] > 0 and l["back"] + l["garrison"] * 1.25 >= l["threat1"] * 1.1 and l["threat1"] > 0:
 							totals["could_hold"] += 1
 						if l["resident"]: totals["held_lost"] += 1
+						# what the owner's heroes could have done: one hero or all of them together, back within
+						# one day or within two
+						var need: float = l["threat1"] * 1.1 - l["garrison"] * 1.25
+						var single1: bool = l["threat1"] > 0 and l["back"] >= need
+						var together1: bool = l["threat1"] > 0 and not single1 and l["back_all"] >= need
+						var single2: bool = l["threat1"] > 0 and not (single1 or together1) and l["back2"] >= need
+						var together2: bool = l["threat1"] > 0 and not (single1 or together1 or single2) and l["back2_all"] >= need
+						if together1: totals["together1"] += 1
+						if single2: totals["single2"] += 1
+						if together2: totals["together2"] += 1
+						if l["seen2"]: totals["seen2"] += 1
+						if l["towns"] == 1:
+							totals["last"] += 1
+							if single1 or together1 or single2 or together2: totals["last_could_hold"] += 1
 						if empty and l["threat2"] > 0 and l["swept"]: totals["swept"] += 1
 						if empty and l["threat2"] > 0 and l["walked_out"]: totals["walked_out"] += 1
 						if verbose:
-							print("CAPTURE map=%d day=%d town=%d from=%d by=%d left: garrison=%d resident=%s threat1=%.0f threat2=%.0f back=%.0f owner_towns=%d swept=%s walked_out=%s" %
+							print("CAPTURE map=%d day=%d town=%d from=%d by=%d left: garrison=%d resident=%s threat1=%.0f threat2=%.0f back=%.0f back_all=%.0f back2=%.0f back2_all=%.0f owner_towns=%d swept=%s walked_out=%s" %
 								[m, state["day"], t["uid"], was, p["index"], l["garrison"], l["resident"], l["threat1"],
-								l["threat2"], l["back"], l["towns"], l["swept"], l["walked_out"]])
+								l["threat2"], l["back"], l["back_all"], l["back2"], l["back2_all"], l["towns"], l["swept"], l["walked_out"]])
 				# what this player leaves behind for the others' turns
 				for tid in p["towns"]:
 					var t: Dictionary = state["towns"][tid]
 					var resident := driver.rules.hero_at(t["pos"])
 					var l := {"garrison": GameState.army_strength(t["garrison"]), "resident": not resident.is_empty(),
 						"threat1": _threat(driver.rules, probe, t, 1), "threat2": _threat(driver.rules, probe, t, 2),
-						"back": _back(driver.rules, probe, p, t), "towns": p["towns"].size(),
+						"back": _back(driver.rules, probe, p, t, 1, false), "back_all": _back(driver.rules, probe, p, t, 1, true),
+						"back2": _back(driver.rules, probe, p, t, 2, false), "back2_all": _back(driver.rules, probe, p, t, 2, true),
+						"towns": p["towns"].size(),
+						"seen2": left.has(tid) and left[tid]["threat2"] > 0,  # (already within two days a turn earlier)
 						"swept": start.has(tid) and start[tid][0] > 0 and GameState.army_strength(t["garrison"]) < start[tid][0],
 						"walked_out": start.has(tid) and start[tid][1] and resident.is_empty()}
 					left[tid] = l
@@ -105,6 +123,8 @@ func _run() -> void:
 	print("TOWN DEFENCE: %d maps, captures %d (empty %d, empty and reachable within two days %d [garrison taken that turn %d, a hero walked out %d], a hero could have held %d, with a hero inside %d), towns left empty within two days' reach %d of %d town-turns, games ended %d, mean end day %.1f" %
 		[maps.size(), totals["captures"], totals["empty"], totals["exposed_empty"], totals["swept"], totals["walked_out"], totals["could_hold"], totals["held_lost"],
 		totals["towns_left_empty_exposed"], totals["owner_turns"], totals["ended"], float(totals["end_days"]) / maps.size()])
+	print("RECALL: of %d captures (one hero back within a day could hold %d), all heroes within a day together %d more, one hero within two days %d more, all within two days %d more; capturer within two days a turn earlier %d; last-town captures %d, of which heroes could have held %d" %
+		[totals["captures"], totals["could_hold"], totals["together1"], totals["single2"], totals["together2"], totals["seen2"], totals["last"], totals["last_could_hold"]])
 	driver.queue_free()
 	await get_tree().process_frame
 	get_tree().quit()
@@ -121,15 +141,16 @@ func _threat(rules: AdvRules, probe: AdvAI, town: Dictionary, days: int) -> floa
 			threat = maxf(threat, probe._strength(enemy))
 	return threat
 
-## The strongest own hero (outside the town) able to walk back to its gate within a day of full movement.
-func _back(rules: AdvRules, probe: AdvAI, player: Dictionary, town: Dictionary) -> float:
+## The strongest own hero (outside the town) able to walk back to its gate within `days` days of full movement, or
+## with `together` all of them added up.
+func _back(rules: AdvRules, probe: AdvAI, player: Dictionary, town: Dictionary, days := 1, together := false) -> float:
 	var best := 0.0
 	for hid in player["heroes"]:
 		var h: Dictionary = rules.world["heroes"][hid]
 		if h["pos"] == town["pos"]: continue
-		var budget: int = h.get("max_movement", 1500)
+		var budget: int = h.get("max_movement", 1500) * days
 		if Vector2(h["pos"] - town["pos"]).length() * 50.0 > budget: continue
 		var plan := rules.plan(h, town["pos"])
 		if not plan["path"].is_empty() and plan["costs"].back() <= budget:
-			best = maxf(best, probe._strength(h))
+			best = best + probe._strength(h) if together else maxf(best, probe._strength(h))
 	return best
