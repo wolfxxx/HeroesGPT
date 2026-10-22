@@ -16,10 +16,43 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Session50 validation checkpoint (2026-10-22), this commit:** `Validate multiplayer campaigns and tactical save flow`.
+- **Session51 coordination checkpoint (2026-10-22), this commit:** `Improve AI reinforcement coordination and clear allied routes`.
+  The user requested committing and pushing this work and the preceding local checkpoint **`eb2c96c`** to
+  `origin/main`; previous pushed checkpoint **`f69ad3a`**. Use `git log -1` for this checkpoint's hash.
+  No new art, presentation changes, save fields, game rules or judge score.
+  - `AdvAI._assault_rally` previews several same-day donors together and moves them before the main army if
+    their combined troops enable a nearby assault. Required defenders are excluded; normal slots/transfers,
+    one creature retained per donor, at most one normal day's travel. Ordinary deliveries remain half-day trips.
+    `run_turn` recomputes this transient plan after a battle; no migration required.
+  - `_plan_with_passage` previews a leader's blocked route with eligible allies temporarily removed from the
+    AStar solid grid, then restores it. A blocker takes a legal one-step move off the route, paying normal
+    movement; the leader replans afterward. Never moves a gate hero/assigned defender or steps onto occupied/
+    guarded ground. Idle heroes retain unused movement so they can yield to a later army the same turn.
+    Occupied shops/dwellings no longer provoke useless meetings; useful troop exchanges remain allowed.
+  - **75 adventure AI checks pass**, including actual paired deliveries -> same-turn conquest, earlier idle
+    helper -> paid step aside -> later leader attacks, defense/slot/movement limits and occupied-site behavior.
+    `tools/ai/adventure_ai_session49.gd` is the frozen **`f69ad3a`** comparison, verified against committed source
+    after subclass adaptation. Existing frozen baselines unchanged. New `tools/campaign_resume_test.tscn`
+    compares copied session50 snapshots with identical explicit seeds (snapshots lack their original RNG state).
+  - Diagnostic **441/1 wins on day 169** with the rally; frozen policy still unresolved at day 197. Of nine saved
+    cases, 415/1 finishes with both policies and seven remain unresolved with both. Not every outcome improves:
+    427/0 ends the diagnostic window with zero towns versus one before. See **`docs/AI_COORDINATION.md`** for
+    reproducible commands, experimental history, all limitations and raw-log locations under `shots/session51/`.
+  - **Final fresh validation vs `f69ad3a`, 84 days:** 24 two-player size-36 maps / 48 games (1100–1123):
+    **21 wins / 23 losses / 4 unresolved**, score **-3.12 +/- 8.68 (2 SE)**, 1126 instant battles.
+    Eight four-player size-48 maps / 32 games (1200–1207): **9 / 22 / 1**, **+7.78 +/- 10.22**, 1875 battles.
+    Both intervals include zero: targeted behavior fixes, **no demonstrated general strength gain** and cannot
+    rule out a regression. No tuning followed final validation. Same-policy session49 control remains 0.00 +/- 0.00.
+  - **Full suite passed** (`tests-final.log`): compile; 40 battles; 25 visual; 15 battle AI; 75 adventure AI;
+    63 week; 29 flow; two/four-player zero-difference controls; 4096 glow phases; 33 camera; 227 factory;
+    46 Necromancy; 31 clicks/drag/queued click; five visits; 306 artifacts; `SIM DONE`. `project.godot` restored.
+  - Next: continue investigating defense/conquest tradeoffs
+    (especially 427/0), incompatible full armies and remaining long games; use new map IDs for later validation.
+    Human competitive play, fog/map spells/difficulty, remaining machine wrecks and hot-seat remain open.
+- **Session50 validation checkpoint (2026-10-22), `eb2c96c`:** `Validate multiplayer campaigns and tactical save flow`.
   The user accepted the next session's larger/four-player validation, unfinished-game investigation and real
-  battle/save-flow checks, then asked to continue. Last pushed checkpoint is **`f69ad3a`**. This checkpoint is local;
-  no push requested for this session. Production AI/rules remain unchanged; no new art, visual change or judge score.
+  battle/save-flow checks, then asked to continue. Included in the session51 commit/push request above.
+  This checkpoint left production AI/rules unchanged; no new art, visual change or judge score.
   - Four-player harness now rotates the candidate through every seat, continues after early eliminations and
     distinguishes candidate losses/unresolved outcomes from all games reaching the limit. New `--players`,
     `--size`, `--maps`, `--dump` options; two-player defaults/statistic preserved. See

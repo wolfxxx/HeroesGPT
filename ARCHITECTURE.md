@@ -69,6 +69,19 @@ viable to attack; delivery itself still has the half-day limit. A changed army o
 when an adjacent meeting/victory consumes no movement. `_reinforce` pays ordinary upgrade costs, merges identical
 stacks before collecting troops to free slots, then merges again after upgrading the additions. `dwelling_recruits`
 shares the exact affordable/carryable count between selection and purchase, including rare resources.
+`_assault_rally` previews multiple donors sequentially on army copies. If their combined transfers make a nearby
+town assault viable, donors that can arrive today (at most one normal day's travel) move before the leader.
+Assigned defenders stay in place; each donor retains one creature, and execution uses ordinary adjacent meetings.
+The rally is local to `run_turn` and is recomputed after a battle; no new save fields. The safety estimate still
+does not model every spell/morale effect or guarantee a successful assault.
+
+`_plan_with_passage` helps only the strongest army when its normal route is blocked. It temporarily relaxes
+eligible friendly occupancy in the AStar grid, restores the grid, then returns a transient `yield` plan for a
+blocking hero's legal one-step move off that route. Town gates, occupied/guarded tiles and assigned defenders
+are excluded. `run_turn` moves that ally through the normal controller, pays movement, and replans the leader
+against real occupancy. Idle heroes retain unused movement so a later army can request passage. An occupied
+shop/dwelling cannot masquerade as a purchase: a meeting must either be an intended delivery or transfer useful
+troops. Useful incidental exchanges remain allowed.
 Map-spell planning and fog-aware strategic knowledge remain unimplemented. Campaign results in HANDOFF.md show
 a gain against `4f126ec` on fresh size-36/two-player maps with instant AI battles. Four-player size-48/64 validation
 is recorded in `docs/CAMPAIGN_VALIDATION.md`; small samples do not establish a broader strength gain.
@@ -138,7 +151,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
-  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (54 spending/defense/coordination/transfer/RNG checks),
+  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (75 spending/defense/coordination/transfer/RNG checks),
   `campaign_week_test` (63 integrated week/save checks), `campaign_flow_test` (29 real tactical-scene/return/save checks),
   `adventure_tournament --self` (two-player and four-player RNG controls),
   `artifact_glow_test` (4096 phase draws in a window, inspect errors),
@@ -182,6 +195,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   original `adventure_ai_baseline.gd` remains the default and unchanged. `--trace=shots/run.jsonl` enables
   diagnostics (create its parent directory first). Session49 validation: `--pairs=48 --start=400 --days=84`
   with the checkpoint baseline; repeat with `--days=42` for the earlier cutoff on the same maps.
+  `--baseline=res://tools/ai/adventure_ai_session49.gd` selects the frozen `f69ad3a` policy for evaluating the
+  rally/passage work. Its code matches that commit after subclass/constant-name adaptation; keep all frozen
+  policies unchanged. Current results and limitations live in `docs/AI_COORDINATION.md`.
   `--players=2|3|4 --size=32|36|48|64` broadens coverage; two-player defaults preserve the original statistic.
   With N players, sum `(candidate - mean(other scores)) / total_score * 100/N` over N rotations of each map;
   estimate two standard errors over maps, not the correlated seats. Four-player score scale differs from two-player.
@@ -194,6 +210,13 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   hero's defense decision, target, route to enemy towns and approximate force ratio. Uses the current policy only
   for the filename's candidate seat, the selected `--baseline` for others (default `4f126ec`). If a route is missing,
   checks a copy with other allied heroes removed to distinguish traffic from terrain. Does not write snapshots.
+  Also prints carried armies, actual transferable value, delivery costs, current rally orders and requested
+  step-aside moves. These are observations/previews, not an execution of the turn.
+- `tools/campaign_resume_test.tscn` — paired diagnostic continuations of the unresolved session50 snapshots.
+  Candidate seat runs frozen `f69ad3a` then current AI; other seats retain the original `4f126ec` opponent.
+  Options: `--dir=shots/session50/states168 --days=28 --case=441_1.dat --trace=shots/run.jsonl` (case/trace optional).
+  Copies the world, initializes UID above live entities and explicitly reseeds each variant identically. Snapshots
+  have no RNG state, so this is not exact continuation of the original random stream or a fresh strength sample.
 - `tools/campaign_trace_report.py <trace> --after=42` — standard-library summary of late actions, no-action hero
   turns, final armies/positions and unused garrisons. No-action turns may be intentional defense; the report
   provides evidence for investigation, not an automatic stall verdict. Old traces have no XP delta.

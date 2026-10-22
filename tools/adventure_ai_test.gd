@@ -17,6 +17,9 @@ func _ready() -> void:
 	_randomness()
 	await _meeting_turn()
 	await _counterattack_turn()
+	await _rally_turn()
+	await _passage_turn()
+	_occupied_site()
 	GameState.world = {}
 	print("ADVENTURE AI TEST: %d checks, failures: %d" % [checks, fails])
 	get_tree().quit(1 if fails else 0)
@@ -309,6 +312,110 @@ func _counterattack_turn() -> void:
 	_ok(not world["objects"].has(gold["uid"]), "a victory without casualties still permits further movement")
 	driver.queue_free()
 	await get_tree().process_frame
+
+func _rally_turn() -> void:
+	_reset()
+	var leader := _hero(0, Vector2i(12, 8), 100)
+	var first := _hero(0, Vector2i(2, 8), 60)
+	var second := _hero(0, Vector2i(12, 0), 60)
+	var target := _town(1, Vector2i(20, 8))
+	target["garrison"][0] = {"id": "pikeman", "count": 140}
+	var player: Dictionary = world["players"][0]
+	_ok(not ai._unlocks_assault(leader, 59 * 80), "one courier alone cannot unlock this assault")
+	var before := var_to_bytes(world)
+	var rally := ai._assault_rally(player)
+	_ok(rally.get("leader", -1) == leader["uid"] and rally.get("donors", []).size() == 2,
+		"two same-day deliveries jointly unlock the assault")
+	_ok(var_to_bytes(world) == before, "rally preview never moves or changes armies/resources")
+	first["movement"] = 100
+	_ok(ai._assault_rally(player).is_empty(), "rally excludes a courier that cannot arrive today")
+	first["movement"] = first["max_movement"]
+	var home := _town(0, first["pos"])
+	var raider := _hero(1, Vector2i(3, 8), 50)
+	_ok(ai._assault_rally(player).is_empty(), "rally never takes a required town defender")
+	world["heroes"].erase(raider["uid"])
+	world["players"][1]["heroes"].erase(raider["uid"])
+	world["towns"].erase(home["uid"])
+	player["towns"].erase(home["uid"])
+	rules.rebuild()
+	target["garrison"][0]["count"] = 400
+	_ok(ai._assault_rally(player).is_empty(), "rally rejects an assault still unsafe after all deliveries")
+	target["garrison"][0]["count"] = 140
+	player["ai_day"] = world["day"]
+	var driver = preload("res://tools/ai/campaign_driver.gd").new()
+	add_child(driver)
+	driver.configure(world)
+	await driver.ai.run_turn(driver, player)
+	_ok(target["owner"] == 0, "production couriers arrive before leader and enable conquest the same turn")
+	_ok(first["army"][0]["count"] == 1 and second["army"][0]["count"] == 1, "rally keeps a creature with each donor")
+	driver.queue_free()
+	await get_tree().process_frame
+
+func _passage_turn() -> void:
+	_reset()
+	world["blocked"].fill(1)
+	for x in range(1, 21): world["blocked"][8 * 24 + x] = 0
+	world["blocked"][7 * 24 + 7] = 0 # the only alcove off the single-file road
+	var leader := _hero(0, Vector2i(5, 8), 100)
+	var helper := _hero(0, Vector2i(7, 8), 1)
+	helper["movement"] = 100
+	var gold := _object(Vector2i(10, 8), "resource")
+	gold.merge({"res": "gold", "amount": 5000})
+	rules.rebuild()
+	_ok(rules.plan(leader, gold["pos"])["path"].is_empty(), "ally actually blocks the single-file route")
+	var before := var_to_bytes(helper)
+	var plan := ai.choose(leader)
+	_ok(plan.has("yield") and plan["yield"]["hero"] == helper["uid"], "leader asks the blocking ally to step aside")
+	_ok(var_to_bytes(helper) == before and rules.astar.is_point_solid(helper["pos"]),
+		"route preview restores the blocking tile")
+	# choose may remember a goal, but it must not move the helper or spend its movement.
+	_ok(helper["pos"] == Vector2i(7, 8) and helper["movement"] == 100, "passage planning does not teleport or spend movement")
+	helper["movement"] = 50
+	_ok(not ai.choose(leader).has("yield"), "cannot step aside without enough movement")
+	helper["movement"] = 100
+	world["blocked"][7 * 24 + 7] = 1
+	rules.rebuild()
+	_ok(not ai.choose(leader).has("yield"), "cannot clear a corridor without a legal alcove")
+	world["blocked"][7 * 24 + 7] = 0
+	var guard := _object(Vector2i(7, 6), "monster")
+	guard.merge({"creature": "angel", "count": 100})
+	rules.rebuild()
+	_ok(not ai.choose(leader).has("yield"), "never steps a courier into a guarded alcove")
+	world["objects"].erase(guard["uid"])
+	var gate := _town(0, helper["pos"])
+	rules.rebuild()
+	_ok(not ai.choose(leader).has("yield"), "passage never displaces a hero holding a town gate")
+	world["towns"].erase(gate["uid"])
+	world["players"][0]["towns"].erase(gate["uid"])
+	# The weaker helper cannot fight this guard, so it is idle when processed before the leader.
+	world["objects"].erase(gold["uid"])
+	var objective := _object(Vector2i(10, 8), "monster")
+	objective.merge({"creature": "pikeman", "count": 10})
+	rules.rebuild()
+	var player: Dictionary = world["players"][0]
+	player["heroes"] = [helper["uid"], leader["uid"]]
+	player["ai_day"] = world["day"]
+	var driver = preload("res://tools/ai/campaign_driver.gd").new()
+	add_child(driver)
+	driver.configure(world)
+	await driver.ai.run_turn(driver, player)
+	_ok(helper["pos"] == Vector2i(7, 7) and helper["movement"] == 0, "production step aside pays the normal 100 movement")
+	_ok(leader["pos"] == Vector2i(9, 8) and not world["objects"].has(objective["uid"]),
+		"earlier idle helper retains movement so later leader can clear the corridor and attack")
+	driver.queue_free()
+	await get_tree().process_frame
+
+func _occupied_site() -> void:
+	_reset()
+	var leader := _hero(0, Vector2i(8, 8), 100)
+	var helper := _hero(0, Vector2i(7, 8), 1)
+	world["players"][0]["resources"]["gold"] = 10000
+	_object(leader["pos"], "war_machine_factory")
+	rules.rebuild()
+	_ok(rules.plan(helper, leader["pos"])["kind"] == "meet", "occupied factory actually resolves as a friendly meeting")
+	_ok(ai.choose(helper).is_empty(), "courier cannot mistake a useless meeting for buying at an occupied factory")
+	helper["army"][0]["count"] = 80 # not an ordinary small courier, but the meeting still transfers real troops
+	_ok(ai.choose(helper).get("kind", "") == "meet", "occupied site may still lead to a useful troop exchange")
 
 func _meeting_turn() -> void:
 	_reset()

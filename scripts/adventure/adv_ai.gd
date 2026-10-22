@@ -20,8 +20,13 @@ func run_turn(adv, player: Dictionary) -> String:
 		player["ai_day"] = world["day"]
 		manage_towns(player)
 		adv.view.rebuild_objects()
+	var rally := _assault_rally(player)
+	var order: Array = player["heroes"].duplicate()
+	if not rally.is_empty():
+		order.erase(rally["leader"])
+		order.append(rally["leader"]) # deliveries arrive before the main army spends its movement
 	var guard := 0
-	for hid in player["heroes"].duplicate():
+	for hid in order:
 		var steps := 0
 		while steps < 8:
 			steps += 1
@@ -31,10 +36,23 @@ func run_turn(adv, player: Dictionary) -> String:
 			var hero: Dictionary = world["heroes"].get(hid, {})
 			if hero.is_empty() or hero["movement"] < 50:
 				break
-			var choice := choose(hero)
+			var choice := {}
+			if hid in rally.get("donors", []):
+				var leader: Dictionary = world["heroes"].get(rally["leader"], {})
+				if not leader.is_empty() and _transfer_value(leader, hero["army"], true) > 400 and _defense(hero).is_empty():
+					var meeting := rules.plan(hero, leader["pos"])
+					if not meeting["path"].is_empty() and meeting["reach"] == meeting["path"].size() - 1:
+						choice = meeting
+			if choice.is_empty(): choice = choose(hero)
 			if choice.is_empty():
-				hero["movement"] = 0
+				# An idle hero may still need to step aside for a later army in this same turn.
 				break
+			if choice.has("yield"):
+				var clearance: Dictionary = choice["yield"]
+				var blocker: Dictionary = world["heroes"].get(clearance["hero"], {})
+				if not blocker.is_empty():
+					await adv.move_hero(blocker, clearance["plan"], false)
+				continue # replan against actual occupancy; the blocked army has spent nothing
 			var before: int = hero["movement"]
 			var army_before := GameState.army_strength(hero["army"])
 			var xp_before: int = hero["xp"]
@@ -54,6 +72,30 @@ func run_turn(adv, player: Dictionary) -> String:
 						_reinforce(hero, town, player)
 						rules.hero_in_town(hero, town)
 	return ""
+
+## Several same-day deliveries can unlock an assault even when no individual delivery does.
+## Preview sequentially on copies so seven slots and the donor's last creature are respected.
+func _assault_rally(player: Dictionary) -> Dictionary:
+	var leader_uid := _leader(player)
+	if leader_uid < 0: return {}
+	var leader: Dictionary = world["heroes"][leader_uid]
+	if leader["movement"] < 50: return {}
+	var preview: Array = leader["army"].duplicate(true)
+	var before := GameState.army_strength(preview)
+	var donors := []
+	for hid in player["heroes"]:
+		if hid == leader_uid: continue
+		var donor: Dictionary = world["heroes"][hid]
+		if donor["movement"] < 50 or not _defense(donor).is_empty(): continue
+		var meeting := rules.plan(donor, leader["pos"])
+		if meeting["path"].is_empty() or meeting["reach"] != meeting["path"].size() - 1 \
+				or meeting["costs"].back() > donor.get("max_movement", 1500): continue
+		var trial := preview.duplicate(true)
+		if _transfer(trial, donor["army"].duplicate(true), true) <= 400: continue
+		preview = trial
+		donors.append(hid)
+	if donors.is_empty() or not _unlocks_assault(leader, GameState.army_strength(preview) - before): return {}
+	return {"leader": leader_uid, "donors": donors}
 
 # ---------------------------------------------------------------------------------------------
 func manage_towns(player: Dictionary) -> void:
@@ -274,7 +316,7 @@ func choose(hero: Dictionary) -> Dictionary:
 		if delivery > 400 and (_strength(hero) < _strength(leader) * 0.35 or _unlocks_assault(leader, delivery)):
 			var meeting := rules.plan(hero, leader["pos"])
 			if not meeting["path"].is_empty() and meeting["costs"].back() <= hero.get("max_movement", 1500) * 0.5:
-				cands.append([leader["pos"], delivery * 1.2])
+				cands.append([leader["pos"], delivery * 1.2, "delivery"])
 	for o in world["objects"].values():
 		var d: Vector2i = o["pos"] - hp
 		if absi(d.x) > 22 or absi(d.y) > 22:
@@ -318,9 +360,16 @@ func choose(hero: Dictionary) -> Dictionary:
 				guarded_ok = false
 		if not guarded_ok:
 			continue
-		var plan := rules.plan(hero, c[0])
+		var plan := _plan_with_passage(hero, c[0])
 		if plan["path"].is_empty() or plan["reach"] == 0:
 			continue
+		# An occupied shop/dwelling is a meeting, not a purchase. It must actually help the army.
+		if plan["kind"] == "meet" and c.size() < 3:
+			var other: Dictionary = plan["target"]
+			if hero["uid"] != leader_uid and other["uid"] != leader_uid: continue
+			var receiver := hero if hero["uid"] == leader_uid else other
+			var donor := other if receiver == hero else hero
+			if _transfer_value(receiver, donor["army"], true) == 0: continue
 		var cost: int = plan["costs"][plan["costs"].size() - 1]
 		var score: float = c[1] / (1.0 + cost / 150.0)
 		var goal: Dictionary = hero.get("ai_goal", {})
@@ -347,8 +396,43 @@ func choose(hero: Dictionary) -> Dictionary:
 		hero["ai_goal"] = {"pos": best["path"].back(), "day": world["day"]}
 	return best
 
-## A substantial second army joins only when its actual transferable troops unlock a nearby conquest.
-## Otherwise it keeps its independent task. Meetings still have the existing half-day travel limit.
+## A blocked leader can ask an idle ally to make a legal one-step move off its route.
+## The relaxed path is diagnostic only: run_turn moves the blocker, then replans normally.
+func _plan_with_passage(hero: Dictionary, target: Vector2i) -> Dictionary:
+	var plan := rules.plan(hero, target)
+	if not plan["path"].is_empty() or hero["uid"] != _leader(rules.player_of(hero)): return plan
+	var blockers := []
+	for hid in rules.player_of(hero)["heroes"]:
+		if hid == hero["uid"]: continue
+		var ally: Dictionary = world["heroes"][hid]
+		if ally["movement"] < 50 or not _defense(ally).is_empty(): continue
+		var pos: Vector2i = ally["pos"]
+		# Never move a gate defender or expose a blocked/guarded underlying tile.
+		if not rules.walkable_ground(pos) or not rules.guards(pos).is_empty(): continue
+		if world["towns"].values().any(func(t): return t["pos"] == pos): continue
+		if world["objects"].values().any(func(o): return o["pos"] == pos): continue
+		blockers.append(ally)
+	# Finish all defense checks before temporarily relaxing any route.
+	for ally in blockers: rules.astar.set_point_solid(ally["pos"], false)
+	var relaxed := rules.plan(hero, target)
+	for ally in blockers: rules.astar.set_point_solid(ally["pos"], true)
+	if relaxed["path"].is_empty(): return plan
+	for pos in relaxed["path"]:
+		for ally in blockers:
+			if ally["pos"] != pos: continue
+			for dir in AdvRules.DIRS:
+				var aside: Vector2i = pos + dir
+				if aside in relaxed["path"] or not rules.walkable_ground(aside) or not rules.at(aside).is_empty() \
+						or not rules.guards(aside).is_empty(): continue
+				var step := rules.plan(ally, aside)
+				if step["path"].size() != 2 or step["reach"] != 1: continue
+				relaxed["yield"] = {"hero": ally["uid"], "plan": step}
+				return relaxed
+			return plan # the first obstruction has no legal place to go
+	return plan
+
+## Check whether transferable troops enable a nearby conquest under the ordinary safety threshold.
+## Ordinary individual deliveries stay within half a day; a coordinated rally may use a full day.
 func _unlocks_assault(leader: Dictionary, delivery: int) -> bool:
 	var strength := _strength(leader)
 	var combined := strength * (1.0 + float(delivery) / maxf(1.0, GameState.army_strength(leader["army"])))
@@ -358,7 +442,7 @@ func _unlocks_assault(leader: Dictionary, delivery: int) -> bool:
 		var resident := rules.hero_at(town["pos"])
 		if not resident.is_empty(): defender += _strength(resident)
 		if strength > defender * 1.4 or combined <= defender * 1.4 or not _safe_gate(leader, town): continue
-		var plan := rules.plan(leader, town["pos"])
+		var plan := _plan_with_passage(leader, town["pos"])
 		if not plan["path"].is_empty() and plan["costs"].back() <= leader.get("max_movement", 1500) * 2:
 			return true
 	return false

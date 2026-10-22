@@ -23,15 +23,26 @@ func _run() -> void:
 		var rules := AdvRules.new(w)
 		var side := int(name.get_basename().get_slice("_", 1))
 		print("SNAPSHOT ", name, " day=", w["day"])
+		for t in w["towns"].values(): print("  town=", t["uid"], " owner=", t["owner"], " pos=", t["pos"])
 		for p in w["players"]:
 			if not p["alive"]: continue
 			var ai: AdvAI = AdvAI.new(rules) if p["index"] == side else baseline.new(rules)
 			print("  player=%d policy=%s towns=%d heroes=%d" % [p["index"], "current" if p["index"] == side else "checkpoint", p["towns"].size(), p["heroes"].size()])
+			if p["index"] == side: print("    rally=", ai._assault_rally(p))
 			for hid in p["heroes"]:
 				var h: Dictionary = w["heroes"][hid]
 				var defense := ai._defense(h)
 				var plan := ai.choose(h)
 				print("    hero=%d pos=%s strength=%.0f defense=%s target=%s" % [hid, h["pos"], ai._strength(h), "hold" if defense.has("hold") else ("move" if not defense.is_empty() else "none"), plan.get("kind", "none")])
+				print("      army=", h["army"])
+				if not plan.is_empty(): print("      target uid=", plan.get("target", {}).get("uid", -1), " destination=", plan["path"].back())
+				if plan.has("yield"): print("      step aside: hero=", plan["yield"]["hero"], " destination=", plan["yield"]["plan"]["path"].back())
+				var leader_uid := ai._leader(p)
+				if leader_uid != hid:
+					var leader: Dictionary = w["heroes"][leader_uid]
+					var value := ai._transfer_value(leader, h["army"], true)
+					var meeting := rules.plan(h, leader["pos"])
+					print("      delivery value=%d unlocks assault=%s cost=%d" % [value, ai._unlocks_assault(leader, value), meeting["costs"].back() if not meeting["path"].is_empty() else -1])
 				for t in w["towns"].values():
 					if t["owner"] == p["index"]: continue
 					var route := rules.plan(h, t["pos"])

@@ -1,6 +1,7 @@
 # Campaign validation — 2026-10-22
 
-This checkpoint adds validation tools; production AI and battle rules remain those of `f69ad3a`.
+Session50 checkpoint `eb2c96c` added validation tools; its production AI and battle rules remained those of `f69ad3a`.
+Later coordination changes and their separate measurements are in [AI_COORDINATION.md](AI_COORDINATION.md).
 Comparator: frozen `4f126ec` in `tools/ai/adventure_ai_checkpoint.gd`. No policy tuning followed these runs.
 Raw logs, traces, snapshots and screenshots are local under ignored `shots/session50/`.
 
