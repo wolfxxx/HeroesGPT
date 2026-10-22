@@ -9,7 +9,8 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
   foot point of a Blender-rendered sprite (from `<dir>/anchors.json`). See ASSETS.md for every asset path.
 - `Audio` — `Audio.music("battle")`, `Audio.sfx("sword_hit")`; pitch uses a private RNG, independent of gameplay.
 - `GameState` — world state across scenes, fade `change_scene()`, battle/town handoff, hero helpers, save/load.
-  `save_game`, `load_game`, `has_save` accept an optional path for isolated tests; default remains `user://savegame.dat`.
+  `save_game`, `load_game`, `has_save` accept an optional path for isolated tests; without one they use
+  `GameState.save_path` (default `user://savegame.dat`; remote playtests point it at `user://playtest_save.dat`).
 - `Shot` — screenshot harness for automated visual review (see below).
 
 ## Shared classes
@@ -41,6 +42,22 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
 ```
 day -> week = (day-1)/7+1, day_of_week = (day-1)%7+1, month = (day-1)/28+1.
 Tiles are 64px; objects have an action tile `pos` and an optional footprint (WorldGen.footprint_for).
+
+## Map access (WorldGen)
+`_reachable` floods with the game's movement rule (a diagonal step needs a free orthogonal side tile). `_carve_road`
+keeps one corner tile clear at each diagonal road step. After all objects are placed, `_ensure_access` connects every
+object and town to the first town: it A*s through trees/rocks (`forest` tiles, weight 6; water, mountains and building
+walls solid), clears those tiles and their decor sprites, and removes an object only when no such path exists
+(printed as "WorldGen: N unreachable object(s) removed"). `WorldGen.last_cleared` lists the opened tiles.
+
+## Meeting your own hero
+`adventure.gd._click`: with a hero selected, a click on another of your heroes plans the `meet` route (status line
+"Meet <name> (trade troops)"); a second click executes it, and `_interact_with` opens `AdventureHUD.open_exchange`.
+With no route the click selects that hero, as before. `open_exchange` shows both armies (shared `ArmyStrip` group)
+and, per hero, `_exchange_artifacts`: worn, then "Backpack:" and carried artifacts as `HeroScreen._Socket`s (meta
+`artifact`); a click calls `GameState.transfer_artifact(from, to, a)` (receiver wears it if slots are free, else
+carries it; combinations move whole; merges announced) and redraws both rows. AI meetings (`AdvAI.exchange_troops`)
+do not move artifacts.
 
 ## Adventure camera and movement
 `adventure.gd.move_hero` owns `_follow` for both human commands and AI paths. Each step checks the human player's
@@ -158,6 +175,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `adventure_camera_test` (33 movement/visibility/turn-camera checks),
   `war_machine_test` (purchases, factory persistence, AI, generated access and battle ammo),
   `necromancy_test` (46 checks of raising rules, slots, casualties and rewards on both sides),
+  `meet_test` (18 meeting-by-click and artifact hand-over checks), `map_reach_report` (every object reachable on 36 maps),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
 - `tools/adventure_camera_test.tscn` — real adventure scene/camera assertions for visible and hidden movement,
@@ -245,6 +263,19 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   the judge agent's prompt is `tools/judge_prompt.md`.
 - `tools/sim_test.tscn` — all-AI soak test: `Godot --path . res://tools/sim_test.tscn -- --seconds=80`
   (prints `SIM day ...` summaries and `SIMBATTLE` lines).
+- `tools/map_reach_report.tscn` — in the full suite: generates 36 maps (sizes 36/48/64) and counts objects/towns the
+  first town cannot reach with the game's movement rule; must print `"maps_with_cut": 0` (exit code 1 otherwise).
+  `-- --save=user://x.dat` checks a saved world; `-- --scenario=<id>` lists the tiles the access pass cleared.
+- `tools/meet_test.tscn` — in the full suite: real clicks on a second own hero show the route, then walk over and open
+  the Hero Meeting dialog; an unreachable hero is selected instead.
+- Remote play (`scripts/core/shot.gd`, `--remote=<dir>`): runs the real game from the main menu and executes
+  command files written to `<dir>/cmd.txt` with real input events, then writes `<dir>/done.txt`. Commands: `click`,
+  `rclick x y [hold] [shot]`, `dclick`, `move`, `park`, `key` (`ctrl+s` style), `keydown/keyup`, `wait`, `shot`,
+  `state` (JSON of the human kingdom), `ctile x y [right]` (click a map tile, scrolling to it), `look [r]` (status
+  text, route kind and cost of nearby explored objects), `probe x y` (what a click there resolves to), `quit`.
+  Coordinates are window pixels (1600x900). Menus and Ctrl+S use `GameState.save_path` = `user://playtest_save.dat`,
+  never the player's save; audio is muted; edge scrolling is off. Restore `project.godot` after the windowed run.
+  Example: `Godot --path . -- --remote=shots/playtest`, then write commands to `shots/playtest/cmd.txt`.
 - Screenshot harness:
 ```
 Godot_v4.7.2-stable_win64_console.exe --path . -- --shot=shots/x.png --scene=res://scenes/battle.tscn --delay=3

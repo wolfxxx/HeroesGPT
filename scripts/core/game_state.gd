@@ -241,6 +241,24 @@ func swap_artifact(h: Dictionary, a: String, worn: bool) -> String:
 	h["movement"] = mini(h["movement"], h["max_movement"])
 	return merged
 
+## Hands an artifact (worn or carried) from one hero to another at a meeting, as the classic exchange screen: the
+## receiver wears it if its slots are free, else carries it in the backpack. A combination moves whole. Returns the
+## name of a combination the receiver's new piece completed ("" if none).
+func transfer_artifact(from: Dictionary, to: Dictionary, a: String) -> String:
+	var i: int = from["artifacts"].find(a)
+	if i >= 0:
+		from["artifacts"].remove_at(i)
+	else:
+		i = from.get("backpack", []).find(a)
+		if i < 0:
+			return ""
+		from["backpack"].remove_at(i)
+	from["max_movement"] = hero_max_movement(from)
+	from["movement"] = mini(from["movement"], from["max_movement"])
+	var made := give_artifact(to, a)
+	to["movement"] = mini(to["movement"], to["max_movement"])  # (movement left today never grows from it)
+	return made
+
 ## As the classic's combination artifacts: when every part of one is worn, the parts merge into it (unless the player
 ## split it on the hero screen and keeps it apart). Returns the name of the combination made ("" if none).
 func merge_combinations(h: Dictionary) -> String:
@@ -327,20 +345,24 @@ func xp_level(xp: int) -> int:
 # Save / load (FileAccess.store_var keeps Vector2i, Color and packed arrays intact)
 # ---------------------------------------------------------------------------------------------
 const SAVE_PATH := "user://savegame.dat"
+## The slot the menus and Ctrl+S use; the remote playtest harness points it at its own file.
+var save_path := SAVE_PATH
 
-func has_save(path := SAVE_PATH) -> bool:
-	return FileAccess.file_exists(path)
+func has_save(path := "") -> bool:
+	return FileAccess.file_exists(path if path != "" else save_path)
 
-func save_game(path := SAVE_PATH) -> bool:
+func save_game(path := "") -> bool:
 	if world.is_empty():
 		return false
-	var f := FileAccess.open(path, FileAccess.WRITE)
+	var f := FileAccess.open(path if path != "" else save_path, FileAccess.WRITE)
 	if f == null:
 		return false
 	f.store_var({"version": 1, "world": world, "uid": _uid})
 	return true
 
-func load_game(path := SAVE_PATH) -> bool:
+func load_game(path := "") -> bool:
+	if path == "":
+		path = save_path
 	if not has_save(path):
 		return false
 	var f := FileAccess.open(path, FileAccess.READ)

@@ -45,6 +45,9 @@ var blocked := PackedByteArray()   # 1 = obstacle/footprint, cannot be entered
 var occupied := {}                 # Vector2i -> uid of object on its action tile
 var covered := {}                  # Vector2i -> uid: every tile an object's building covers (footprints too)
 var keep_clear := PackedByteArray() # tiles that must stay free of obstacles (roads, town aprons)
+var forest := {}                   # Vector2i -> true: blocked by trees/rocks (decor), may be cleared for access
+var _town_list := []
+static var last_cleared: Array = []  # (diagnostics: tiles the last map's access pass opened, see tools/map_reach_report)
 var decor := []
 var world := {}
 
@@ -258,6 +261,10 @@ func _generate(settings: Dictionary) -> Dictionary:
 	for k in int(round(22 * area_scale)):
 		_place_obj({"type": "monster"}, Vector2i(w / 2, h / 2), 0, n, reach, false, 7)
 
+	_town_list = town_list
+	var lost := _ensure_access(town_list[0]["pos"] + Vector2i(0, 1))
+	if lost > 0:
+		print("WorldGen: %d unreachable object(s) removed (seed %d)" % [lost, seed_v])
 	for o in world["objects"].values():
 		if o["type"] == "dwelling":
 			o["available"] = GameData.CREATURES[o["creature"]]["growth"]
@@ -404,12 +411,19 @@ func _carve_road(a: Vector2i, b: Vector2i) -> void:
 			else:
 				astar.set_point_weight_scale(p, 2.2 + 2.0 * wander.get_noise_2d(x, y))
 	var path := astar.get_id_path(a, b)
-	for p in path:
+	for k in path.size():
+		var p := path[k]
 		var i := idx(p)
 		if blocked[i] == 1:
 			continue
 		terrain[i] = T_ROAD
 		keep_clear[i] = 1
+		# a diagonal step is walkable only beside a free tile: keep one corner clear, or obstacles on both make it a wall
+		if k > 0 and path[k - 1].x != p.x and path[k - 1].y != p.y:
+			for side in [Vector2i(p.x, path[k - 1].y), Vector2i(path[k - 1].x, p.y)]:
+				if blocked[idx(side)] != 1 and terrain[idx(side)] != T_WATER:
+					keep_clear[idx(side)] = 1
+					break
 		# keep a 1 tile apron free on most of the road so it reads as a road, not a corridor
 		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 			var q: Vector2i = p + d
@@ -448,6 +462,7 @@ func _place_forests(kind_noise: FastNoiseLite) -> void:
 			if blocked[i] != 2:
 				continue
 			blocked[i] = 1
+			forest[Vector2i(x, y)] = true
 			var t: int = terrain[i]
 			var choices: Array
 			match t:
@@ -503,6 +518,9 @@ func _passable(p: Vector2i) -> bool:
 	var i := idx(p)
 	return blocked[i] == 0 and terrain[i] != T_WATER
 
+## Tiles a hero can walk to from `from`, with the movement rule of AdvRules: a diagonal step needs at least one free
+## orthogonal side tile (two touching corners are a wall). Pickups, monsters and entrances are not walls here: each
+## is collected, fought or stepped through.
 func _reachable(from: Vector2i) -> Dictionary:
 	var seen := {from: true}
 	var stack := [from]
@@ -511,10 +529,79 @@ func _reachable(from: Vector2i) -> Dictionary:
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):
 				var q := p + Vector2i(dx, dy)
-				if not seen.has(q) and _passable(q):
-					seen[q] = true
-					stack.append(q)
+				if seen.has(q) or not _passable(q):
+					continue
+				if dx != 0 and dy != 0 and not _passable(p + Vector2i(dx, 0)) and not _passable(p + Vector2i(0, dy)):
+					continue
+				seen[q] = true
+				stack.append(q)
 	return seen
+
+## Every object and town must be reachable from the first town. Footprints placed after the first reachability flood
+## can seal off a pocket; open a path through the cheapest trees/rocks (their sprites go too), or, when only water,
+## mountains or buildings stand in the way, take the object off the map. Returns how many were removed.
+func _ensure_access(start: Vector2i) -> int:
+	var removed := 0
+	var reach := _reachable(start)
+	last_cleared = []
+	var targets := []
+	for o in world["objects"].values():
+		if not reach.has(o["pos"]):
+			targets.append(o)
+	for t in _town_list:
+		if not reach.has(t["pos"] + Vector2i(0, 1)):
+			targets.append(t)
+	if targets.is_empty():
+		return 0
+	var carve := AStarGrid2D.new()
+	carve.region = Rect2i(0, 0, w, h)
+	carve.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER  # (an orthogonal cut is walkable whatever the corners do)
+	carve.update()
+	for y in h:
+		for x in w:
+			var p := Vector2i(x, y)
+			if _passable(p):
+				carve.set_point_weight_scale(p, 1.0)
+			elif forest.has(p):
+				carve.set_point_weight_scale(p, 6.0)
+			else:
+				carve.set_point_solid(p, true)
+	var cleared := {}
+	for o in targets:
+		var goal: Vector2i = o["pos"]
+		if o.has("garrison"):  # (a town: its gate is entered from below)
+			goal = goal + Vector2i(0, 1)
+		if reach.has(goal):
+			continue
+		var sg := carve.is_point_solid(goal)
+		carve.set_point_solid(goal, false)
+		var path := carve.get_id_path(start, goal)
+		carve.set_point_solid(goal, sg)
+		if path.is_empty():
+			if o.has("garrison"):
+				push_warning("WorldGen: town %s cannot be reached" % o["name"])
+				continue
+			world["objects"].erase(o["uid"])
+			occupied.erase(goal)
+			for q in covered.keys():
+				if covered[q] == o["uid"]:
+					covered.erase(q)
+					if q != goal and blocked[idx(q)] == 1:
+						blocked[idx(q)] = 0
+			removed += 1
+			continue
+		for q in path:
+			if forest.has(q) and blocked[idx(q)] == 1:
+				blocked[idx(q)] = 0
+				carve.set_point_weight_scale(q, 1.0)
+				forest.erase(q)
+				cleared[q] = true
+		reach = _reachable(start)
+	last_cleared = cleared.keys()
+	if not cleared.is_empty():
+		decor = decor.filter(func(d): return not cleared.has(Vector2i(int(d["p"].x / TILE), int(d["p"].y / TILE))))
+		world["decor"] = decor
+	return removed
 
 func _place_obj(o: Dictionary, center: Vector2i, rmin: int, rmax: int, reach: Dictionary, guarded := false, min_town_dist := 0) -> Dictionary:
 	var foot := footprint_for(o["type"])

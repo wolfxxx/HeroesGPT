@@ -203,7 +203,7 @@ func _process(delta: float) -> void:
 		if Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D): move.x += 1
 		if Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W): move.y -= 1
 		if Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S) and not Input.is_key_pressed(KEY_CTRL): move.y += 1
-		if DisplayServer.window_is_focused() and not Shot.active and not _dragging:
+		if DisplayServer.window_is_focused() and not Shot.active and not Shot.remote and not _dragging:
 			move += _edge_scroll()
 	_poll_drag()
 	if move != Vector2.ZERO:
@@ -414,8 +414,17 @@ func _click(t: Vector2i, _dbl: bool) -> void:
 	if not hh.is_empty() and hh["owner"] == me:
 		if hh["uid"] == world["selected_hero"]:
 			hud.open_hero_screen(hh)
-		else:
-			_select_hero(hh["uid"])
+			return
+		# As the classic game: with a hero selected, another of yours is a meeting target (walk over and trade);
+		# the first click shows the route, the second walks. Only an unreachable hero is selected instead.
+		if not selected_hero().is_empty() and t == _plan_target and not _plan.is_empty():
+			_execute_move()
+			return
+		if not selected_hero().is_empty():
+			_make_plan(t)
+			if not _plan.is_empty():
+				return
+		_select_hero(hh["uid"])
 		return
 	var town := rules.town_covering(t)
 	var hero := selected_hero()
@@ -585,6 +594,9 @@ func _describe_tile(t: Vector2i) -> String:
 		return "Uncharted territory"
 	var hh := rules.hero_at(t)
 	if not hh.is_empty():
+		var sel := selected_hero()
+		if hh["owner"] == _human() and not sel.is_empty() and sel["uid"] != hh["uid"]:
+			return "Meet %s (trade troops)" % hh["name"]
 		return "%s — %s" % [hh["name"], world["players"][hh["owner"]]["name"]]
 	var town := rules.town_covering(t)
 	if not town.is_empty():

@@ -794,8 +794,9 @@ func open_hero_screen(h: Dictionary) -> void:
 	refresh()
 
 func open_exchange(a: Dictionary, b: Dictionary) -> void:
-	var m := Modal.custom(adv, "Hero Meeting", 900)
+	var m := Modal.custom(adv, "Hero Meeting", 1000)
 	var g := {}
+	var rows := []  # each hero's artifact row, rebuilt after every hand-over
 	for h in [a, b]:
 		var hb := HBoxContainer.new()
 		hb.add_theme_constant_override("separation", 14)
@@ -805,11 +806,63 @@ func open_exchange(a: Dictionary, b: Dictionary) -> void:
 		hb.add_child(strip)
 		m.body.add_child(UI.label(h["name"], 24, UI.GOLD))
 		m.body.add_child(hb)
+		var row := HFlowContainer.new()
+		row.add_theme_constant_override("h_separation", 6)
+		row.add_theme_constant_override("v_separation", 6)
+		m.body.add_child(row)
+		rows.append(row)
+	var redo := func(self_ref: Callable) -> void:
+		for k in 2:
+			_exchange_artifacts(rows[k], [a, b][k], [a, b][1 - k], func(): self_ref.call(self_ref))
+	redo.call(redo)
 	m.add_buttons([["Done", true]])
 	m.set_meta("default", true)
 	m.set_meta("cancel", true)
 	await m.closed
 	refresh()
+
+## One hero's artifacts at a meeting, worn then carried: a click hands one to the other hero (as the classic
+## exchange screen; there it is dragged between the two paper-dolls).
+func _exchange_artifacts(row: HFlowContainer, h: Dictionary, other: Dictionary, redo: Callable) -> void:
+	for c in row.get_children():
+		row.remove_child(c)
+		c.queue_free()
+	var l := UI.label("Artifacts", 18, UI.GOLD)
+	l.custom_minimum_size = Vector2(92, HeroScreen.SOCK)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(l)
+	var items: Array = h["artifacts"].map(func(x): return [x, true]) + h.get("backpack", []).map(func(x): return [x, false])
+	if items.is_empty():
+		var none := UI.label("none", 18, Color(0.75, 0.7, 0.6))
+		none.custom_minimum_size.y = HeroScreen.SOCK
+		none.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(none)
+	for it in items:
+		var art: String = it[0]
+		if not it[1] and (row.get_child_count() == 1 or row.get_child(row.get_child_count() - 1).has_meta("artifact")) \
+				and not row.get_children().any(func(c): return c.has_meta("pack_mark")):
+			var pk := UI.label("Backpack:", 16, Color(0.85, 0.8, 0.68))
+			pk.custom_minimum_size = Vector2(0, HeroScreen.SOCK)
+			pk.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			pk.set_meta("pack_mark", true)
+			row.add_child(pk)
+		var so := HeroScreen._Socket.new()
+		so.custom_minimum_size = Vector2(HeroScreen.SOCK, HeroScreen.SOCK)
+		so.tex = Assets.artifact_icon(art)
+		so.inner = true
+		so.tier_col = GameData.ARTIFACT_TIERS[GameData.ARTIFACTS[art]["tier"]][1]
+		so.set_meta("artifact", art)
+		var where := "worn" if it[1] else "in the backpack"
+		var hint := "%s. Click: give it to %s." % [where.capitalize(), other["name"]]
+		var tip := HeroScreen._artifact_tip(art, hint, h)
+		HoverInfo.attach(so, func(): return tip)
+		so.pressed = func():
+			var made := GameState.transfer_artifact(h, other, art)
+			Audio.sfx("build" if made != "" else "click", -6 if made != "" else 0)
+			redo.call()
+			if made != "":
+				Modal.message(adv, made, "The parts join into the %s!" % made)
+		row.add_child(so)
 
 func open_dwelling(hero: Dictionary, o: Dictionary) -> void:
 	await recruit_dialog(adv, o["creature"], o["available"], adv.human_player(), hero["army"], func(n): o["available"] -= n)

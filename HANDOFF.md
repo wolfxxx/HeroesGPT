@@ -16,9 +16,49 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Session51 coordination checkpoint (2026-10-22), this commit:** `Improve AI reinforcement coordination and clear allied routes`.
+- **Session52 checkpoint (2026-10-22), this commit (pushed at the user's request):** the user approved fixing playtest findings 1 and 3 (map access,
+  meeting by click). AI work (§8 steps 1–4) is next and not started.
+  - **Map access.** `WorldGen._reachable` now uses the game's movement rule (a diagonal needs a free orthogonal
+    side tile; the old flood let heroes squeeze between two touching corners). Diagonal road steps keep one corner
+    tile clear. New `_ensure_access` runs after all objects are placed: anything the first town cannot reach is
+    connected by clearing the cheapest trees/rocks (their decor sprites are removed), or, if only water, mountains
+    or buildings block it, removed from the map. 36-map sweep before: unreachable objects on 35 maps (about 390
+    objects); after: **0**, with 5 objects of about 6,000 removed. Every generated map changes (scenario maps
+    too, so judge adventure shots will differ from judge 47). Existing saves keep their maps.
+    Visual check: cleared tiles in the "Shattered Crown" map read as ordinary grass (`shots/session52/v002c.png`).
+  - **Meeting your own hero by click** (HoMM3 behaviour): with a hero selected, a click on another of your heroes
+    shows the route and the status line "Meet <name> (trade troops)"; a second click walks over and opens the
+    existing Hero Meeting dialog. An unreachable hero is selected as before; the side-panel hero cards still select.
+    Verified with real clicks in the game (`v004_route.png`, `v005_meeting.png`, `v006_traded.png`: troops merged,
+    the last stack stays).
+  - **Artifact trading at meetings** (user-approved): under each hero's army the Hero Meeting dialog lists that hero's
+    worn artifacts, then "Backpack:" and the carried ones. A click hands one to the other hero, who wears it if the
+    slots are free, else carries it (`GameState.transfer_artifact`); a combination moves whole, a completed set merges
+    and is announced, movement left never grows. Simplification: HoMM3 drags between two paper-dolls; here a click
+    hands over. The AI's meetings still exchange troops only. Captures: `meeting_before_c.png`, `meeting_after_c.png`.
+  - New tests in the full suite: `tools/meet_test.tscn` (18 checks, including artifact hand-overs by real clicks) and `tools/map_reach_report.tscn` (36 maps, must
+    report `maps_with_cut: 0`). Full suite passed (`shots/session52/tests.log`); the player's save is unchanged.
+- **Session52 playtest (2026-10-22), included in this commit:** the user asked for the playtest (step 5 of the §8 plan) to
+  come first. The assistant played one full campaign through the real UI with real mouse/key events: scenario
+  "The Shattered Crown" (conquer), Haven, Sir Aldric, Normal, one Necropolis AI. **Victory on day 13
+  (Month 1, Week 2, Day 6)**. Exercised: New Game, briefing, building (7 builds), recruiting/merging, Tavern hire
+  and rehire, chests, campfires, mines, windmill, artifacts, guarded mines, 18 battles (manual and Auto), sieges
+  of neutral and enemy towns (one lost, the rest won), level-ups with skill choices, week change, Ctrl+S
+  save and menu Load, town loss and recapture, the final Victory dialog. **Not exercised:** Necropolis as the
+  human, spells cast by hand, marketplace, mage-guild learning, four players, retreat/surrender as the human.
+  Opponent pressure was **low**: the AI's capital Gravenmoor fell with an empty garrison and no hero inside,
+  its heroes came one at a time, and two attacks on my empty towns were the only threat. This is one game by an
+  assistant, not a human difficulty judgement. Findings are in §8 under "Playtest findings (session52)".
+  The player's own save was hash-checked before and after (unchanged); the playtest used `user://playtest_save.dat`.
+  New: remote-play mode in `scripts/core/shot.gd` (`--remote=<dir>`, see ARCHITECTURE.md) with
+  `GameState.save_path`; diagnostic `tools/map_reach_report.tscn`. Screenshots/logs under ignored `shots/playtest/`.
+- **Planning follow-up (2026-10-22), documentation, included in this commit:** after the push, the user asked what comes
+  next and whether this handoff contains the full plan. The proposed next session is now recorded at the start
+  of section 8, including priorities, evidence, validation and completion criteria. Implementation has not
+  started. Previous pushed checkpoint: **`555fedc`**; use `git log -1` for this one.
+- **Session51 pushed coordination checkpoint (2026-10-22), `555fedc`:** `Improve AI reinforcement coordination and clear allied routes`.
   The user requested committing and pushing this work and the preceding local checkpoint **`eb2c96c`** to
-  `origin/main`; previous pushed checkpoint **`f69ad3a`**. Use `git log -1` for this checkpoint's hash.
+  `origin/main`; both were pushed and the remote hash verified. Previous pushed checkpoint: **`f69ad3a`**.
   No new art, presentation changes, save fields, game rules or judge score.
   - `AdvAI._assault_rally` previews several same-day donors together and moves them before the main army if
     their combined troops enable a nearby assault. Required defenders are excluded; normal slots/transfers,
@@ -46,7 +86,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   - **Full suite passed** (`tests-final.log`): compile; 40 battles; 25 visual; 15 battle AI; 75 adventure AI;
     63 week; 29 flow; two/four-player zero-difference controls; 4096 glow phases; 33 camera; 227 factory;
     46 Necromancy; 31 clicks/drag/queued click; five visits; 306 artifacts; `SIM DONE`. `project.godot` restored.
-  - Next: continue investigating defense/conquest tradeoffs
+  - Next: follow the proposed plan at the start of section 8; investigate defense/conquest tradeoffs
     (especially 427/0), incompatible full armies and remaining long games; use new map IDs for later validation.
     Human competitive play, fog/map spells/difficulty, remaining machine wrecks and hot-seat remain open.
 - **Session50 validation checkpoint (2026-10-22), `eb2c96c`:** `Validate multiplayer campaigns and tactical save flow`.
@@ -504,6 +544,94 @@ strategic AI are more substantial next steps than further small dialog polish.
 
 ## 8. What's next
 
+### Proposed next session after `555fedc` — not started
+
+The latest recommendation is **one focused AI round (steps 1–4), then a complete gameplay playtest (step 5)**.
+This is a proposed plan, not a record of completed work or approval to implement/publish it. It takes priority
+over older suggested next steps below. The last round fixed particular coordination failures, but its fresh-map
+results did not establish a general strength gain; preserve that distinction when reporting the next round.
+
+1. **Defense versus conquest.** Start with saved case **427/0**: session51's diagnostic continuation ended with
+   no towns, versus one under `f69ad3a`, while its hero survived. Replay and trace the actual decisions before
+   changing policy; losing a town alone does not prove a bad decision. Inspect `_defense`, `_counterattack`,
+   `_assault_rally` and `choose` in `scripts/adventure/adv_ai.gd`. Compare travel time, reachable enemy threats,
+   garrison strength and feasible attack/recapture opportunities. Aim to distinguish a useful offensive trade
+   from abandoning the last defendable town, without making the strongest army permanently passive. Add
+   focused scenarios for both holding/intercepting and leaving safely; verify through the production turn driver.
+
+2. **Full armies and reinforcement delivery.** Inspect the saved armies that cannot consolidate because all
+   seven slots contain incompatible creatures. Trace `_transfer`, `_transfer_value`, `_reinforce` and actual
+   friendly meetings before choosing a fix. Evaluate useful exchanges and staging troops in reachable town
+   garrisons through existing rules. Preserve creatures, the donor's required last creature, slot limits,
+   upgrade costs and normal movement. Check full receivers, compatible merges, unavailable garrison space and
+   essential defenders. A larger main army alone is not evidence of improved campaign outcomes.
+
+3. **Unfinished campaigns.** Revisit all nine unresolved session50 snapshots, using `441/1` as a successful
+   rally case that must keep working and `441/0` as a consolidation-without-victory case. Investigate repeated
+   town exchanges, defensive standoffs and townless surviving heroes. Separate legal long games from concrete
+   decision loops or missed feasible objectives; do not lower combat safety thresholds merely to force an end.
+   Read synchronized snapshots for ownership; different players' end-turn trace records are different instants.
+   Turn each confirmed failure into a small regression case and document any unresolved tradeoffs.
+
+4. **Validation against the version just pushed.** Before changing policy, freeze the AI from **`555fedc`** in
+   a new comparison script and verify its adaptation against committed source. Preserve all older baselines;
+   ensure new inherited helpers cannot silently change the frozen policy. Run a same-policy zero-difference
+   control. The current resume tool hardcodes `f69ad3a` as its before-policy: explicitly add/select the new
+   baseline when comparing this round, while keeping the saved worlds' original opponents fixed. These old
+   snapshots lack RNG state, so paired explicitly seeded restarts remain diagnostics, not exact continuations.
+   Develop on recorded cases; reserve unused map IDs before final validation. Match the previous round's
+   initial validation coverage: 24 size-36 two-player maps (48 rotated-seat games) and eight size-48 four-player
+   maps (32 games), each at 84 days. Report wins/losses/unresolved, games at the limit and score deltas with
+   uncertainty across maps. Do not tune on final validation maps; subsequent changes need a fresh set.
+   Run focused AI checks during development and `sh tools/run_tests.sh` after the final implementation.
+
+5. **Complete gameplay playtest afterward.** Play from New Game through a campaign outcome, checking whether
+   the opponent creates credible pressure and whether exploration, town management, recruitment, tactical
+   battles, leveling and save/reload flow smoothly. Preserve the player's normal save by using an isolated
+   test save. Exercise both factions across playtests; capture and inspect screenshots for any visual fixes.
+   Existing scripted flow tests do not establish human competitive balance; record who played, what was
+   exercised and what remains untested. Human feedback is needed for the subjective difficulty assessment.
+
+**Evidence and tools:** `docs/AI_COORDINATION.md`, `docs/CAMPAIGN_VALIDATION.md`,
+`tools/campaign_snapshot_report.tscn`, `tools/campaign_resume_test.tscn`, `tools/campaign_trace_report.py`,
+`tools/adventure_ai_test.tscn`, `tools/adventure_tournament.tscn` and `tools/campaign_flow_test.tscn`.
+Local inputs are under ignored `shots/session50/states168/`; prior traces and final results are under
+`shots/session51/`. They are not on GitHub: on a fresh clone, regenerate snapshots using the validation report's
+commands before attempting those replays. Store next-round evidence separately, for example `shots/session52/`.
+
+**Completion criteria for steps 1–4:** confirmed failure cases have focused tests and fixes, remaining cases
+are explicitly explained, current regressions and the full suite pass, fresh-map results are reported honestly,
+and handoff/architecture documentation identifies the final behavior and limitations. A statistically unclear
+result must not be described as stronger AI. No HoMM3 rule changes are part of this plan; flag and ask before
+any deviation. Update docs with implementation; commit/push only on the user's instruction.
+
+**Following milestone:** hot-seat multiplayer (human/computer selection, private turn handoff, human-versus-human
+battles, saving and turn ownership). Fog-information policy, map-spell planning, difficulty settings, remaining
+machine wrecks and visual findings stay on the backlog; online multiplayer remains a separate larger project.
+
+### Playtest findings (session52, one Haven campaign on Normal; not yet fixed)
+Ranked by impact. Evidence (screenshots `s###.png`, logs) is in ignored `shots/playtest/`.
+1. **FIXED (session52): map objects walled off from every route.** In the playtest a Griffin dwelling, a Sawmill and
+   six artifacts could not be reached. With the game's real movement rule the sweep found unreachable objects on
+   35 of 36 generated maps; now 0 (see §2).
+2. **AI leaves its capital empty / low pressure.** Gravenmoor (9 buildings) was taken on day 11 with no garrison
+   and no hero; the AI's heroes fought one at a time and never combined. This matches the planned §8 step 1
+   (defense versus conquest, case 427/0) and suggests checking garrison retention when the main hero leaves.
+3. **FIXED (session52, user-approved): meeting your own hero by click, with troop and artifact trading** (see §2).
+4. **Hero drawn behind a building after a visit.** After walking into a mine/windmill entrance the hero sprite is
+   hidden behind the building (only the flag shows) until the scene is rebuilt (reload fixes it).
+5. **Decorative red rocks look like a resource pile.** A sand-terrain red-rock decor sprite reads as Sulfur/Crystal;
+   walking onto it does nothing.
+6. **Right-click on the map shows only a one-line toast** ("A pack of Archers"), not HoMM3's held info popup. The
+   hover panel carries the detail, so this is minor.
+7. **Unconfirmed:** a rehired Lord Gareth (killed, then hired again) appeared in the save with the Oaken Buckler his
+   earlier self had found, and it was gone after his next battle. A headless repro of kill + rehire gave a clean
+   hero, so the path is unknown.
+Questions for the user (deviations already in the game, not changed): Necropolis upgrades use custom names/stats
+(Arch Lich, Doom Rider with Dread Knight as the base, Wraith from Ghost); the build tree is one shared simplified tree.
+Worked well and matched HoMM3: recruit/merge, tavern gate rule, chest gold/XP choice, XP = killed HP, monster stack
+splitting, week announcement, siege flow, level-up choices, end-turn warning, remembered routes, victory flow.
+
 ### Open findings from judge 47 (overall 9.4; battle 9.3)
 1. Other participants in siege melees remain crowded even though the focused Vampire is now clear
    (`battle_siege_later`, x790–1040/y560–720). Local session48 adds bounded staggering and verifies reduced
@@ -688,6 +816,14 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   xp / speed `icons/stat_*.png`, the hero screen's closed spellbook `icons/spellbook_closed.png`.
 
 ## 10. Gotchas learned the hard way
+
+- Map reachability must use the game's diagonal rule (AStarGrid2D `DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE`): two
+  obstacles touching at a corner are a wall. Any later footprint can seal a pocket, so check access after all
+  placement (`WorldGen._ensure_access`), not only before it. Pickups, monsters and entrances are cleared or stepped
+  through, so they are not walls for this check; they are solid in AdvRules' planner, which is intended.
+- Remote playtests: `--remote` coordinates are window pixels (1600x900), but `adv._event_world`/`_pick` expect
+  canvas coordinates (x1.2); `ctile`/`look` avoid the conversion. A shell heredoc or `cat` without input in a
+  tool command waits on stdin forever; redirect `< /dev/null` when chaining Godot runs.
 
 - A zero-cost adjacent victory may leave army value unchanged. XP gain is still real turn progress; otherwise
   AI throws away its remaining movement. Do not remove the no-progress guard entirely (repeat visits can loop).
