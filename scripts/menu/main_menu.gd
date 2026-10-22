@@ -24,6 +24,11 @@ var _preview_info: Label    # the land, then the towns and mines (the line under
 var _preview_info2: Label
 var _preview_box: Control
 var _seats_box: HBoxContainer  # hot-seat: who plays each colour
+var _edit_seat := 0          # hot-seat: the colour whose town, hero and bonus the left side shows
+var _choose_flag: TextureRect  # (beside the left headings in hot-seat: whose choices they are)
+var _faction_head: Label
+var _hero_head: Label
+var _bonus_head: Label
 var _preview_cache := {}    # "scenario/faction/extra humans' towns" -> [texture, text]
 var _logo: Control
 var _menu_band: Control
@@ -244,7 +249,13 @@ func _build_setup() -> void:
 	cond.add_theme_constant_override("separation", 40)
 	v.add_child(_rule())
 
-	v.add_child(UI.label("Choose your faction", 24, UI.GOLD))
+	var fh := HBoxContainer.new()
+	fh.add_theme_constant_override("separation", 8)
+	v.add_child(fh)
+	_choose_flag = UI.icon(UI.flag_icon(GameData.PLAYER_COLORS[0]), Vector2(30, 30))
+	fh.add_child(_choose_flag)
+	_faction_head = UI.label("Choose your faction", 24, UI.GOLD)
+	fh.add_child(_faction_head)
 	var frow := HBoxContainer.new()
 	frow.add_theme_constant_override("separation", 20)
 	v.add_child(frow)
@@ -257,7 +268,8 @@ func _build_setup() -> void:
 		frow.add_child(b)
 		_faction_buttons[f] = b
 
-	v.add_child(UI.label("Choose your hero", 24, UI.GOLD))
+	_hero_head = UI.label("Choose your hero", 24, UI.GOLD)
+	v.add_child(_hero_head)
 	_hero_row = HBoxContainer.new()
 	_hero_row.add_theme_constant_override("separation", 16)
 	v.add_child(_hero_row)
@@ -270,7 +282,8 @@ func _build_setup() -> void:
 	orow.add_theme_constant_override("separation", 40)
 	v.add_child(orow)
 	var bv := VBoxContainer.new()
-	bv.add_child(UI.label("Starting bonus", 22, UI.GOLD))
+	_bonus_head = UI.label("Starting bonus", 22, UI.GOLD)
+	bv.add_child(_bonus_head)
 	var bh := HBoxContainer.new()
 	bh.add_theme_constant_override("separation", 10)
 	bv.add_child(bh)
@@ -284,7 +297,7 @@ func _build_setup() -> void:
 		var bk: String = k
 		b.pressed.connect(func():
 			Audio.sfx("click", -6)
-			_settings["bonus"] = bk
+			_set_choice("bonus", _edit_seat, bk)
 			_refresh_options())
 		bh.add_child(b)
 		_bonus_buttons[k] = b
@@ -388,7 +401,10 @@ Play on: heroes carry on without a town for as long as they last.
 		_settings["opponents"] = 1
 	if not _settings.has("bonus"):
 		_settings["bonus"] = "gold"
-	_select_faction(_settings.get("faction", "haven"))
+	if not GameData.FACTIONS.has(_choice("faction", 0)):
+		_settings["faction"] = "haven"
+	_fix_seats()
+	_edit(0)
 	_select_scenario(_settings.get("scenario", GameData.SCENARIOS[0]["id"]))
 
 func _rule() -> Control:
@@ -554,7 +570,9 @@ func _refresh_scenario() -> void:
 	var ms: int = int(_settings.get("map_size", 48))
 	var people := range(n + 1).filter(func(i): return _seat_human(i)).size()
 	if people > 1:  # (hot-seat)
-		_scen_info.text = "Map: %s (%d x %d)     Players: %d at this screen, %d computer" % [size_name, ms, ms, people, n + 1 - people]
+		var bots := n + 1 - people
+		_scen_info.text = "Map: %s (%d x %d)     Players: %d at this screen%s" % [size_name, ms, ms, people,
+			"" if bots == 0 else ", %d computer" % bots]
 	else:
 		_scen_info.text = "Map: %s (%d x %d)     Players: you and %d %s" % [size_name, ms, ms, n, "rival" if n == 1 else "rivals"]
 	for pair in [[_vic_row, "Victory", sc["victory"], GameData.victory_text(sc["victory"])],
@@ -648,7 +666,11 @@ func _refresh_options() -> void:
 		for b in _option_buttons[key]:
 			b.button_pressed = b.get_meta("value") == _settings.get(key)
 	for k in _bonus_buttons:
-		_bonus_buttons[k].button_pressed = k == _settings.get("bonus", "")
+		_bonus_buttons[k].button_pressed = k == _choice("bonus", _edit_seat)
+	if _hero_row != null and (_edit_seat >= _players_in_play() or not _seat_human(_edit_seat)):
+		_edit(0)  # (the colour shown left the game: back to Red's choices)
+	elif _hero_row != null:
+		_edit(_edit_seat)  # (the headings follow whether two or more people now play)
 	_refresh_seats()
 	_refresh_scenario()
 
@@ -657,79 +679,140 @@ func _seat_human(i: int) -> bool:
 	return i == 0 or (i < a.size() and bool(a[i]))
 
 func _seat_faction(i: int) -> String:
-	var a: Array = _settings.get("seat_faction", [])
+	return _choice("faction", i)
+
+## One colour's town, hero or bonus: Red's are the plain settings, every other colour's sit in "seat_<key>" arrays.
+func _choice(key: String, i: int) -> String:
+	if i == 0:
+		return str(_settings.get(key, ""))
+	var a: Array = _settings.get("seat_" + key, [])
 	return str(a[i]) if i < a.size() else ""
 
+func _set_choice(key: String, i: int, v) -> void:
+	if i == 0:
+		_settings[key] = v
+		return
+	_set_seat_value("seat_" + key, i, v)
+
 ## Sets one seat's entry in a settings array (a fresh copy, so the saved defaults are not changed in place).
-func _set_seat(key: String, i: int, v) -> void:
+func _set_seat_value(key: String, i: int, v) -> void:
 	var a: Array = _settings.get(key, []).duplicate()
 	while a.size() < 4:
 		a.append(false if key == "seat_human" else "")
 	a[i] = v
 	_settings[key] = a
-	Audio.sfx("click", -6)
-	_refresh_options()
-	_refresh_preview()
 
-## One button per colour in play: Red is you; a click on another colour cycles Computer, then a person at this
-## screen (hot-seat) with a random town, then with each faction's town.
+func _players_in_play() -> int:
+	return int(_settings.get("opponents", 1)) + 1
+
+func _hotseat_setup() -> bool:
+	return range(_players_in_play()).filter(func(i): return _seat_human(i)).size() > 1
+
+## The heroes the other people at this screen have chosen (no two players lead the same hero, as in HoMM3).
+func _taken_heroes(seat: int) -> Array:
+	var out := []
+	for i in _players_in_play():
+		if i != seat and _seat_human(i):
+			out.append(_choice("hero", i))
+	return out
+
+func _free_hero(faction: String, seat: int) -> String:
+	var taken := _taken_heroes(seat)
+	for hid in GameData.HEROES:
+		if GameData.HEROES[hid]["faction"] == faction and not hid in taken:
+			return hid
+	return ""
+
+## Every person in play has a town, a hero of that town no one else leads, and a bonus (earlier colours keep theirs).
+func _fix_seats() -> void:
+	for i in _players_in_play():
+		if not _seat_human(i):
+			continue
+		var f := _choice("faction", i)
+		if not GameData.FACTIONS.has(f):
+			var used := range(i).filter(func(j): return _seat_human(j)).map(func(j): return _choice("faction", j))
+			f = GameData.FACTIONS.keys()[0]
+			for k in GameData.FACTIONS:  # (a new player starts on a town no one has taken yet)
+				if not k in used:
+					f = k
+					break
+			_set_choice("faction", i, f)
+		var hid := _choice("hero", i)
+		var earlier := range(i).filter(func(j): return _seat_human(j)).map(func(j): return _choice("hero", j))
+		if GameData.HEROES.get(hid, {}).get("faction", "") != f or hid in earlier:
+			_set_choice("hero", i, "")
+			_set_choice("hero", i, _free_hero(f, i))
+		if not GameData.START_BONUSES.has(_choice("bonus", i)):
+			_set_choice("bonus", i, "gold")
+
+## Shows the chosen colour's choices on the left: its town, its heroes (those another player leads are greyed), its bonus.
+func _edit(seat: int) -> void:
+	_edit_seat = seat
+	var hot := _hotseat_setup()
+	_choose_flag.visible = hot
+	_choose_flag.texture = UI.flag_icon(GameData.PLAYER_COLORS[seat])
+	var who := "%s Player" % GameData.PLAYER_COLOR_NAMES[seat]
+	_faction_head.text = ("%s: choose your faction" % who) if hot else "Choose your faction"
+	_hero_head.text = ("%s: choose your hero" % who) if hot else "Choose your hero"
+	_bonus_head.text = ("%s: starting bonus" % who) if hot else "Starting bonus"
+	_select_faction(_choice("faction", seat))
+	for k in _bonus_buttons:
+		_bonus_buttons[k].button_pressed = k == _choice("bonus", seat)
+
+## One button per colour in play, with its town or "Computer"; lit while the left side shows that colour's choices.
+## Red is always a person. A click on a computer's colour makes it a person at this screen (hot-seat) and shows
+## their town, hero and bonus on the left; a click on a person shows theirs; a second click hands it back to the
+## computer (the choices are kept should it come back).
 func _refresh_seats() -> void:
 	if _seats_box == null:
 		return
 	for c in _seats_box.get_children():
 		_seats_box.remove_child(c)
 		c.queue_free()
-	var n: int = int(_settings.get("opponents", 1)) + 1
-	for i in n:
+	for i in _players_in_play():
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(140, 54)
-		b.toggle_mode = true  # (lit for the people at this screen, as the other choices)
+		b.toggle_mode = true
 		_ink(b)
-		b.button_pressed = _seat_human(i)
+		b.button_pressed = i == _edit_seat and _seat_human(i)
 		b.icon = UI.flag_icon(GameData.PLAYER_COLORS[i])
-		b.add_theme_constant_override("icon_max_width", 30)
-		b.add_theme_font_size_override("font_size", 17)
+		b.add_theme_constant_override("icon_max_width", 24)
+		b.add_theme_constant_override("h_separation", 4)
+		b.add_theme_font_size_override("font_size", 16)
 		b.clip_text = true  # (four colours must fit the column)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		var f := _seat_faction(i)
-		if i == 0:
-			b.text = "You"
-			b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		elif _seat_human(i):
-			b.text = "Human
-%s" % (GameData.FACTIONS[f]["name"] if GameData.FACTIONS.has(f) else "Random")
-		else:
-			b.text = "Computer"
-		if i > 0:
-			var si := i
-			b.pressed.connect(func():
-				var steps: Array = [""] + GameData.FACTIONS.keys()  # (the town choices a person cycles through)
-				if not _seat_human(si):
-					_set_seat("seat_faction", si, "")
-					_set_seat("seat_human", si, true)
-				elif steps.find(_seat_faction(si)) == steps.size() - 1:
-					_set_seat("seat_human", si, false)
-				else:
-					_set_seat("seat_faction", si, steps[steps.find(_seat_faction(si)) + 1]))
-			var tip := "%s: click to choose who plays this colour.
-Computer, or a person at this screen (hot-seat: players take turns, the map hidden between them), with a random town or a chosen one." % GameData.PLAYER_COLOR_NAMES[i]
-			(func(): if is_instance_valid(b): HoverInfo.attach(b, func(): return tip)).call_deferred()  # (not mid-setup)
+		var f := _choice("faction", i)
+		b.text = "%s\n%s" % ["You" if i == 0 and not _hotseat_setup() else "Human", GameData.FACTIONS[f]["name"] if GameData.FACTIONS.has(f) else ""] if _seat_human(i) else "Computer"
+		var si := i
+		b.pressed.connect(func():
+			Audio.sfx("click", -6)
+			if not _seat_human(si):
+				_set_seat_value("seat_human", si, true)
+			elif si == _edit_seat and si > 0:
+				_set_seat_value("seat_human", si, false)
+			_fix_seats()
+			_refresh_preview()
+			_edit(si if _seat_human(si) else 0)
+			_refresh_options())
+		var tip := ("Red: you. Click to show your town, hero and bonus." if i == 0 else
+			("%s: a computer lord, or a person at this screen (hot-seat: players take turns, the map hidden between them).\n" +
+			"Click to make it a person and show their town, hero and bonus on the left; click again for the computer.") % GameData.PLAYER_COLOR_NAMES[i])
+		var wb: WeakRef = weakref(b)  # (the buttons are rebuilt on every click: one may be gone by then)
+		(func(): if wb.get_ref(): HoverInfo.attach(wb.get_ref(), func(): return tip)).call_deferred()  # (not mid-setup)
 		_seats_box.add_child(b)
 
 func _select_faction(f: String) -> void:
-	_settings["faction"] = f
+	_set_choice("faction", _edit_seat, f)
 	_refresh_preview()
 	for k in _faction_buttons:
 		_faction_buttons[k].button_pressed = k == f
 	for c in _hero_row.get_children():
 		c.queue_free()
-	var first := ""
+	var taken := _taken_heroes(_edit_seat)
 	for hid in GameData.HEROES:
 		var h: Dictionary = GameData.HEROES[hid]
 		if h["faction"] != f:
 			continue
-		if first == "":
-			first = hid
 		var b := Button.new()
 		b.toggle_mode = true
 		b.custom_minimum_size = Vector2(238, 104)
@@ -737,14 +820,19 @@ func _select_faction(f: String) -> void:
 		var nm: String = h["name"]
 		_card(b, Assets.hero_portrait(hid), 58, nm, h["class"], 21 if nm.length() <= 11 else 19, 19, false)  # (plain mixed case: small caps at this size were dim)
 		b.set_meta("hero", hid)
+		if hid in taken:  # (led by another player at this screen)
+			b.disabled = true
+			b.modulate = Color(1, 1, 1, 0.4)
 		b.pressed.connect(_select_hero.bind(hid))
 		_hero_row.add_child(b)
-	if _settings.get("hero", "") == "" or GameData.HEROES.get(_settings["hero"], {}).get("faction", "") != f:
-		_settings["hero"] = first
-	_select_hero(_settings["hero"])
+	var cur := _choice("hero", _edit_seat)
+	if GameData.HEROES.get(cur, {}).get("faction", "") != f or cur in taken:
+		cur = _free_hero(f, _edit_seat)
+	_select_hero(cur)
+	_refresh_seats()
 
 func _select_hero(hid: String) -> void:
-	_settings["hero"] = hid
+	_set_choice("hero", _edit_seat, hid)
 	for b in _hero_row.get_children():
 		if b.has_meta("hero"):
 			b.button_pressed = b.get_meta("hero") == hid

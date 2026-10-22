@@ -1,6 +1,7 @@
 extends Node
-## Hot-seat through the real scenes: the New Game seats make human players (names, resources, chosen town) while a
-## one-human game is generated exactly as before; each human's turn starts behind a dark cover naming the player,
+## Hot-seat through the real scenes: on New Game each person picks their own town, hero and bonus (no two lead the
+## same hero), the seats make human players (names, resources, those choices) while a one-human game is generated
+## exactly as before; each human's turn starts behind a dark cover naming the player,
 ## then shows that player's own map; the new week is announced to every human; a battle between two humans is
 ## played by both; a computer attacking an absent human calls them to the screen; a fallen human leaves while the
 ## others play on, and the last one standing wins.
@@ -23,6 +24,7 @@ class Watcher extends Node:
 	func _ready() -> void:
 		process_mode = Node.PROCESS_MODE_ALWAYS
 		_generation()
+		await _new_game_screen()
 		await _turns()
 		await _battle_between_humans()
 		await _defence_call()
@@ -55,6 +57,62 @@ class Watcher extends Node:
 		_ok(ps[1]["faction"] == "necropolis", "an extra human's chosen town")
 		_ok(ps[1]["resources"]["wood"] >= 20 and ps[1]["resources"]["gold"] >= 20000 and ps[1].has("start_hero"),
 			"an extra human starts with a human's resources (Normal) and a champion")
+		var s := _settings([true, true, true], ["", "necropolis", "haven", ""])
+		s["seat_hero"] = ["", "ilsa_grimveil", "sir_aldric", ""]  # (Green asks for Red's hero: Red keeps him)
+		s["seat_bonus"] = ["", "resource", "gold", ""]
+		var c := WorldGen.generate(s)
+		var blue_hero: Dictionary = c["heroes"][c["players"][1]["start_hero"]]
+		var green_hero: Dictionary = c["heroes"][c["players"][2]["start_hero"]]
+		_ok(blue_hero["id"] == "ilsa_grimveil", "an extra human leads the hero they chose (%s)" % blue_hero["id"])
+		_ok(green_hero["id"] != "sir_aldric" and GameData.HEROES[green_hero["id"]]["faction"] == "haven", "never the same hero as another player")
+		_ok(c["players"][1]["resources"]["wood"] == 30 and c["players"][2]["resources"]["gold"] == 22500, "and the bonus they chose")
+
+	## The New Game screen: Blue becomes a person and shows their own choices on the left; Red's hero is greyed for
+	## them; the game starts with each player's town, hero and bonus.
+	func _new_game_screen() -> void:
+		var keep: Dictionary = GameState.new_game_settings
+		get_tree().change_scene_to_file(GameState.SCENE_MENU)
+		await _wait_scene("main_menu.tscn")
+		var menu = get_tree().current_scene
+		menu._open_setup()
+		menu._settings["opponents"] = 2
+		menu._refresh_options()
+		await _frames(2)
+		_ok(menu._seats_box.get_child_count() == 3, "one button per colour in play")
+		var blue: Button = menu._seats_box.get_child(1)
+		_ok(blue.text == "Computer", "Blue starts as a computer")
+		blue.pressed.emit()
+		await _frames(2)
+		_ok(menu._seat_human(1) and menu._edit_seat == 1 and menu._faction_head.text.begins_with("Blue Player"),
+			"Blue becomes a person and the left side shows Blue's choices")
+		menu._select_faction("haven")
+		await _frames(2)
+		var greyed := []
+		for b in menu._hero_row.get_children():
+			if b.has_meta("hero") and not b.is_queued_for_deletion() and b.disabled:
+				greyed.append(b.get_meta("hero"))
+		_ok(greyed == [menu._settings["hero"]], "Red's hero is greyed for Blue (%s)" % [greyed])
+		menu._select_hero("lord_gareth")
+		menu._bonus_buttons["artifact"].pressed.emit()
+		_ok(menu._choice("hero", 1) == "lord_gareth" and menu._choice("bonus", 1) == "artifact" and menu._choice("bonus", 0) == "gold",
+			"Blue's hero and bonus are Blue's own")
+		menu._seats_box.get_child(0).pressed.emit()
+		await _frames(2)
+		_ok(menu._edit_seat == 0 and menu._choice("faction", 0) == "haven" and menu._faction_head.text.begins_with("Red Player"), "back to Red's choices")
+		menu._seats_box.get_child(1).pressed.emit()  # (shows Blue's choices)
+		await _frames(2)
+		_ok(menu._seat_human(1) and menu._edit_seat == 1, "a click on a person's colour shows their choices")
+		menu._seats_box.get_child(1).pressed.emit()  # (a second click: the computer)
+		await _frames(2)
+		_ok(not menu._seat_human(1) and menu._faction_head.text == "Choose your faction", "Blue back to a computer: one person again")
+		menu._seats_box.get_child(1).pressed.emit()
+		await _frames(2)
+		_ok(menu._seat_human(1) and menu._edit_seat == 1 and menu._choice("hero", 1) == "lord_gareth", "and Blue's choices were kept")
+		var w := WorldGen.generate(menu._settings)
+		var bh: Dictionary = w["heroes"][w["players"][1]["start_hero"]]
+		_ok(bh["id"] == "lord_gareth" and not w["players"][1]["is_ai"] and bh["artifacts"].size() + bh.get("backpack", []).size() > 0,
+			"the game starts with Blue's town, hero and bonus")
+		GameState.new_game_settings = keep
 
 	func _start(seats: Array) -> Dictionary:
 		var w := WorldGen.generate(_settings(seats))

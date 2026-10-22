@@ -37,7 +37,8 @@ var map_zoom := 0.8
 var battle_speed := 1.0  # battle: how fast it plays (combat options), applied as the engine's time scale
 var show_grid := false  # battle: the whole hex grid (G), or only where the active stack can go (the default)
 var new_game_settings := {"faction": "haven", "hero": "sir_aldric", "difficulty": 1, "map_size": 48, "seed": 0, "townless_limit": 0,
-	"seat_human": [true, false, false, false], "seat_faction": ["", "", "", ""]}
+	"seat_human": [true, false, false, false], "seat_faction": ["", "", "", ""], "seat_hero": ["", "", "", ""],
+	"seat_bonus": ["", "", "", ""]}
 var _uid := 1000
 
 var _fade_layer: CanvasLayer

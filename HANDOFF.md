@@ -16,11 +16,18 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Hot-seat multiplayer (2026-10-22), committed with this HANDOFF update:** the user agreed to the hot-seat milestone after the polish
-  batch. New Game has a **Players** row: one button per colour; Red is you, a click on another colour cycles
-  Computer → Human (random town) → Human (Haven) → Human (Necropolis) → Computer (`main_menu._refresh_seats`,
-  settings `seat_human` / `seat_faction`). Extra humans get a human's starting resources for the difficulty, a
-  random hero of their town and a random starting bonus (HoMM3's "Random" choice for each); names become "Red
+- **Each hot-seat player makes their own choices (2026-10-22), committed with this HANDOFF update:** the user asked that every player
+  pick their own town, hero and bonus, and to keep the "To Arms" call. The Players row is one button per colour
+  ("Human / <town>" or "Computer"): a click on a computer's colour makes it a person and the left side (town,
+  hero, bonus cards, headed "Blue Player: choose your faction" with the colour's pennant) then shows and edits
+  that colour's choices; a click on a person's colour shows theirs; a second click hands it back to the computer
+  (choices kept). A hero another player leads is greyed (no two players share one); a new person starts on a town
+  no earlier player took. Settings `seat_faction` / `seat_hero` / `seat_bonus` (Red's stay `faction` / `hero` /
+  `bonus`); `WorldGen` uses them (a missing or clashing hero falls back to a random free one, a missing bonus to
+  a random one). Screenshots `shots/session53/seats_c..f.png`, `start_a.png`; hotseat_test now 46 checks.
+- **Hot-seat multiplayer (2026-10-22), committed as `c4fe34f`:** the user agreed to the hot-seat milestone after the polish
+  batch. New Game has a **Players** row, one button per colour; Red is you (seat choices: see the entry above).
+  Extra humans get a human's starting resources for the difficulty; names become "Red
   Player", "Blue Player" (a one-human game is generated exactly as before, tested). The viewpoint is
   `GameState.human_player_index()`: the human whose turn it is, during computer turns the last human who moved
   (`world["viewer"]`). Each human turn in hot-seat starts behind a dark cover with "<Colour> Player's Turn" and a
@@ -830,8 +837,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
-- **Hot-seat (session53):** seats on New Game `main_menu._refresh_seats` / `_set_seat`; generation
-  `WorldGen.generate` (`humans`, `_player_name`, per-human `start_hero`, random bonus for extra humans); viewpoint
+- **Hot-seat (session53):** seats on New Game `main_menu._refresh_seats`, per-colour choices `_edit` /
+  `_choice` / `_set_choice` / `_fix_seats` / `_taken_heroes`; generation
+  `WorldGen.generate` (`humans`, `_player_name`, per-human `start_hero`, `seat_hero` / `seat_bonus`); viewpoint
   `GameState.human_player_index`, `hotseat()`, `hotseat_alive()`, `handed_over` / `was_handed`; turn flow
   `adventure._start_human_turn`, `_cover`, `_turn_banner` (`seen_by`), `_start_battle` (the defence call),
   `_check_game_over` + `_hotseat_defeats`; `AdvRules.eliminate`; battle result `battle._end_battle`; pennant

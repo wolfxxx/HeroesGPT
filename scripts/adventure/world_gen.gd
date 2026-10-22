@@ -76,9 +76,11 @@ func _generate(settings: Dictionary) -> Dictionary:
 	var opponents: int = clampi(int(settings.get("opponents", 1)), 1, 3)
 	var nplayers := opponents + 1
 	var difficulty: int = settings.get("difficulty", 1)
-	# hot-seat: which seats a person plays (Red always), and the town each extra human chose ("" = random)
+	# hot-seat: which seats a person plays (Red always), and the town, hero and bonus each extra human chose ("" = random)
 	var seat_human: Array = settings.get("seat_human", [])
 	var seat_faction: Array = settings.get("seat_faction", [])
+	var seat_hero: Array = settings.get("seat_hero", [])
+	var seat_bonus: Array = settings.get("seat_bonus", [])
 	var humans := []
 	for i in nplayers:
 		humans.append(i == 0 or (i < seat_human.size() and bool(seat_human[i])))
@@ -317,8 +319,8 @@ func _generate(settings: Dictionary) -> Dictionary:
 		player["explored"].resize(w * h)
 		player["explored"].fill(0)
 		world["players"].append(player)
-		var hid: String = settings.get("hero", "") if i == 0 else ""
-		if hid == "" or GameData.HEROES.get(hid, {}).get("faction", "") != factions[i]:
+		var hid: String = settings.get("hero", "") if i == 0 else (str(seat_hero[i]) if humans[i] and i < seat_hero.size() else "")
+		if hid == "" or GameData.HEROES.get(hid, {}).get("faction", "") != factions[i] or hid in used_heroes:
 			var cands := []
 			for k in GameData.HEROES:
 				if GameData.HEROES[k]["faction"] == factions[i] and not k in used_heroes:
@@ -345,9 +347,12 @@ func _generate(settings: Dictionary) -> Dictionary:
 	for t in town_list:
 		t["start_owner"] = t["owner"]
 	_start_bonus(world["players"][0], world["heroes"][world["start_hero"]], settings.get("bonus", ""))
-	for p in world["players"]:  # (other humans: a random bonus, HoMM3's default choice)
+	for p in world["players"]:  # (other humans: their own choice, else a random one as HoMM3's "Random")
 		if p["index"] > 0 and not p["is_ai"]:
-			_start_bonus(p, world["heroes"][p["start_hero"]], GameData.START_BONUSES.keys()[rng.randi() % GameData.START_BONUSES.size()])
+			var bonus: String = str(seat_bonus[p["index"]]) if p["index"] < seat_bonus.size() else ""
+			if not GameData.START_BONUSES.has(bonus):
+				bonus = GameData.START_BONUSES.keys()[rng.randi() % GameData.START_BONUSES.size()]
+			_start_bonus(p, world["heroes"][p["start_hero"]], bonus)
 	return world
 
 ## "You" when one person plays; in hot-seat each human is named by colour ("Blue Player").

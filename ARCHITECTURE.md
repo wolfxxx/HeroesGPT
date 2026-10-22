@@ -68,10 +68,12 @@ dialog (also after building a guild level or hiring, via `_learn_guild_spells`).
 icon lists. Test: `tools/announce_test.tscn` (real battle end -> adventure transfer; real visit -> town dialog).
 
 ## Hot-seat
-Seats: New Game settings `seat_human` / `seat_faction` (arrays of 4; Red is always human, "" = random town), edited
-by `main_menu._refresh_seats`. `WorldGen.generate` draws every computer-style faction from the rng first and then
+Seats: New Game settings `seat_human` / `seat_faction` / `seat_hero` / `seat_bonus` (arrays of 4; Red is always
+human and keeps the plain `faction` / `hero` / `bonus`; "" = random), edited by `main_menu._refresh_seats` and the
+left-side cards, which show the colour in `_edit_seat` (`_choice` / `_set_choice`; `_fix_seats` keeps every
+person's hero unique, greyed for the others). `WorldGen.generate` draws every computer-style faction from the rng first and then
 applies a chosen one, so a one-human game is unchanged; humans get the difficulty's human resources, a per-player
-`start_hero`, and (beyond Red) a random starting bonus. `player["is_ai"]` is the only switch the rules read.
+`start_hero` (their chosen hero unless another took it), and their chosen starting bonus (random if none). `player["is_ai"]` is the only switch the rules read.
 Viewpoint: `GameState.human_player_index()` = the current player if it is a living human, else `world["viewer"]`
 (set at each human turn start), else the first living human (all fallen: the last one, for the defeat). Everything
 that shows "your" kingdom (fog, HUD, town fallback, remote `state`) goes through it. `GameState.hotseat()` = two or
@@ -220,7 +222,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `adventure_camera_test` (33 movement/visibility/turn-camera checks),
   `war_machine_test` (purchases, factory persistence, AI, generated access and battle ammo),
   `necromancy_test` (46 checks of raising rules, slots, casualties and rewards on both sides),
-  `meet_test` (18 meeting-by-click and artifact hand-over checks), `announce_test` (10 captured-artifact and town-learning announcement checks), `hotseat_test` (33 hot-seat checks), `map_reach_report` (every object reachable on 36 maps),
+  `meet_test` (18 meeting-by-click and artifact hand-over checks), `announce_test` (10 captured-artifact and town-learning announcement checks), `hotseat_test` (46 hot-seat checks), `map_reach_report` (every object reachable on 36 maps),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
 - `tools/adventure_camera_test.tscn` — real adventure scene/camera assertions for visible and hidden movement,
@@ -311,7 +313,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/map_reach_report.tscn` — in the full suite: generates 36 maps (sizes 36/48/64) and counts objects/towns the
   first town cannot reach with the game's movement rule; must print `"maps_with_cut": 0` (exit code 1 otherwise).
   `-- --save=user://x.dat` checks a saved world; `-- --scenario=<id>` lists the tiles the access pass cleared.
-- `tools/hotseat_test.tscn` — in the full suite: seats and generation, the turn handover cover, Blue's own view,
+- `tools/hotseat_test.tscn` — in the full suite: seats and generation, each player's own town/hero/bonus on the
+  New Game screen (greyed heroes, back to the computer and again), the turn handover cover, Blue's own view,
   the new week for each human, save/load handover, a human-versus-human battle, the defence call, hot-seat defeats
   and the last player standing.
 - `tools/meet_test.tscn` — in the full suite: real clicks on a second own hero show the route, then walk over and open
