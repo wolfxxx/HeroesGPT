@@ -487,7 +487,8 @@ const DECOR_KINDS := {
 		["decor_boulders", 0.6], ["decor_thorns", 0.4], ["decor_menhir", 0.2], ["decor_pillar", 0.15]],
 	T_DIRT: [["rock_1", 0.6], ["rock_2", 0.6], ["rock_3", 0.6], ["decor_twigs", 1.0], ["decor_bones", 0.7], ["decor_thorns", 1.0],
 		["decor_dry_grass", 1.2], ["decor_tuft", 0.8], ["decor_stump", 0.8], ["decor_boulders", 0.7], ["decor_menhir", 0.3], ["decor_pillar", 0.2]],
-	T_SAND: [["rock_1", 0.5], ["rock_3", 0.5], ["decor_cactus", 1.2], ["decor_horn_skull", 0.6], ["decor_dry_grass", 1.6], ["decor_sandstone", 1.0],
+	# (no "decor_sandstone": its orange slab heap read as a resource pile to pick up; its weight went to the boulders)
+	T_SAND: [["rock_1", 1.0], ["rock_3", 1.0], ["decor_cactus", 1.2], ["decor_horn_skull", 0.6], ["decor_dry_grass", 1.6],
 		["decor_bones", 0.5]],
 	T_SNOW: [["rock_1", 0.4], ["rock_2", 0.4], ["decor_snow_rock", 1.2], ["decor_ice", 0.8], ["decor_snow_stump", 1.0], ["decor_frost_shrub", 1.2]],
 	T_SWAMP: [["bush_1", 0.6], ["bush_2", 0.6], ["decor_reeds", 2.0], ["decor_swamp_caps", 1.0], ["decor_mossy_log", 0.7], ["decor_swamp_shrub", 1.0],

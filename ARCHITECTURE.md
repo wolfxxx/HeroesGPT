@@ -67,6 +67,11 @@ Town visits: `adventure._enter_own_town(hero, town)` -> `{hero, learned, mana}` 
 dialog (also after building a guild level or hiring, via `_learn_guild_spells`). `Modal.add_icon_flow` wraps long
 icon lists. Test: `tools/announce_test.tscn` (real battle end -> adventure transfer; real visit -> town dialog).
 
+## Map right-click and depth
+Right button down on the map: `adventure._right_click` shows `_tile_info(t, true)` (the hover panel; heroes add
+`_army_row`, own towns their garrison) via `HoverInfo.show_for(self, …, 0.0)`; release hides it (`_rclick_info`).
+`MapView.hero_foot` is 1px below `foot_of` so heroes win y-sort ties with buildings on their tile.
+
 ## Meeting your own hero
 `adventure.gd._click`: with a hero selected, a click on another of your heroes plans the `meet` route (status line
 "Meet <name> (trade troops)"); a second click executes it, and `_interact_with` opens `AdventureHUD.open_exchange`.
@@ -293,7 +298,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - Remote play (`scripts/core/shot.gd`, `--remote=<dir>`): runs the real game from the main menu and executes
   command files written to `<dir>/cmd.txt` with real input events, then writes `<dir>/done.txt`. Commands: `click`,
   `rclick x y [hold] [shot]`, `dclick`, `move`, `park`, `key` (`ctrl+s` style), `keydown/keyup`, `wait`, `shot`,
-  `state` (JSON of the human kingdom), `ctile x y [right]` (click a map tile, scrolling to it), `look [r]` (status
+  `state` (JSON of the human kingdom), `ctile x y [right]` (click a map tile, scrolling to it), `rtile x y seconds [file.png]` (hold right on a tile), `look [r]` (status
   text, route kind and cost of nearby explored objects), `probe x y` (what a click there resolves to), `quit`.
   Coordinates are window pixels (1600x900). Menus and Ctrl+S use `GameState.save_path` = `user://playtest_save.dat`,
   never the player's save; audio is muted; edge scrolling is off. Restore `project.godot` after the windowed run.

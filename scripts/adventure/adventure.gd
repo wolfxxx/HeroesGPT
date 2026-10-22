@@ -23,6 +23,7 @@ var _drag_synced := false              # a motion event moved the map this frame
 var _left_down := false      # left button held on the map: a click on release, or a drag once it moves
 var _left_tile := Vector2i(-1, -1)
 var _info_tile := Vector2i(-2, -2)
+var _rclick_info := false      # the right button is held: its information panel stays up until release
 var _pending_click := Vector2i(-1, -1)  # clicked while the hero was still moving: planned when it stops
 const DRAG_START := 10.0
 const EDGE := 14.0           # edge-scroll band (screen pixels), also just outside the window
@@ -342,8 +343,13 @@ func _unhandled_input(e: InputEvent) -> void:
 						_pending_click = _left_tile
 					else:
 						_click(_left_tile, false)
-		elif e.pressed and e.button_index == MOUSE_BUTTON_RIGHT:
-			_right_click(_pick(view.tile_at(_event_world(e)), _event_world(e)))
+		elif e.button_index == MOUSE_BUTTON_RIGHT:
+			if e.pressed:
+				_right_click(_pick(view.tile_at(_event_world(e)), _event_world(e)))
+			elif _rclick_info:  # (the classic right-click: the information stays up while the button is held)
+				_rclick_info = false
+				_info_tile = Vector2i(-2, -2)
+				HoverInfo.hide_for(self)
 	elif e is InputEventKey and e.pressed and not e.echo:
 		if busy:
 			return
@@ -377,6 +383,23 @@ func _unhandled_input(e: InputEvent) -> void:
 				if e.ctrl_pressed:
 					GameState.save_game()
 					hud.toast("Game saved")
+
+## A row of an army's portraits: exact counts for your own troops, the classic count words for anyone else's.
+func _army_row(v: VBoxContainer, army: Array, exact: bool) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	for s in army:
+		if s == null:
+			continue
+		var c := VBoxContainer.new()
+		c.add_theme_constant_override("separation", 0)
+		c.add_child(UI.icon(Assets.creature_portrait(s["id"]), Vector2(48, 48)))
+		var l := UI.label(str(s["count"]) if exact else UI.count_word(s["count"]), 15)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.custom_minimum_size.x = 48
+		c.add_child(l)
+		row.add_child(c)
+	v.add_child(row)
 
 ## Creature, hero and treasure sprites stand above their tile: a point on a sprite means that unit (front-most
 ## first), otherwise the tile itself, or the unit below when the tile is empty.
@@ -455,23 +478,18 @@ func _make_plan(t: Vector2i) -> void:
 	view.set_path(p["path"], p["reach"], p["kind"])
 	hero["dest"] = t
 
+## As the classic map: holding the right button shows what is there at once (the hover panel, with a hero's army or
+## an own town's garrison added), until the button is released.
 func _right_click(t: Vector2i) -> void:
-	if not rules.inside(t) or not rules.is_explored(human_player(), t):
+	var info = _tile_info(t, true)
+	if info == null:
 		return
-	var o := rules.object_covering(t)
-	if not o.is_empty():
-		if o["type"] == "monster":
-			var c: Dictionary = GameData.CREATURES[o["creature"]]
-			hud.toast("%s %s" % [UI.count_word(o["count"]), c["plural"]])
-		else:
-			hud.toast(_describe_tile(t))
-		return
-	var hh := rules.hero_at(t)
-	if not hh.is_empty():
-		hud.toast("%s (Level %d %s), %s" % [hh["name"], hh["level"], hh["class"], world["players"][hh["owner"]]["name"]])
+	_rclick_info = true
+	_info_tile = t
+	HoverInfo.show_for(self, info, 0.0, 1, -1.0, Rect2(), Rect2(0, 0, AdventureHUD.PANEL_X - 6, 1036))
 
 ## Hover panel for a map tile: what the hero, town or object there is and what visiting it does (null: nothing).
-func _tile_info(t: Vector2i):
+func _tile_info(t: Vector2i, detailed := false):
 	if not rules.inside(t) or not rules.is_explored(human_player(), t):
 		return null
 	var hh := rules.hero_at(t)
@@ -479,12 +497,20 @@ func _tile_info(t: Vector2i):
 		var v := HoverInfo.box(hh["name"])
 		HoverInfo.line(v, "Level %d %s" % [hh["level"], hh["class"]])
 		HoverInfo.line(v, world["players"][hh["owner"]]["name"], Color(0.8, 0.75, 0.65))
+		if detailed:  # (an own hero's exact numbers; another's army as the classic shows it, in words)
+			_army_row(v, hh["army"], hh["owner"] == _human())
 		return v
 	var town := rules.town_covering(t)
 	if not town.is_empty():
 		var v := HoverInfo.box(town["name"])
 		HoverInfo.line(v, "%s town" % GameData.FACTIONS[town["faction"]]["name"])
 		HoverInfo.line(v, "Neutral" if town["owner"] < 0 else world["players"][town["owner"]]["name"], Color(0.8, 0.75, 0.65))
+		if detailed and town["owner"] == _human():
+			if GameState.army_is_empty(town["garrison"]):
+				HoverInfo.line(v, "No garrison.", Color(0.8, 0.75, 0.65), 18)
+			else:
+				HoverInfo.line(v, "Garrison:", UI.GOLD, 18)
+				_army_row(v, town["garrison"], true)
 		return v
 	var o := rules.object_covering(t)
 	var me: int = human_player()["index"]

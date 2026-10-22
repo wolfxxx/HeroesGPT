@@ -479,11 +479,13 @@ func foot_of(tile: Vector2i) -> Vector2:
 	return Vector2((tile.x + 0.5) * TILE, (tile.y + 1.0) * TILE - 6)
 
 ## Where a hero stands on a tile: at a town's gate it steps out onto the road, in front of the wall (not into it).
+## One pixel below the tile's foot line: a hero in a mine's or windmill's doorway sorts in front of that building
+## even after the building node is rebuilt (a claimed mine's flag) and added after the hero at the same depth.
 func hero_foot(tile: Vector2i) -> Vector2:
 	for t in world["towns"].values():
 		if t["pos"] == tile:
 			return foot_of(tile) + Vector2(0, 0.42 * TILE)
-	return foot_of(tile)
+	return foot_of(tile) + Vector2(0, 1)
 
 func tile_center(tile: Vector2i) -> Vector2:
 	return (Vector2(tile) + Vector2(0.5, 0.5)) * TILE

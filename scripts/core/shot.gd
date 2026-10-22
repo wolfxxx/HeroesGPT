@@ -33,7 +33,7 @@ func _ready() -> void:
 ## the first line's id. Coordinates are WINDOW pixels (the 1600x900 screenshots), not the 1920x1080 design space.
 ##   id N | click x y | rclick x y (held for `hold` s, default 0.8) | dclick x y | move x y | park
 ##   key Name (e.g. Enter, Escape, ctrl+s) | keydown Name | keyup Name | wait seconds
-##   shot file.png (inside <dir>) | state file.json (scene, day, the human side's kingdom) | quit
+##   rtile tx ty seconds [file.png] (hold right on a map tile) | shot file.png (inside <dir>) | state file.json (scene, day, the human side's kingdom) | quit
 ## Menus and Ctrl+S save to user://playtest_save.dat, never the player's own save. Audio is muted.
 func _remote() -> void:
 	var dir: String = args["remote"]
@@ -77,6 +77,7 @@ func _remote() -> void:
 				"state": _dump(dir.path_join(w[1]))
 				"probe": log_lines.append(_probe(p))
 				"ctile": await _click_tile(Vector2i(int(w[1]), int(w[2])), w.size() > 3 and w[3] == "right")
+				"rtile": await _hold_tile(Vector2i(int(w[1]), int(w[2])), float(w[3]) if w.size() > 3 else 0.8, dir, w)
 				"look": log_lines.append(_look(int(w[1]) if w.size() > 1 else 8))
 				"quit": get_tree().quit()
 				_: log_lines.append("unknown command: " + raw)
@@ -184,6 +185,22 @@ func _click_tile(t: Vector2i, right: bool) -> void:
 		canvas = get_viewport().get_canvas_transform() * adv.view.tile_center(t)
 	var win: Vector2 = get_viewport().get_final_transform() * canvas
 	_press(win, MOUSE_BUTTON_RIGHT if right else MOUSE_BUTTON_LEFT)
+
+## Holds the right button on a map tile (scrolling there first): rtile x y seconds [file.png shot during the hold].
+func _hold_tile(t: Vector2i, secs: float, dir: String, w: PackedStringArray) -> void:
+	var adv := get_tree().current_scene
+	if adv == null or not "view" in adv:
+		return
+	var canvas: Vector2 = get_viewport().get_canvas_transform() * adv.view.tile_center(t)
+	if canvas.x < 40 or canvas.y < 40 or canvas.x > 1500 or canvas.y > 1000:
+		adv.center_on(t, true)
+		await get_tree().create_timer(0.3).timeout
+		canvas = get_viewport().get_canvas_transform() * adv.view.tile_center(t)
+	var win: Vector2 = get_viewport().get_final_transform() * canvas
+	var ww := PackedStringArray(["rtile", str(win.x), str(win.y), str(secs)])
+	if w.size() > 4:
+		ww.append(w[4])
+	await _hold(win, MOUSE_BUTTON_RIGHT, secs, dir, ww)
 
 ## The status-bar description of every explored object within r tiles of the selected hero (what hovering shows).
 func _look(r: int) -> String:

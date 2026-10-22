@@ -16,6 +16,16 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Playtest polish (2026-10-22), uncommitted:** the user approved fixing the remaining playtest findings.
+  (1) Hero hidden behind a building: a claimed mine/visited windmill is rebuilt (`MapView.refresh_object`) and added
+  after the hero at the same y-sort depth; `MapView.hero_foot` now sits 1px lower, so a hero in a doorway always
+  draws in front. Verified by claiming the Ore Pit in the real game (`shots/session52/mine_after.png`).
+  (2) Sand decoration no longer uses `decor_sandstone` (its orange slab heap read as a resource pile); its weight went
+  to `rock_1`/`rock_3`. New maps only: saves keep their stored decor.
+  (3) Right-click on the map is the classic held popup: the hover panel shows at once while the button is held and
+  closes on release (was a one-line toast). Heroes also show their army (own: exact counts, others: count words),
+  own towns their garrison. Verified with held right clicks (`rc_monster.png`, `rc_hero.png`, `rc_town.png`,
+  `rc_released.png`). Remote harness gained `rtile x y seconds [shot]`. Full suite passed (`tests6.log`).
 - **Announcements (2026-10-22), committed and pushed at the user's request:** after playing, the user asked for captured artifacts and town learning
   to be announced. (1) The battle result now says "<winner> captures <loser>'s artifacts:" with icons and names of
   every worn and carried artifact the defeated hero had (not when it retreated or surrendered: it keeps them);
@@ -655,12 +665,9 @@ Ranked by impact. Evidence (screenshots `s###.png`, logs) is in ignored `shots/p
    and no hero; the AI's heroes fought one at a time and never combined. This matches the planned §8 step 1
    (defense versus conquest, case 427/0) and suggests checking garrison retention when the main hero leaves.
 3. **FIXED (session52, user-approved): meeting your own hero by click, with troop and artifact trading** (see §2).
-4. **Hero drawn behind a building after a visit.** After walking into a mine/windmill entrance the hero sprite is
-   hidden behind the building (only the flag shows) until the scene is rebuilt (reload fixes it).
-5. **Decorative red rocks look like a resource pile.** A sand-terrain red-rock decor sprite reads as Sulfur/Crystal;
-   walking onto it does nothing.
-6. **Right-click on the map shows only a one-line toast** ("A pack of Archers"), not HoMM3's held info popup. The
-   hover panel carries the detail, so this is minor.
+4. **FIXED (session52): hero drawn behind a building after a visit** (see §2).
+5. **FIXED (session52): sand decor that looked like a resource pile** (removed from new maps).
+6. **FIXED (session52): right-click is the classic held info popup** (with armies and own garrisons).
 7. **Unconfirmed:** a rehired Lord Gareth (killed, then hired again) appeared in the save with the Oaken Buckler his
    earlier self had found, and it was gone after his next battle. A headless repro of kill + rehire gave a clean
    hero, so the path is unknown.
