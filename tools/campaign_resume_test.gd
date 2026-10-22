@@ -1,8 +1,9 @@
 extends Node
 ## Paired diagnostic continuations of unfinished session50 worlds, not a fresh strength benchmark.
 ## Snapshots lack RNG state: both variants restart with the same explicit seed/UID, not the original stream.
+## --before=res://tools/ai/adventure_ai_session51.gd selects the "before" policy (default: frozen f69ad3a, session49);
+## the other seats keep the worlds' original 4f126ec opponent either way.
 const Driver = preload("res://tools/ai/campaign_driver.gd")
-const Before = preload("res://tools/ai/adventure_ai_session49.gd")
 const Opponent = preload("res://tools/ai/adventure_ai_checkpoint.gd")
 
 func _ready() -> void:
@@ -13,11 +14,15 @@ func _run() -> void:
 	var days := 28
 	var only_case := ""
 	var trace_path := ""
+	var before_path := "res://tools/ai/adventure_ai_session49.gd"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--dir="): directory = arg.substr(6)
 		if arg.begins_with("--days="): days = int(arg.substr(7))
 		if arg.begins_with("--case="): only_case = arg.substr(7)
 		if arg.begins_with("--trace="): trace_path = arg.substr(8)
+		if arg.begins_with("--before="): before_path = arg.substr(9)
+	var Before = load(before_path)
+	print("CAMPAIGN RESUME: before policy ", before_path)
 	var names := DirAccess.get_files_at(directory)
 	names.sort()
 	var driver := Driver.new()

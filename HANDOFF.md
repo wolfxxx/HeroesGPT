@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session52 AI round (2026-10-22), committed and pushed at the user's request:** §8 steps 1 and 4 done; steps 2–3 partly (see
+  **`docs/AI_COORDINATION.md` "Session52"**). Frozen baseline `tools/ai/adventure_ai_session51.gd` (`555fedc`,
+  control 0.00 ± 0.00); resume tool `--before=`. Kept one change, `AdvAI._leave_rear_guard` (a hero leaving a town an
+  enemy can reach next turn leaves enough troops to hold it when that costs at most 25% of its army). Rejected after
+  measurement: a danger filter (heroes avoiding stronger enemy reach) and leader-only garrison collection.
+  **Final validation on reserved maps: two-player 23/25/0, -4.17 ± 14.64; four-player 7/24/1, -2.42 ± 4.83: no
+  demonstrated strength change.** Replays: 427/0 and 425/0 keep one more town, others unchanged. 79 adventure AI
+  checks; full suite passed (`shots/session52/tests3.log`). Open question for the user: HoMM3 eliminates a player
+  after 7 days without a town; this game does not (townless heroes survive indefinitely), which prolongs games.
 - **Session52 checkpoint (2026-10-22), this commit (pushed at the user's request):** the user approved fixing playtest findings 1 and 3 (map access,
   meeting by click). AI work (§8 steps 1–4) is next and not started.
   - **Map access.** `WorldGen._reachable` now uses the game's movement rule (a diagonal needs a free orthogonal
@@ -604,6 +613,12 @@ are explicitly explained, current regressions and the full suite pass, fresh-map
 and handoff/architecture documentation identifies the final behavior and limitations. A statistically unclear
 result must not be described as stronger AI. No HoMM3 rule changes are part of this plan; flag and ask before
 any deviation. Update docs with implementation; commit/push only on the user's instruction.
+
+**Session52 progress on this plan:** steps 1 and 4 done with one kept fix and no measured strength change (see
+§2). Remaining: step 2 (incompatible full armies and couriers; leader-only garrisons was tried and rejected),
+step 3 for the cases still unresolved, step 5 for Necropolis and a human playtest. Two-player size-36 games are
+early rushes; judge long-game changes mainly on four-player/larger maps. Next map IDs to reserve: 1700+ (1300–1323,
+1400–1407 validation and 1500–1523, 1600–1607 development were used in session52).
 
 **Following milestone:** hot-seat multiplayer (human/computer selection, private turn handoff, human-versus-human
 battles, saving and turn ownership). Fog-information policy, map-spell planning, difficulty settings, remaining

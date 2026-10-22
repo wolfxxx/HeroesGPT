@@ -91,3 +91,42 @@ town exchanges and townless surviving heroes. Rally predictions still use approx
 attack thresholds; actual defense/guard checks may prevent an immediate assault. Human competitive balance and
 larger samples remain untested. Before further policy tuning, use these diagnostics for development and reserve
 new map IDs for the next validation set.
+
+## Session52: rear guard, and two rejected policies
+
+Baseline: `tools/ai/adventure_ai_session51.gd` freezes `555fedc` (live `adv_ai.gd` was byte-identical to that commit;
+every function overridden, `BUILD_ORDER` renamed `SESSION51_BUILD_ORDER`). Same-policy control on maps 900–903:
+exactly 0.00 ± 0.00. `tools/campaign_resume_test.tscn` gained `--before=<policy>` (default still `f69ad3a`).
+
+**Recorded case 427/0** (trace `shots/session52/r427.jsonl`): two armies of about 600k strength never fight (each
+needs a 1.3–1.4x margin). Meanwhile 70k heroes wander into the enemy army's reach and die (day 174), and every
+hero passing a town takes its whole garrison, so 3k–20k heroes trade empty towns. The candidate lost its last town
+on day 196 to a 3k hero after its 640k army left it empty.
+
+| Change | Dev 2p, 24 maps (1500–1523) | Dev 4p, 8 maps (1600–1607) | Kept |
+|---|---|---|---|
+| Danger filter (no errand ending where a stronger enemy can strike next turn; own towns as refuges) + rear guard | -27.28 ± 24.84 (17/30/1) | -6.56 ± 15.48 (6/25/1) | no |
+| Danger filter only | -23.56 ± 24.22 (18/29/1) | — | no |
+| Rear guard only | -4.83 ± 9.82 (21/23/4) | -4.17 ± 8.33 (7/25/0) | **yes** |
+| Rear guard + only the leader collects garrisons | -22.11 ± 16.77 (15/26/7) | -7.12 ± 13.38 (5/25/2) | no |
+
+The danger filter first made one main army stand still for 28 days (441/0); a relative version and a town-capture
+exemption reduced but did not remove the loss on two-player maps, where early empty-town captures decide games.
+Leader-only garrison collection left secondary heroes too weak to contest towns. Both were removed.
+
+**Kept: `AdvAI._leave_rear_guard`.** A hero leaving its own town that an enemy army can reach next turn leaves enough
+troops (cheapest units first) to hold the gate against that army, if that costs at most 25% of its strength.
+Replays of the nine session50 cases (28 days, `shots/session52/resume3.log`): 427/0 ends with one town instead of
+none, 425/0 with three instead of two, the other seven identical. Two focused checks plus two edge checks in
+`tools/adventure_ai_test.tscn` (79 total).
+
+**Final validation, reserved maps, 84 days, no tuning afterwards:**
+24 two-player size-36 maps (1300–1323, 48 games): **23 wins / 25 losses / 0 unresolved, -4.17 ± 14.64 (2 SE)**,
+1028 battles. Eight four-player size-48 maps (1400–1407, 32 games): **7 / 24 / 1, -2.42 ± 4.83**, 1733 battles.
+Both intervals include zero: no demonstrated strength change either way. The rear guard is a fix for a confirmed
+failure (empty towns taken by trivial raiders), not evidence of a stronger AI.
+
+Benchmark note: two-player size-36 games are short (median about 16–18 days with the old generator too) and turn on
+day-1 to day-5 captures of empty towns, so policies that trade tempo for safety lose there. Results on larger maps
+with more players are a better guide to long-game behaviour; neither showed a gain this round.
+Logs: ignored `shots/session52/{control51,dev1,dev2,final36,final48,resume1,resume2,resume3}.log`.

@@ -53,6 +53,7 @@ func run_turn(adv, player: Dictionary) -> String:
 				if not blocker.is_empty():
 					await adv.move_hero(blocker, clearance["plan"], false)
 				continue # replan against actual occupancy; the blocked army has spent nothing
+			_leave_rear_guard(hero, choice)
 			var before: int = hero["movement"]
 			var army_before := GameState.army_strength(hero["army"])
 			var xp_before: int = hero["xp"]
@@ -395,6 +396,35 @@ func choose(hero: Dictionary) -> Dictionary:
 	else:
 		hero["ai_goal"] = {"pos": best["path"].back(), "day": world["day"]}
 	return best
+
+## Leaving a town that an enemy army can reach next turn: leave behind enough troops to hold it against that army,
+## when that costs at most a quarter of the hero's strength (an empty gate is otherwise taken by any passing raider).
+func _leave_rear_guard(hero: Dictionary, choice: Dictionary) -> void:
+	var town := {}
+	for t in world["towns"].values():
+		if t["pos"] == hero["pos"] and t["owner"] == hero["owner"]:
+			town = t
+	if town.is_empty() or choice.get("path", []).size() < 2: return
+	var threat := _town_threat(town)
+	var need := threat * 1.4 / 1.25 - GameState.army_strength(town["garrison"])
+	if threat <= 0.0 or need <= 0.0 or need > GameState.army_strength(hero["army"]) * 0.25: return
+	# cheapest units first, whole units only; the hero keeps at least one creature
+	var order := []
+	for i in hero["army"].size():
+		if hero["army"][i]: order.append(i)
+	order.sort_custom(func(a, b): return GameData.CREATURES[hero["army"][a]["id"]]["ai_value"] < GameData.CREATURES[hero["army"][b]["id"]]["ai_value"])
+	var left := 0
+	for i in order: left += hero["army"][i]["count"]
+	for i in order:
+		if need <= 0.0: break
+		var s: Dictionary = hero["army"][i]
+		var unit: int = GameData.CREATURES[s["id"]]["ai_value"]
+		var n: int = mini(mini(s["count"], ceili(need / unit)), left - 1)
+		if n <= 0 or not GameState.add_to_army(town["garrison"], s["id"], n): continue
+		s["count"] -= n
+		left -= n
+		need -= n * unit
+		if s["count"] == 0: hero["army"][i] = null
 
 ## A blocked leader can ask an idle ally to make a legal one-step move off its route.
 ## The relaxed path is diagnostic only: run_turn moves the blocker, then replans normally.

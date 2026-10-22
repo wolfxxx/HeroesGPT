@@ -20,6 +20,7 @@ func _ready() -> void:
 	await _rally_turn()
 	await _passage_turn()
 	_occupied_site()
+	_rear_guard()
 	GameState.world = {}
 	print("ADVENTURE AI TEST: %d checks, failures: %d" % [checks, fails])
 	get_tree().quit(1 if fails else 0)
@@ -434,3 +435,25 @@ func _meeting_turn() -> void:
 	_ok(not world["objects"].has(gold["uid"]) and helper["pos"] == gold["pos"], "free adjacent exchange does not prematurely end courier movement")
 	driver.queue_free()
 	await get_tree().process_frame
+
+## Leaving a town an enemy can reach next turn, a hero leaves enough troops to hold it when that is cheap, and none
+## when holding it would cost more than a quarter of its army.
+func _rear_guard() -> void:
+	_reset()
+	var town := _town(0, Vector2i(8, 8))
+	var hero := _hero(0, town["pos"], 200)
+	var raider := _hero(1, Vector2i(13, 8), 20)
+	var plan := rules.plan(hero, Vector2i(2, 8))
+	var before := GameState.army_strength(hero["army"])
+	ai._leave_rear_guard(hero, plan)
+	var left := GameState.army_strength(town["garrison"])
+	_ok(left * 1.25 >= ai._town_threat(town) * 1.4, "the rear guard holds the gate against the raider (%d left)" % left)
+	_ok(before - GameState.army_strength(hero["army"]) == left and left <= before * 0.25, "troops are moved, not lost, and cost at most a quarter")
+	_reset()
+	var town2 := _town(0, Vector2i(8, 8))
+	var hero2 := _hero(0, town2["pos"], 200)
+	_hero(1, Vector2i(13, 8), 150)
+	ai._leave_rear_guard(hero2, rules.plan(hero2, Vector2i(2, 8)))
+	_ok(GameState.army_is_empty(town2["garrison"]) and hero2["army"][0]["count"] == 200, "no rear guard when holding would cost too much")
+	ai._leave_rear_guard(hero2, {"path": []})
+	_ok(hero2["army"][0]["count"] == 200, "staying put leaves nothing behind")

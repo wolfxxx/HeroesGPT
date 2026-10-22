@@ -92,6 +92,11 @@ Assigned defenders stay in place; each donor retains one creature, and execution
 The rally is local to `run_turn` and is recomputed after a battle; no new save fields. The safety estimate still
 does not model every spell/morale effect or guarantee a successful assault.
 
+`_leave_rear_guard` runs in `run_turn` before a hero moves off its own town: if `_town_threat` finds an enemy army that
+can reach the gate next turn, the cheapest units needed to hold it (garrison x1.25 >= threat x1.4) stay behind,
+whole units only, at most 25% of the hero's strength, at least one creature kept. Frozen `555fedc` policy:
+`tools/ai/adventure_ai_session51.gd`; `campaign_resume_test --before=` selects the comparison policy.
+
 `_plan_with_passage` helps only the strongest army when its normal route is blocked. It temporarily relaxes
 eligible friendly occupancy in the AStar grid, restores the grid, then returns a transient `yield` plan for a
 blocking hero's legal one-step move off that route. Town gates, occupied/guarded tiles and assigned defenders
