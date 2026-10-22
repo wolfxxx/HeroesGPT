@@ -50,6 +50,15 @@ object and town to the first town: it A*s through trees/rocks (`forest` tiles, w
 walls solid), clears those tiles and their decor sprites, and removes an object only when no such path exists
 (printed as "WorldGen: N unreachable object(s) removed"). `WorldGen.last_cleared` lists the opened tiles.
 
+## Optional seven-day townless rule
+`world["townless_limit"]` (New Game "Without a town": 0 = play on, 7 = classic; `WorldGen` copies the setting, missing
+in old saves = 0). `AdvRules.capture_town` starts the loser's `townless_days` at limit+1 when it loses its last town
+and clears the new owner's; `tick_townless` (first thing in `new_day`) counts each townless living player down and,
+at 0, removes its heroes and marks `defeated_townless` before `check_eliminations`. `townless_days_left(player)` is
+-1 when not counting. `adventure._turn_banner` warns the human; `_check_game_over` has its own defeat text;
+`GameData.loss_text(loss, townless)` adds it to the Defeat line. `AdvAI.choose` lowers a townless player's town-assault
+threshold to 1.1x and raises its value. `adventure_tournament --townless=7` enables it in benchmarks.
+
 ## Meeting your own hero
 `adventure.gd._click`: with a hero selected, a click on another of your heroes plans the `meet` route (status line
 "Meet <name> (trade troops)"); a second click executes it, and `_interact_with` opens `AdventureHUD.open_exchange`.

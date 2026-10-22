@@ -288,7 +288,16 @@ func _build_setup() -> void:
 		bh.add_child(b)
 		_bonus_buttons[k] = b
 	orow.add_child(bv)
-	orow.add_child(_option_group("Difficulty", DIFFICULTIES, "difficulty", [0, 1, 2], 100))
+	var dv := VBoxContainer.new()
+	dv.add_theme_constant_override("separation", 6)
+	dv.add_child(_option_group("Difficulty", DIFFICULTIES, "difficulty", [0, 1, 2], 100))
+	var tg := _option_group("Without a town", ["Play on", "7 days"], "townless_limit", [0, 7], 150)
+	var ttip := "Without a town
+Play on: heroes carry on without a town for as long as they last.
+7 days (the classic rule): a player who loses every town has seven days to capture one, or is defeated."
+	(func(): HoverInfo.attach(tg, func(): return ttip)).call_deferred()  # (the hover layer cannot be added mid-setup)
+	dv.add_child(tg)
+	orow.add_child(dv)
 
 	# right: the scenarios (size, rivals, victory and loss at a glance), the random map's options, the buttons
 	var rv := VBoxContainer.new()
@@ -533,7 +542,7 @@ func _refresh_scenario() -> void:
 	var ms: int = int(_settings.get("map_size", 48))
 	_scen_info.text = "Map: %s (%d x %d)     Players: you and %d %s" % [size_name, ms, ms, n, "rival" if n == 1 else "rivals"]
 	for pair in [[_vic_row, "Victory", sc["victory"], GameData.victory_text(sc["victory"])],
-			[_loss_row, "Defeat", sc["loss"], GameData.loss_text(sc["loss"])]]:
+			[_loss_row, "Defeat", sc["loss"], GameData.loss_text(sc["loss"], int(_settings.get("townless_limit", 0)))]]:
 		var row: HBoxContainer = pair[0]
 		for c in row.get_children():
 			row.remove_child(c)

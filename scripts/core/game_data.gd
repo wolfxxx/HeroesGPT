@@ -398,11 +398,12 @@ static func victory_text(v: Dictionary) -> String:
 		"gold": return "Amass %d gold" % int(v.get("amount", 0))
 	return "Defeat all enemies"
 
-static func loss_text(l: Dictionary) -> String:
+static func loss_text(l: Dictionary, townless := 0) -> String:
+	var also := ", or %d days without a town" % townless if townless > 0 else ""
 	match l.get("type", "standard"):
-		"hero": return "Lose your starting hero"
-		"days": return "Time runs out (month %d ends)" % (int(l.get("days", 112)) / 28)
-	return "Lose all your towns and heroes"
+		"hero": return "Lose your starting hero" + also
+		"days": return "Time runs out (month %d ends)" % (int(l.get("days", 112)) / 28) + also
+	return ("Lose all your towns and heroes" + also) if townless <= 0 else "Lose all your heroes, or %d days without a town" % townless
 
 ## Starting bonus for the player's first hero (as the classics: gold, an artifact or resources).
 const START_BONUSES := {"gold": ["Gold", "+2500 gold"], "artifact": ["Artifact", "A random artifact"],

@@ -82,6 +82,7 @@ func _generate(settings: Dictionary) -> Dictionary:
 		"players": [], "heroes": {}, "towns": {}, "objects": {},
 		"terrain": terrain, "blocked": blocked, "decor": decor, "difficulty": difficulty,
 		"tavern": [], "selected_hero": -1, "game_over": false,
+		"townless_limit": int(settings.get("townless_limit", 0)),  # (optional classic rule, see AdvRules.tick_townless)
 	}
 
 	# ---- players & start positions -------------------------------------------------------

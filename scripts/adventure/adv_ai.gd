@@ -325,6 +325,8 @@ func choose(hero: Dictionary) -> Dictionary:
 		var v := _object_value(hero, player, o, me)
 		if v > 0:
 			cands.append([o["pos"], v])
+	# Under the optional seven-day rule a townless player must take a town or lose: accept a riskier assault.
+	var townless := rules.townless_days_left(player) > 0
 	for t in world["towns"].values():
 		var v := 0.0
 		if t["owner"] != hero["owner"]:
@@ -332,8 +334,8 @@ func choose(hero: Dictionary) -> Dictionary:
 			var dh := rules.hero_at(t["pos"])
 			if not dh.is_empty():
 				def += _strength(dh)
-			if me > def * 1.4:
-				v = 12000.0
+			if me > def * (1.1 if townless else 1.4):
+				v = 36000.0 if townless else 12000.0
 		elif t["pos"] != hp and rules.hero_at(t["pos"]).is_empty():
 			var reinforcement := _transfer_value(hero, t["garrison"], false)
 			if reinforcement > me * 0.25:

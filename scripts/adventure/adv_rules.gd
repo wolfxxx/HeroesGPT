@@ -699,10 +699,43 @@ func _kill_hero(hero: Dictionary, kept := false) -> void:
 
 func capture_town(town: Dictionary, new_owner: int) -> void:
 	if town["owner"] >= 0:
-		world["players"][town["owner"]]["towns"].erase(town["uid"])
+		var loser: Dictionary = world["players"][town["owner"]]
+		loser["towns"].erase(town["uid"])
+		if loser["towns"].is_empty() and townless_limit() > 0:
+			loser["townless_days"] = townless_limit() + 1  # (counted down at each new day: 7 days shown first)
 	town["owner"] = new_owner
 	if not town["uid"] in world["players"][new_owner]["towns"]:
 		world["players"][new_owner]["towns"].append(town["uid"])
+	world["players"][new_owner].erase("townless_days")
+
+## Optional classic rule (New Game setting, off by default): a player left without a town has this many days to
+## capture one, or is defeated. 0 = off (heroes without a town carry on indefinitely).
+func townless_limit() -> int:
+	return int(world.get("townless_limit", 0))
+
+## Days a townless player has left (-1: not counting down).
+func townless_days_left(p: Dictionary) -> int:
+	return int(p.get("townless_days", -1)) if townless_limit() > 0 and p["towns"].is_empty() else -1
+
+## A day passes for every player without a town; when the count runs out, its heroes leave the map and it is out.
+## Returns the players defeated this way.
+func tick_townless() -> Array:
+	var out := []
+	if townless_limit() <= 0:
+		return out
+	for p in world["players"]:
+		if not p["alive"] or not p["towns"].is_empty():
+			p.erase("townless_days")
+			continue
+		p["townless_days"] = int(p.get("townless_days", townless_limit() + 1)) - 1
+		if p["townless_days"] <= 0:
+			for hid in p["heroes"].duplicate():
+				_kill_hero(world["heroes"][hid])
+			p["defeated_townless"] = true
+			out.append(p)
+	check_eliminations()
+	rebuild()
+	return out
 
 func check_eliminations() -> void:
 	for p in world["players"]:
@@ -726,6 +759,7 @@ func date_string() -> String:
 func new_day() -> Dictionary:
 	world["day"] += 1
 	var d: int = world["day"]
+	tick_townless()
 	var new_week := (d - 1) % 7 == 0
 	for p in world["players"]:
 		if not p["alive"]:

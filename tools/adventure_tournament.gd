@@ -21,6 +21,7 @@ func _run() -> void:
 	var players := 2
 	var maps: Array = []
 	var dump_path := ""
+	var townless := 0
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--pairs="): pairs = int(arg.substr(8))
 		if arg.begins_with("--days="): days = int(arg.substr(7))
@@ -33,6 +34,7 @@ func _run() -> void:
 		if arg.begins_with("--maps="):
 			for value in arg.substr(7).split(","): maps.append(int(value))
 		if arg.begins_with("--dump="): dump_path = arg.substr(7)
+		if arg.begins_with("--townless="): townless = int(arg.substr(11))  # (the optional seven-day rule; 0 = off)
 	if pairs < 1 or days < 1 or first < 0 or players not in [2, 3, 4] or map_size not in [32, 36, 48, 64]:
 		push_error("Expected positive pairs/days, nonnegative start, players=2..4, size=32/36/48/64")
 		get_tree().quit(1)
@@ -57,13 +59,13 @@ func _run() -> void:
 	if maps.is_empty(): maps.assign(range(first, first + pairs))
 	pairs = maps.size()
 	if dump_path != "": DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dump_path))
-	print("CONFIG maps=%s players=%d size=%d days=%d baseline=%s" % [maps, players, map_size, days, baseline_path])
+	print("CONFIG maps=%s players=%d size=%d days=%d baseline=%s townless=%d" % [maps, players, map_size, days, baseline_path, townless])
 	for pair in maps:
 		var delta := 0.0
 		for side in players:
 			GameState._uid = 1000 # generated towns/spell pools must match between the paired games
 			var state := WorldGen.generate({"seed": 48000 + pair, "map_size": map_size, "opponents": players - 1,
-				"faction": "haven" if pair % 2 == 0 else "necropolis"})
+				"faction": "haven" if pair % 2 == 0 else "necropolis", "townless_limit": townless})
 			for p in state["players"]: p["is_ai"] = true
 			driver.configure(state)
 			driver.run_label = "%d/%d" % [pair, side]

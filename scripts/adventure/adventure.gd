@@ -104,7 +104,7 @@ func _post_ready() -> void:
 		world["intro_shown"] = true
 		var sc: Dictionary = world["scenario"]
 		await Modal.message(self, sc["name"], "%s\n\nVictory: %s.\nDefeat: %s." % [sc["desc"],
-			GameData.victory_text(sc["victory"]), GameData.loss_text(sc["loss"])]).closed
+			GameData.victory_text(sc["victory"]), GameData.loss_text(sc["loss"], rules.townless_limit())]).closed
 	if world["players"][world["current_player"]]["is_ai"]:
 		_run_ai_turns()
 	elif world.get("pending_turn_banner", false):
@@ -1003,6 +1003,11 @@ func _turn_banner() -> void:
 	else:
 		hud.banner("Day %d" % world["day"])
 		hud.toast(rules.date_string())
+	# the classic warning: a player without a town must take one before the count runs out
+	var left := rules.townless_days_left(human_player())
+	if left > 0:
+		await Modal.message(self, "Without a Town", "You have no town. Capture one within %d day%s, or you will be defeated." % [
+			left, "" if left == 1 else "s"]).closed
 
 func _check_game_over() -> bool:
 	if world.get("game_over", false):
@@ -1017,7 +1022,9 @@ func _check_game_over() -> bool:
 	var vic: Dictionary = sc.get("victory", {})
 	var loss: Dictionary = sc.get("loss", {})
 	var lost := ""
-	if not me["alive"]:
+	if not me["alive"] and me.get("defeated_townless", false):
+		lost = "Seven days have passed without a town to call your own. Your followers have deserted you."
+	elif not me["alive"]:
 		lost = "Your last hero has fallen and your towns are lost. The Shattered Crown will never be whole again."
 	elif loss.get("type", "") == "hero" and not world["heroes"].has(world.get("start_hero", -1)):
 		lost = "Your champion has fallen, and with them the last hope of the old order."

@@ -16,6 +16,16 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Optional seven-day rule (2026-10-22), committed and pushed at the user's request:** the user asked for HoMM3's "lose without a town" rule as an
+  optional setting. New Game shows **"Without a town: Play on / 7 days"** (default Play on = previous behaviour;
+  saved as `world["townless_limit"]`, old saves read 0). With 7 days: a player who loses every town counts down 7..1
+  (`AdvRules.capture_town`/`tick_townless` in `new_day`), the human sees "Without a Town" at the start of each such
+  day, capturing any town stops the count, and at the end the player's heroes leave the map and it is defeated
+  ("Seven days have passed without a town..."). Defeat texts in the menu and briefing mention it. A townless AI under
+  the rule accepts a town assault at 1.1x instead of 1.4x and values it 3x. Tournament `--townless=7` plays with it.
+  Eight new checks (87 adventure AI checks). Screenshots inspected: `shots/session52/tl_option.png`,
+  `tl_brief.png`, `tl_warning.png`. Full suite passed (`tests4.log`); player's save unchanged. Not measured: how
+  often the rule ends long AI games (a tournament with `--townless=7` would show it).
 - **Session52 AI round (2026-10-22), committed and pushed at the user's request:** §8 steps 1 and 4 done; steps 2–3 partly (see
   **`docs/AI_COORDINATION.md` "Session52"**). Frozen baseline `tools/ai/adventure_ai_session51.gd` (`555fedc`,
   control 0.00 ± 0.00); resume tool `--before=`. Kept one change, `AdvAI._leave_rear_guard` (a hero leaving a town an
@@ -23,8 +33,8 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   measurement: a danger filter (heroes avoiding stronger enemy reach) and leader-only garrison collection.
   **Final validation on reserved maps: two-player 23/25/0, -4.17 ± 14.64; four-player 7/24/1, -2.42 ± 4.83: no
   demonstrated strength change.** Replays: 427/0 and 425/0 keep one more town, others unchanged. 79 adventure AI
-  checks; full suite passed (`shots/session52/tests3.log`). Open question for the user: HoMM3 eliminates a player
-  after 7 days without a town; this game does not (townless heroes survive indefinitely), which prolongs games.
+  checks; full suite passed (`shots/session52/tests3.log`). The user then asked for HoMM3's seven-day townless
+  rule as an option (entry above).
 - **Session52 checkpoint (2026-10-22), this commit (pushed at the user's request):** the user approved fixing playtest findings 1 and 3 (map access,
   meeting by click). AI work (§8 steps 1–4) is next and not started.
   - **Map access.** `WorldGen._reachable` now uses the game's movement rule (a diagonal needs a free orthogonal

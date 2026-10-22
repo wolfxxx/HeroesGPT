@@ -21,6 +21,7 @@ func _ready() -> void:
 	await _passage_turn()
 	_occupied_site()
 	_rear_guard()
+	_townless()
 	GameState.world = {}
 	print("ADVENTURE AI TEST: %d checks, failures: %d" % [checks, fails])
 	get_tree().quit(1 if fails else 0)
@@ -457,3 +458,54 @@ func _rear_guard() -> void:
 	_ok(GameState.army_is_empty(town2["garrison"]) and hero2["army"][0]["count"] == 200, "no rear guard when holding would cost too much")
 	ai._leave_rear_guard(hero2, {"path": []})
 	_ok(hero2["army"][0]["count"] == 200, "staying put leaves nothing behind")
+
+## The optional classic rule: a player who loses every town has seven days (shown 7..1) to capture one, or is out;
+## off by default. A townless AI under the rule accepts a riskier assault on a town.
+func _townless() -> void:
+	_reset()
+	world["townless_limit"] = 7
+	var home := _town(1, Vector2i(20, 12))
+	var exile := _hero(1, Vector2i(2, 2), 50)
+	_hero(0, Vector2i(20, 13), 10)
+	rules.capture_town(home, 0)
+	var seen := []
+	for d in 7:
+		rules.new_day()
+		seen.append(rules.townless_days_left(world["players"][1]))
+	_ok(seen == [7, 6, 5, 4, 3, 2, 1], "the countdown shows seven days down to one: %s" % [seen])
+	_ok(world["players"][1]["alive"] and world["heroes"].has(exile["uid"]), "still in the game on the last day")
+	rules.new_day()
+	_ok(not world["players"][1]["alive"] and not world["heroes"].has(exile["uid"]) and world["players"][1].get("defeated_townless", false),
+		"defeated when the seventh day passes without a town")
+	# taking a town back stops the count
+	_reset()
+	world["townless_limit"] = 7
+	var lost := _town(1, Vector2i(20, 12))
+	var other := _town(0, Vector2i(4, 12))
+	_hero(1, Vector2i(2, 2), 50)
+	rules.capture_town(lost, 0)
+	rules.new_day()
+	rules.capture_town(other, 1)
+	_ok(rules.townless_days_left(world["players"][1]) == -1 and not world["players"][1].has("townless_days"), "capturing a town resets the count")
+	for d in 10: rules.new_day()
+	_ok(world["players"][1]["alive"], "a player holding a town is never counted down")
+	# off by default: heroes without a town carry on
+	_reset()
+	var gone := _town(1, Vector2i(20, 12))
+	_hero(1, Vector2i(2, 2), 50)
+	rules.capture_town(gone, 0)
+	for d in 12: rules.new_day()
+	_ok(world["players"][1]["alive"] and rules.townless_days_left(world["players"][1]) == -1, "off by default: no countdown, no defeat")
+	# a townless AI under the rule assaults a town it would otherwise leave alone (1.2x its defence, below the usual 1.4x)
+	for on in [false, true]:
+		_reset()
+		world["townless_limit"] = 7 if on else 0
+		var target := _town(0, Vector2i(10, 8))
+		target["garrison"][0] = {"id": "pikeman", "count": 100}
+		var mine := _town(1, Vector2i(20, 12))
+		var raider := _hero(1, Vector2i(6, 8), 100)
+		raider["army"][0]["count"] = int(ceil(100 * 1.25 * 1.2 / (1.0 + 0.05 * (GameState.hero_stat(raider, "attack") + GameState.hero_stat(raider, "defense")))))
+		rules.capture_town(mine, 0)
+		var plan := ai.choose(raider)
+		var assaults: bool = not plan.is_empty() and plan["path"].back() == target["pos"]
+		_ok(assaults == on, "townless assault at 1.2x: %s with the rule %s" % [assaults, "on" if on else "off"])
