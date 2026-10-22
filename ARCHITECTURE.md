@@ -138,6 +138,10 @@ does not model every spell/morale effect or guarantee a successful assault.
 can reach the gate next turn, the cheapest units needed to hold it (garrison x1.25 >= threat x1.4) stay behind,
 whole units only, at most 25% of the hero's strength, at least one creature kept. Frozen `555fedc` policy:
 `tools/ai/adventure_ai_session51.gd`; `campaign_resume_test --before=` selects the comparison policy.
+A hero collecting a garrison (`_reinforce`, and `choose`'s value of a town's troops) goes through `_collect_garrison`:
+when `_town_threat` finds an army able to reach the gate next turn and the garrison can hold it (x1.25 >= threat x1.4),
+`_garrison_keep` leaves that much and the hero takes the rest, most valuable first. `_counterattack` strikes a raider
+at 1.3x, the margin of any attack on a hero. Frozen `1dfa88b` policy: `tools/ai/adventure_ai_session52.gd`.
 
 `_plan_with_passage` helps only the strongest army when its normal route is blocked. It temporarily relaxes
 eligible friendly occupancy in the AStar grid, restores the grid, then returns a transient `yield` plan for a
@@ -215,7 +219,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
-  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (75 spending/defense/coordination/transfer/RNG checks),
+  `battle_ai_test` (15 tactical checks), `adventure_ai_test` (94 spending/defense/coordination/transfer/garrison/RNG checks),
   `campaign_week_test` (63 integrated week/save checks), `campaign_flow_test` (29 real tactical-scene/return/save checks),
   `adventure_tournament --self` (two-player and four-player RNG controls),
   `artifact_glow_test` (4096 phase draws in a window, inspect errors),
@@ -277,6 +281,11 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   checks a copy with other allied heroes removed to distinguish traffic from terrain. Does not write snapshots.
   Also prints carried armies, actual transferable value, delivery costs, current rally orders and requested
   step-aside moves. These are observations/previews, not an execution of the turn.
+- `tools/ai/town_defense_report.tscn` — one policy in every seat on generated maps (production driver); every town
+  capture with what the owner left at the end of its last turn (garrison, hero at the gate, strongest enemy within
+  one and two days, strongest own hero able to return, garrison taken / hero walked out that turn) and a summary.
+  `-- --maps=1800,1801 --players=2 --size=36 --days=28 --policy=res://tools/ai/adventure_ai_session52.gd --verbose
+  --trace=shots/x.jsonl`. Diagnostic only, not in the suite.
 - `tools/campaign_resume_test.tscn` — paired diagnostic continuations of the unresolved session50 snapshots.
   Candidate seat runs frozen `f69ad3a` then current AI; other seats retain the original `4f126ec` opponent.
   Options: `--dir=shots/session50/states168 --days=28 --case=441_1.dat --trace=shots/run.jsonl` (case/trace optional).

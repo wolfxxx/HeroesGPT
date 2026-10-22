@@ -188,14 +188,39 @@ func _reinforce(hero: Dictionary, town: Dictionary, _player: Dictionary) -> void
 		if stack:
 			TownLogic.upgrade_stack(town, _player, stack)
 	_merge_stacks(hero["army"])
-	for i in 7:
-		var s = town["garrison"][i]
-		if s and GameState.add_to_army(hero["army"], s["id"], s["count"]):
-			town["garrison"][i] = null
+	_collect_garrison(hero["army"], town)
 	for stack in hero["army"]:
 		if stack:
 			TownLogic.upgrade_stack(town, _player, stack)
 	_merge_stacks(hero["army"])
+
+## Garrison strength that holds the gate against the strongest army able to reach it next turn, when the garrison
+## can hold it at all (a garrison too weak to hold is better carried by the hero).
+func _garrison_keep(town: Dictionary) -> float:
+	var threat := _town_threat(town)
+	var need := threat * 1.4 / 1.25
+	if threat <= 0.0 or GameState.army_strength(town["garrison"]) < need: return 0.0
+	return need
+
+## A hero takes the town's garrison into its army, leaving what the gate needs (the most valuable troops go first).
+func _collect_garrison(army: Array, town: Dictionary) -> int:
+	var keep := _garrison_keep(town)
+	var spare := float(GameState.army_strength(town["garrison"])) - keep
+	var order := []
+	for i in 7:
+		if town["garrison"][i]: order.append(i)
+	order.sort_custom(func(a, b): return GameData.CREATURES[town["garrison"][a]["id"]]["ai_value"] > GameData.CREATURES[town["garrison"][b]["id"]]["ai_value"])
+	var value := 0
+	for i in order:
+		var s: Dictionary = town["garrison"][i]
+		var unit: int = GameData.CREATURES[s["id"]]["ai_value"]
+		var n: int = s["count"] if keep <= 0.0 else mini(s["count"], int(spare / unit))
+		if n <= 0 or not GameState.add_to_army(army, s["id"], n): continue
+		s["count"] -= n
+		spare -= n * unit
+		value += n * unit
+		if s["count"] == 0: town["garrison"][i] = null
+	return value
 
 func _merge_stacks(army: Array) -> void:
 	var first := {}
@@ -337,7 +362,7 @@ func choose(hero: Dictionary) -> Dictionary:
 			if me > def * (1.1 if townless else 1.4):
 				v = 36000.0 if townless else 12000.0
 		elif t["pos"] != hp and rules.hero_at(t["pos"]).is_empty():
-			var reinforcement := _transfer_value(hero, t["garrison"], false)
+			var reinforcement := _collect_garrison(hero["army"].duplicate(true), t.duplicate(true))
 			if reinforcement > me * 0.25:
 				v = 2500.0 + reinforcement * 0.6
 		if v > 0:
@@ -536,7 +561,7 @@ func _defense(hero: Dictionary) -> Dictionary:
 			return best_plan
 	return {}
 
-## Remove a reachable raider instead of letting a much weaker army pin the defender indefinitely.
+## Remove a reachable raider instead of letting a weaker army pin the defender indefinitely (the usual 1.3x margin).
 ## Keep the gate held if another hostile army could take it while this hero is away.
 func _counterattack(hero: Dictionary, town: Dictionary) -> Dictionary:
 	var threats := []
@@ -554,7 +579,7 @@ func _counterattack(hero: Dictionary, town: Dictionary) -> Dictionary:
 				danger += GameState.army_strength(target_town["garrison"]) * 1.25
 		for guard in rules.guards(enemy["pos"]):
 			danger = maxf(danger, GameData.CREATURES[guard["creature"]]["ai_value"] * guard["count"])
-		if _strength(hero) <= danger * 1.6: continue
+		if _strength(hero) <= danger * 1.3: continue  # (the margin for any attack on a hero, see choose)
 		var uncovered := false
 		for other in threats:
 			if other != enemy and _strength(other) * 1.4 > garrison: uncovered = true

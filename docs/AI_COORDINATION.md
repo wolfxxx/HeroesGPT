@@ -141,3 +141,47 @@ split), so the rule rarely applies. The nine saved session50 stalemates (`campai
 Conclusion: the rule is a faithful option, not a fix for AI stalemates; those are between town-holding armies that
 never commit to a decisive assault (see 427/0 above). Logs: `shots/session52/townless{0,7}.log`,
 `resume_townless{0,7}.log`.
+
+## Session54: town garrisons and the counterattack margin
+
+Playtest finding 2 (session52): the AI's capital fell on day 11 with no garrison and no hero inside. New diagnostic
+`tools/ai/town_defense_report.tscn` plays one policy in every seat and records each town capture with what its owner
+left at the end of its last turn. With the session52 policy, on eight two-player maps (1800–1807, 28 days), 48 of
+63 captures were of **empty** towns and 41 of those could already be reached by the capturer; only 3 had been
+emptied by a hero collecting the garrison that same turn and 9 by a hero walking out, so most stood empty for days.
+Two causes in the code: every hero passing an own town took the whole garrison (`_reinforce`), and a hero guarding a
+gate only struck a raider 1.6x weaker (`_counterattack`) while any other attack on a hero needs 1.3x, so a strong
+defender sat in one town while the raider took the next.
+
+Frozen comparison: `tools/ai/adventure_ai_session52.gd` (the policy at `1dfa88b`); control on maps 1800–1803:
+0.00 ± 0.00. Development maps: two-player size 36, 1800–1823 (48 games, 28 days); four-player size 48, 1830–1837
+(32 games, 56 days). Score delta vs the frozen policy (2 SE), wins/losses/unresolved:
+
+| Change | Dev 2p | Dev 4p | Kept |
+|---|---|---|---|
+| Garrison keeps what holds against a two-day threat | +25.03 ± 19.29 (26/14/8) | -6.60 ± 6.73 (5/24/3) | no |
+| Rear guard against two-day threats | -1.04 ± 3.80 (21/21/6) | -5.23 ± 10.24 (4/22/6) | no |
+| Counterattack at 1.3x instead of 1.6x | +20.11 ± 20.96 (25/15/8) | +9.95 ± 8.73 (9/20/3) | in the pair below |
+| Recruit at once against two-day threats | -1.16 ± 18.83 (20/20/8) | +1.22 ± 6.09 (7/22/3) | no |
+| The first three together | +35.71 ± 22.26 (29/12/7) | +2.40 ± 13.59 (7/22/3) | no |
+| Two-day keep + 1.3x | +32.74 ± 23.06 (28/13/7) | +2.53 ± 13.58 (8/23/1) | no |
+| Counterattack at 1.2x | +18.99 ± 23.80 (26/17/5) | +3.60 ± 9.82 (8/22/2) | no |
+| **Next-day keep + 1.3x** | **+23.33 ± 23.38 (26/15/7)** | **+10.82 ± 12.47 (9/20/3)** | **yes** |
+
+**Kept.** `AdvAI._collect_garrison` (used by `_reinforce` and by `choose`'s value of a town's troops): a hero taking a
+garrison leaves the troops that hold the gate (garrison x1.25 >= threat x1.4) against the strongest army able to
+reach it next turn, when the garrison can hold it at all (`_garrison_keep`); the most valuable troops go with the
+hero. With no threat, or a garrison too weak to matter, it takes everything as before. `_counterattack` strikes at
+1.3x. A re-run of the final code reproduces the development row exactly.
+
+**Final validation, reserved fresh maps, 84 days, no tuning afterwards:** 24 two-player size-36 maps (1900–1923,
+48 games): **29 wins / 19 losses / 0 unresolved, +20.83 ± 24.01**. Eight four-player size-48 maps (1940–1947,
+32 games): **11 / 20 / 1, +15.05 ± 19.85** (an equal policy wins about 8 of 32). Every development and validation
+result points the same way, but both validation intervals include zero: a likely gain, not a demonstrated one.
+
+Town defence with the new policy in every seat (same maps as development; the session52 policy in brackets):
+two-player 326 captures (364), 274 of empty towns (309), 19 of 24 games decided by day 28, mean end day 16.1 (17.7);
+four-player 316 (438), 260 empty (352), all 8 decided, mean end day 28.3 (40.9). Fewer towns are walked into and
+games end sooner. A garrison still cannot hold against a much stronger main army: against a human who brings the
+strongest army to the capital, the town falls unless a hero gets back in time.
+Logs: ignored `shots/session54/{dev2_v*,dev4_v*,recheck2,final36,final48,tdr*}.log`.

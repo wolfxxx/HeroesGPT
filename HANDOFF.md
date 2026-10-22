@@ -16,6 +16,16 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session54 AI round: town garrisons (2026-10-22), committed with this HANDOFF update:** the user chose playtest finding 2 (the AI's
+  capital taken empty). New diagnostic `tools/ai/town_defense_report.tscn` showed most captured towns were empty and
+  reachable by the capturer. Kept, after measuring eight variants (`docs/AI_COORDINATION.md` "Session54"): a hero
+  collecting a garrison leaves what holds the gate against an army able to reach it next turn, if the garrison can
+  hold it (`AdvAI._collect_garrison` / `_garrison_keep`); a gate defender strikes a raider at 1.3x (was 1.6x).
+  Frozen previous policy `tools/ai/adventure_ai_session52.gd` (control 0.00). Final validation on fresh maps,
+  84 days: two-player 29/19/0, +20.83 ± 24.01; four-player 11/20/1, +15.05 ± 19.85: all results point the same way,
+  intervals include zero. Fewer empty towns are taken (four-player 352 -> 260) and games end sooner. Seven new
+  checks (94 adventure AI checks). Not addressed: heroes still wander one at a time, and a garrison cannot hold
+  against a much stronger main army.
 - **Each hot-seat player makes their own choices (2026-10-22), committed with this HANDOFF update:** the user asked that every player
   pick their own town, hero and bonus, and to keep the "To Arms" call. The Players row is one button per colour
   ("Human / <town>" or "Computer"): a click on a computer's colour makes it a person and the left side (town,
@@ -685,7 +695,7 @@ Ranked by impact. Evidence (screenshots `s###.png`, logs) is in ignored `shots/p
 1. **FIXED (session52): map objects walled off from every route.** In the playtest a Griffin dwelling, a Sawmill and
    six artifacts could not be reached. With the game's real movement rule the sweep found unreachable objects on
    35 of 36 generated maps; now 0 (see §2).
-2. **AI leaves its capital empty / low pressure.** Gravenmoor (9 buildings) was taken on day 11 with no garrison
+2. **PARTLY ADDRESSED (session54, see §2): AI leaves its capital empty / low pressure.** Gravenmoor (9 buildings) was taken on day 11 with no garrison
    and no hero; the AI's heroes fought one at a time and never combined. This matches the planned §8 step 1
    (defense versus conquest, case 427/0) and suggests checking garrison retention when the main hero leaves.
 3. **FIXED (session52, user-approved): meeting your own hero by click, with troop and artifact trading** (see §2).
@@ -837,6 +847,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Town garrisons (session54):** `AdvAI._collect_garrison` / `_garrison_keep` (garrison kept against a next-turn
+  threat), `_counterattack` margin 1.3x; frozen previous policy `tools/ai/adventure_ai_session52.gd`; diagnostic
+  `tools/ai/town_defense_report.tscn` (`--maps= --players= --size= --days= --policy= --verbose --trace=`).
 - **Hot-seat (session53):** seats on New Game `main_menu._refresh_seats`, per-colour choices `_edit` /
   `_choice` / `_set_choice` / `_fix_seats` / `_taken_heroes`; generation
   `WorldGen.generate` (`humans`, `_player_name`, per-human `start_hero`, `seat_hero` / `seat_bonus`); viewpoint

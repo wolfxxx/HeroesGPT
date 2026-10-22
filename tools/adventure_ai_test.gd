@@ -21,6 +21,7 @@ func _ready() -> void:
 	await _passage_turn()
 	_occupied_site()
 	_rear_guard()
+	_garrison_keep()
 	_townless()
 	GameState.world = {}
 	print("ADVENTURE AI TEST: %d checks, failures: %d" % [checks, fails])
@@ -154,6 +155,14 @@ func _counterattack() -> void:
 	guard.merge({"creature": "bone_dragon", "count": 100})
 	rules.rebuild()
 	_ok(ai.choose(hero).is_empty(), "interception cannot bypass lethal guards beside its target")
+	# the margin is the usual 1.3x for attacking a hero, not a much larger one that leaves the raider free
+	_reset()
+	var gate := _town(0, Vector2i(8, 8))
+	var keeper := _hero(0, gate["pos"], 100)
+	var raider := _hero(1, Vector2i(11, 8), 70)
+	_ok(ai.choose(keeper).get("target", {}).get("uid", -1) == raider["uid"], "a defender 1.4x stronger intercepts the raider")
+	raider["army"][0]["count"] = 80
+	_ok(ai.choose(keeper).is_empty(), "a defender only 1.25x stronger holds the gate")
 
 func _targets() -> void:
 	_reset()
@@ -458,6 +467,34 @@ func _rear_guard() -> void:
 	_ok(GameState.army_is_empty(town2["garrison"]) and hero2["army"][0]["count"] == 200, "no rear guard when holding would cost too much")
 	ai._leave_rear_guard(hero2, {"path": []})
 	_ok(hero2["army"][0]["count"] == 200, "staying put leaves nothing behind")
+
+## A hero collecting a town's garrison leaves what holds the gate against an army able to reach it next turn, when
+## the garrison can hold it; otherwise (no threat, or a garrison too weak to matter) it takes everything.
+func _garrison_keep() -> void:
+	_reset()
+	var town := _town(0, Vector2i(8, 8))
+	var player: Dictionary = world["players"][0]
+	var hero := _hero(0, town["pos"], 50)
+	town["garrison"][0] = {"id": "pikeman", "count": 100}
+	var raider := _hero(1, Vector2i(13, 8), 20)
+	ai._reinforce(hero, town, player)
+	var kept := GameState.army_strength(town["garrison"])
+	_ok(kept * 1.25 >= ai._town_threat(town) * 1.4 and kept < 100 * GameData.CREATURES["pikeman"]["ai_value"],
+		"the garrison keeps what holds the gate (%d) and the hero takes the rest" % kept)
+	_ok(hero["army"][0]["count"] + town["garrison"][0]["count"] == 150, "no troops are lost")
+	var spare := ai._collect_garrison(hero["army"].duplicate(true), town.duplicate(true))
+	_ok(spare == 0, "a second visit finds nothing spare (%d)" % spare)
+	raider["army"][0]["count"] = 200
+	town["garrison"][0]["count"] = 100
+	hero["army"][0]["count"] = 50
+	ai._reinforce(hero, town, player)
+	_ok(GameState.army_is_empty(town["garrison"]) and hero["army"][0]["count"] == 150, "a garrison too weak to hold goes with the hero")
+	world["heroes"].erase(raider["uid"])
+	world["players"][1]["heroes"].erase(raider["uid"])
+	rules.rebuild()
+	town["garrison"][0] = {"id": "pikeman", "count": 30}
+	ai._reinforce(hero, town, player)
+	_ok(GameState.army_is_empty(town["garrison"]) and hero["army"][0]["count"] == 180, "with no threat the hero takes everything")
 
 ## The optional classic rule: a player who loses every town has seven days (shown 7..1) to capture one, or is out;
 ## off by default. A townless AI under the rule accepts a riskier assault on a town.
