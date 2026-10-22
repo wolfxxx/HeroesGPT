@@ -13,6 +13,7 @@
 #   WAR MACHINE TEST: N checks, failures: 0
 #   NECROMANCY TEST: N checks, failures: 0
 #   MEET TEST: N checks, failures: 0
+#   ANNOUNCE TEST: N checks, failures: 0
 #   REACH SWEEP {... "maps_with_cut": 0 ...}
 #   CLICK TEST: N clicks, 0 without a path    + DRAG TEST ... plan unchanged: true   + PENDING TEST ... shown: true
 #   5                                           (visit test: five VISIT lines)
@@ -39,6 +40,7 @@ echo "--adventure-camera"; timeout 60 $G --headless --path . res://tools/adventu
 echo "--war-machines"; timeout 120 $G --headless --path . res://tools/war_machine_test.tscn 2>&1 | grep -E "WAR MACHINE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--necromancy"; timeout 60 $G --headless --path . res://tools/necromancy_test.tscn 2>&1 | grep -E "NECROMANCY TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--meet"; timeout 90 $G --headless --path . res://tools/meet_test.tscn 2>&1 | grep -E "MEET TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--announce"; timeout 120 $G --headless --path . res://tools/announce_test.tscn 2>&1 | grep -E "ANNOUNCE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--map-reach"; timeout 300 $G --headless --path . res://tools/map_reach_report.tscn 2>&1 | grep -E "REACH SWEEP|SCRIPT ERROR" | tail -3
 echo "--click"; timeout 300 $G --path . res://tools/click_test.tscn 2>&1 | grep -E "clicks|DRAG|PENDING|SCRIPT ERROR|FAIL" | tail -5
 echo "--visit"; timeout 300 $G --headless --path . res://tools/visit_test.tscn 2>&1 | grep -cE "VISIT"

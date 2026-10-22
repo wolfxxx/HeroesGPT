@@ -2076,6 +2076,14 @@ func _end_battle(winner: int) -> void:
 		m.body.add_child(row)
 	if wh:
 		m.add_text("%s gains %d experience." % [wh["name"], xp], 22)
+	# The winner takes a defeated hero's artifacts, worn and carried (AdvRules._loot); a hero who retreated or
+	# surrendered keeps them.
+	var lh = L.heroes[loser]
+	if wh and lh and _retreated != loser:
+		var spoils: Array = lh.get("artifacts", []) + lh.get("backpack", [])
+		if not spoils.is_empty():
+			m.add_text("%s captures %s's artifacts:" % [wh["name"], lh["name"]], 22)
+			m.add_icon_flow(spoils.map(func(a): return [Assets.artifact_icon(a), GameData.ARTIFACTS[a]["name"]]))
 	var necro_text := Necromancy.message(necro)
 	if necro_text != "":
 		m.add_text(necro_text, 22)

@@ -16,6 +16,16 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Announcements (2026-10-22), committed and pushed at the user's request:** after playing, the user asked for captured artifacts and town learning
+  to be announced. (1) The battle result now says "<winner> captures <loser>'s artifacts:" with icons and names of
+  every worn and carried artifact the defeated hero had (not when it retreated or surrendered: it keeps them);
+  `AdvRules._loot` already transferred them silently. (2) Entering an own town: the "Learned: ..." toast was shown
+  and immediately hidden by the town scene change. `adventure._enter_own_town` now builds a report (spells learned,
+  spell points restored) passed in `GameState.pending_town["report"]`; the town screen shows a "Mage Guild" dialog
+  with the spell icons and the restored points, nothing when there is nothing new. The same dialog announces spells
+  learned when a Mage Guild level is built with a hero in town or a hero is hired there (which now also follows the
+  Wisdom rule instead of always level 1–2). New `Modal.add_icon_flow`. New `tools/announce_test.tscn` (10 checks,
+  in the suite). Inspected `shots/session52/announce_battle.png`, `announce_town.png`. Full suite passed (`tests5.log`).
 - **Optional seven-day rule (2026-10-22), committed and pushed at the user's request:** the user asked for HoMM3's "lose without a town" rule as an
   optional setting. New Game shows **"Without a town: Play on / 7 days"** (default Play on = previous behaviour;
   saved as `world["townless_limit"]`, old saves read 0). With 7 days: a player who loses every town counts down 7..1

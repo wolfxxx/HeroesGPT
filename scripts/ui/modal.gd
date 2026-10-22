@@ -79,6 +79,28 @@ func add_icons(icons: Array, icon_size := Vector2(72, 72)) -> void:
 		h.add_child(v)
 	body.add_child(h)
 
+## Icons with wrapped captions that flow onto further rows (a long list of artifacts or spells).
+func add_icon_flow(icons: Array, icon_size := Vector2(56, 56), cell_w := 132.0) -> void:
+	if icons.is_empty():
+		return
+	var f := HFlowContainer.new()
+	f.alignment = FlowContainer.ALIGNMENT_CENTER
+	f.add_theme_constant_override("h_separation", 10)
+	f.add_theme_constant_override("v_separation", 8)
+	for ic in icons:
+		var v := VBoxContainer.new()
+		v.custom_minimum_size.x = cell_w
+		var c := CenterContainer.new()
+		c.add_child(UI.icon(ic[0], icon_size))
+		v.add_child(c)
+		var l := UI.label(str(ic[1]), 17)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size.x = cell_w
+		v.add_child(l)
+		f.add_child(v)
+	body.add_child(f)
+
 func add_buttons(options: Array) -> HBoxContainer:
 	var h := HBoxContainer.new()
 	h.alignment = BoxContainer.ALIGNMENT_CENTER

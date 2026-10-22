@@ -59,6 +59,14 @@ at 0, removes its heroes and marks `defeated_townless` before `check_elimination
 `GameData.loss_text(loss, townless)` adds it to the Defeat line. `AdvAI.choose` lowers a townless player's town-assault
 threshold to 1.1x and raises its value. `adventure_tournament --townless=7` enables it in benchmarks.
 
+## Announcements
+Battle result (`battle.gd._end_battle`): lists the loser hero's `artifacts` + `backpack` as "captures" when both sides
+have heroes and the loser did not retreat/surrender (the transfer itself is `AdvRules._loot` in `apply_battle`).
+Town visits: `adventure._enter_own_town(hero, town)` -> `{hero, learned, mana}` -> `open_town(uid, report)` ->
+`GameState.pending_town["report"]`; `town_screen._announce_learning(learned, mana_gain)` shows the "Mage Guild"
+dialog (also after building a guild level or hiring, via `_learn_guild_spells`). `Modal.add_icon_flow` wraps long
+icon lists. Test: `tools/announce_test.tscn` (real battle end -> adventure transfer; real visit -> town dialog).
+
 ## Meeting your own hero
 `adventure.gd._click`: with a hero selected, a click on another of your heroes plans the `meet` route (status line
 "Meet <name> (trade troops)"); a second click executes it, and `_interact_with` opens `AdventureHUD.open_exchange`.
@@ -189,7 +197,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `adventure_camera_test` (33 movement/visibility/turn-camera checks),
   `war_machine_test` (purchases, factory persistence, AI, generated access and battle ammo),
   `necromancy_test` (46 checks of raising rules, slots, casualties and rewards on both sides),
-  `meet_test` (18 meeting-by-click and artifact hand-over checks), `map_reach_report` (every object reachable on 36 maps),
+  `meet_test` (18 meeting-by-click and artifact hand-over checks), `announce_test` (10 captured-artifact and town-learning announcement checks), `map_reach_report` (every object reachable on 36 maps),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
 - `tools/adventure_camera_test.tscn` — real adventure scene/camera assertions for visible and hidden movement,

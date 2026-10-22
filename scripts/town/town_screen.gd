@@ -24,6 +24,36 @@ func _ready() -> void:
 	_build()
 	refresh()
 	Audio.music("town_%s" % town["faction"])
+	var report: Dictionary = GameState.pending_town.get("report", {})
+	if not hero.is_empty() and report.get("hero", -1) == hero["uid"]:
+		_announce_learning.call_deferred(report.get("learned", []), int(report.get("mana", 0)))
+
+## What a visit (or a new Mage Guild level) taught the visiting hero: the new spells with their icons, and spell
+## points restored. Nothing to say: no dialog.
+func _announce_learning(learned: Array, mana_gain := 0) -> void:
+	if learned.is_empty() and mana_gain <= 0:
+		return
+	var m := Modal.custom(self, "Mage Guild", 760)
+	if not learned.is_empty():
+		m.add_text("%s studies in the Mage Guild and learns %s:" % [hero["name"],
+			"a new spell" if learned.size() == 1 else "%d new spells" % learned.size()], 22)
+		m.add_icon_flow(learned.map(func(sp): return [Assets.spell_icon(sp), GameData.SPELLS[sp]["name"]]), Vector2(64, 64))
+	if mana_gain > 0:
+		m.add_text("%s's spell points are restored to %d." % [hero["name"], hero["mana"]], 22)
+	m.add_buttons([["OK", true]])
+	m.set_meta("default", true)
+	m.set_meta("cancel", true)
+	Audio.sfx("build", -8)
+	await m.closed
+
+## The guild's spells a hero can learn now (spell level up to 2, more with Wisdom, as AdvRules.max_spell_level).
+func _learn_guild_spells(h: Dictionary) -> Array:
+	var learned := []
+	for sp in town["mage_spells"]:
+		if not sp in h["spells"] and GameData.SPELLS[sp]["level"] <= 2 + int(h["skills"].get("wisdom", 0)):
+			h["spells"].append(sp)
+			learned.append(sp)
+	return learned
 
 func _resolve_state() -> void:
 	if GameState.world.is_empty():
@@ -663,12 +693,12 @@ func _building_detail(id: String) -> void:
 		return
 	if TownLogic.build(town, player, id):
 		Audio.sfx("build")
+		var learned := []
 		if hero.size() > 0 and id.begins_with("mage_guild"):
-			for sp in town["mage_spells"]:
-				if not sp in hero["spells"] and GameData.SPELLS[sp]["level"] <= 2 + int(hero["skills"].get("wisdom", 0)):
-					hero["spells"].append(sp)
+			learned = _learn_guild_spells(hero)
 		refresh()
 		_flash_building(id)
+		await _announce_learning(learned)
 
 func _flash_building(id: String) -> void:
 	for b in _bld_nodes:
@@ -786,13 +816,12 @@ func _open_tavern() -> void:
 	nh["pos"] = town["pos"]
 	world["heroes"][nh["uid"]] = nh
 	player["heroes"].append(nh["uid"])
-	for s in town["mage_spells"]:
-		if not s in nh["spells"] and GameData.SPELLS[s]["level"] <= 2:
-			nh["spells"].append(s)
+	var learned := _learn_guild_spells(nh)  # (as any visit: up to level 2, more with Wisdom)
 	hero = nh
 	world["selected_hero"] = nh["uid"]
 	Audio.sfx("recruit")
 	refresh()
+	await _announce_learning(learned)
 
 func _hero_at_gate() -> bool:
 	for h in world["heroes"].values():

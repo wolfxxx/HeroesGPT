@@ -804,11 +804,9 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 		"town":
 			var town: Dictionary = world["towns"][occ["uid"]]
 			if town["owner"] == hero["owner"]:
-				var learned := rules.hero_in_town(hero, town)
+				var report := _enter_own_town(hero, town)
 				if human:
-					if learned.size() > 0:
-						hud.toast("Learned: " + ", ".join(learned.map(func(s): return GameData.SPELLS[s]["name"])))
-					open_town(town["uid"])
+					open_town(town["uid"], report)  # (the town screen announces what the visit taught)
 				return ""
 			if GameState.army_is_empty(town["garrison"]) and rules.town_defender(town, hero).is_empty():
 				rules.capture_town(town, hero["owner"])
@@ -922,13 +920,20 @@ func _handle_level_ups(hero: Dictionary) -> void:
 # ---------------------------------------------------------------------------------------------
 # Towns
 # ---------------------------------------------------------------------------------------------
-func open_town(uid: int) -> void:
+func open_town(uid: int, report := {}) -> void:
 	var town: Dictionary = world["towns"][uid]
 	var visitor := rules.hero_at(town["pos"])
-	if not visitor.is_empty() and visitor["owner"] == town["owner"]:
-		rules.hero_in_town(visitor, town)
-	GameState.pending_town = {"town_uid": uid, "hero_uid": visitor.get("uid", -1)}
+	if not visitor.is_empty() and visitor["owner"] == town["owner"] and report.is_empty():
+		report = _enter_own_town(visitor, town)
+	GameState.pending_town = {"town_uid": uid, "hero_uid": visitor.get("uid", -1), "report": report}
 	GameState.change_scene(GameState.SCENE_TOWN)
+
+## A hero in its own town learns the Mage Guild's spells and has its spell points restored: what it gained, for the
+## town screen to announce ({hero, learned, mana}).
+func _enter_own_town(hero: Dictionary, town: Dictionary) -> Dictionary:
+	var mana_before: int = hero["mana"]
+	var learned := rules.hero_in_town(hero, town)
+	return {"hero": hero["uid"], "learned": learned, "mana": hero["mana"] - mana_before}
 
 # ---------------------------------------------------------------------------------------------
 # Turns
