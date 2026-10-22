@@ -70,7 +70,8 @@ when an adjacent meeting/victory consumes no movement. `_reinforce` pays ordinar
 stacks before collecting troops to free slots, then merges again after upgrading the additions. `dwelling_recruits`
 shares the exact affordable/carryable count between selection and purchase, including rare resources.
 Map-spell planning and fog-aware strategic knowledge remain unimplemented. Campaign results in HANDOFF.md show
-a gain against `4f126ec` on fresh size-36/two-player maps with instant AI battles; broader balance is untested.
+a gain against `4f126ec` on fresh size-36/two-player maps with instant AI battles. Four-player size-48/64 validation
+is recorded in `docs/CAMPAIGN_VALIDATION.md`; small samples do not establish a broader strength gain.
 
 `AdvRules.roll_level_up(hero, rng=null)` honors a supplied generator for both stats and skill options; otherwise
 it uses the global gameplay stream. No reseeding from wall-clock time. Other presentation randomness still needs
@@ -138,7 +139,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
   `battle_ai_test` (15 tactical checks), `adventure_ai_test` (54 spending/defense/coordination/transfer/RNG checks),
-  `campaign_week_test` (63 integrated week/save checks), `adventure_tournament --self --pairs=2` (RNG control),
+  `campaign_week_test` (63 integrated week/save checks), `campaign_flow_test` (29 real tactical-scene/return/save checks),
+  `adventure_tournament --self` (two-player and four-player RNG controls),
   `artifact_glow_test` (4096 phase draws in a window, inspect errors),
   `adventure_camera_test` (33 movement/visibility/turn-camera checks),
   `war_machine_test` (purchases, factory persistence, AI, generated access and battle ammo),
@@ -158,11 +160,18 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/campaign_week_test.tscn` — a controlled seven-day fixture through production movement, visits, battles,
   enemy AI, building/recruiting, factory purchases, Necromancy and weekly growth. Saves/loads an isolated
   `user://campaign_week_test_<pid>.dat`, compares the complete world and removes only that test file.
+- `tools/campaign_flow_test.tscn` — a watcher surviving real adventure/battle scene changes. Human attack,
+  Defend/Auto controls, tactical victory, XP/level-up/Necromancy, real result dismissal and subsequent movement;
+  then End Turn -> AI attack -> human retreat -> interrupted AI turn resumes exactly once. Isolated save API
+  round trips after both cases, adventure scene reload, and hash check of the untouched default player save.
+  Scripted fixture, not a competitive human playtest; button signals drive controls and saves use the optional
+  test path, not the main-menu save slot. `-- --capture` saves screenshots under `shots/session50/flow/`.
+  Run windowed for captures and restore `project.godot`; the full suite runs it headless.
 - `tools/ai/campaign_driver.gd` — headless subclass of the adventure controller. Suppresses drawing, camera
   visibility and game-over popups; all players must be AI. Runs real turns and instant battles, counts battles.
   Optional JSONL tracing records moves (positions, target, movement/army/XP deltas) and end-turn resources,
   heroes and town garrisons/recruit pools. Recording does not call policy decisions or consume randomness.
-- `tools/adventure_tournament.tscn` — paired generated maps, sides swapped, current policy versus the frozen
+- `tools/adventure_tournament.tscn` — generated maps, current policy rotated through every seat versus the frozen
   `tools/ai/adventure_ai_baseline.gd` from `35ed2e6`. Example: `Godot --headless --path .
   res://tools/adventure_tournament.tscn -- --pairs=48 --start=200 --days=42`. `--self` uses baseline on both sides
   and fails if any pair differs. Reset UID and global RNG for each game. Strategic score: army + 5000/town +
@@ -173,9 +182,23 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   original `adventure_ai_baseline.gd` remains the default and unchanged. `--trace=shots/run.jsonl` enables
   diagnostics (create its parent directory first). Session49 validation: `--pairs=48 --start=400 --days=84`
   with the checkpoint baseline; repeat with `--days=42` for the earlier cutoff on the same maps.
+  `--players=2|3|4 --size=32|36|48|64` broadens coverage; two-player defaults preserve the original statistic.
+  With N players, sum `(candidate - mean(other scores)) / total_score * 100/N` over N rotations of each map;
+  estimate two standard errors over maps, not the correlated seats. Four-player score scale differs from two-player.
+  Play continues until one player remains or the day limit, even after the candidate loses. Wins mean sole survivor,
+  losses mean candidate eliminated; unresolved means candidate survives with opponents. `games_at_limit` counts
+  all unfinished games, including losses where other players are still fighting. Day 85 means 84 days played and
+  the next day's reset (the historic two-player convention). `--maps=404,408` replays explicit map IDs;
+  `--dump=shots/states` writes final world dictionaries to `<map>_<seat>.dat`, separate from player save files.
+- `tools/campaign_snapshot_report.tscn -- --dir=shots/states` — reads those final worlds and reports each live
+  hero's defense decision, target, route to enemy towns and approximate force ratio. Uses the current policy only
+  for the filename's candidate seat, the selected `--baseline` for others (default `4f126ec`). If a route is missing,
+  checks a copy with other allied heroes removed to distinguish traffic from terrain. Does not write snapshots.
 - `tools/campaign_trace_report.py <trace> --after=42` — standard-library summary of late actions, no-action hero
   turns, final armies/positions and unused garrisons. No-action turns may be intentional defense; the report
   provides evidence for investigation, not an automatic stall verdict. Old traces have no XP delta.
+  Each owner's last recorded turn is a different instant; capture later that day can make those town counts
+  overlap. Use final binary snapshots for synchronized end-state ownership.
 - `tools/artifact_glow_test.tscn` — render 32 glows over 128 frames, sampling appearance/disappearance thresholds
   and the wider cycle. Run windowed for actual renderer verification; `-- --shot=shots/x.png --delay=1` holds a
   labelled phase sheet. Restore `project.godot` after any windowed run (the full suite's exit trap does this).

@@ -2,7 +2,7 @@
 
 Read this first, then `ARCHITECTURE.md` (code map), `ASSETS.md` (every asset path and the art pipeline) and
 `CREDITS.md`. This file is written so that another person or another AI assistant can pick the work up exactly
-where it stopped. Last updated 2026-10-21 (HeroesGPT repository continuation; latest visual review: judge 47,
+where it stopped. Last updated 2026-10-22 (HeroesGPT repository continuation; latest visual review: judge 47,
 overall 9.4), branch `main`, remote `https://github.com/wolfxxx/HeroesGPT.git` (public repo).
 
 ## 1. The project in one paragraph
@@ -16,10 +16,42 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Session49 checkpoint (2026-10-21), this commit:** `Improve AI counterattacks and campaign reinforcement`.
+- **Session50 validation checkpoint (2026-10-22), this commit:** `Validate multiplayer campaigns and tactical save flow`.
+  The user accepted the next session's larger/four-player validation, unfinished-game investigation and real
+  battle/save-flow checks, then asked to continue. Last pushed checkpoint is **`f69ad3a`**. This checkpoint is local;
+  no push requested for this session. Production AI/rules remain unchanged; no new art, visual change or judge score.
+  - Four-player harness now rotates the candidate through every seat, continues after early eliminations and
+    distinguishes candidate losses/unresolved outcomes from all games reaching the limit. New `--players`,
+    `--size`, `--maps`, `--dump` options; two-player defaults/statistic preserved. See
+    **`docs/CAMPAIGN_VALIDATION.md`** for exact commands, definitions, limitations and the 17-case outcome table.
+  - **64 four-player games / 16 fresh maps, 84 days**, against frozen `4f126ec`: size 48 (600–607),
+    **11 wins / 20 losses / 1 candidate unresolved**, score **+15.50 +/- 24.86 (2 SE)**, 2818 instant battles;
+    size 64 (700–707), **11 / 19 / 2**, **+14.36 +/- 17.05**, 3362 battles. Both intervals include zero:
+    no demonstrated general four-player strength gain. Rotated seats are correlated; errors are across maps.
+    Thirteen size-48 and five size-64 games reached the limit, including games where the candidate already lost.
+    Same-policy four-player 84-day control: **0.00 +/- 0.00** on two maps. Logs: `shots/session50/large*.log`, `control4.log`.
+  - All **17** unfinished session49 cases reproduced. At **168 days**, eight finish (four current wins/four losses)
+    and nine remain. Final snapshots show gate-holding, divided forces below individual assault thresholds and
+    continued town exchanges. In 427/0, allied heroes also block the leader's route; removing them in a copy restores
+    it, but the army is still below the safe assault threshold. These are open strategy findings, not fixed stalls.
+    New `tools/campaign_snapshot_report.tscn` reads final worlds and diagnoses routes/force/defense decisions.
+    JSONL end-turn owner records are different instants; use final snapshots for synchronized town ownership.
+    Local evidence: `unresolved.jsonl`, `states/`, `states168/`, `extended168.log`, `snapshot-report.txt`.
+  - New **`tools/campaign_flow_test.tscn`, 29 checks pass windowed and headless**: actual human attack -> tactical
+    Defend/Auto -> victory -> level-up -> adventure, exact XP/casualties/Necromancy, isolated save/reload and movement;
+    End Turn -> AI attack -> human retreat -> AI resumes once -> next human day -> save/reload. The player's normal
+    save is hash-checked and untouched. Scripted button signals and isolated save API, not a competitive human
+    playtest or menu-slot test. Viewed all seven captures under `shots/session50/flow/`; success log `flow2.log`.
+  - **Full suite passed** (`shots/session50/tests.log`): compile; 40 battles; 25 visual; 15 battle AI; 54 adventure AI;
+    63 week; 29 flow; two/four-player zero-difference controls; 4096 glow phases; 33 camera; 227 factory;
+    46 Necromancy; 31 clicks/drag/queued click; five visits; 306 artifacts; `SIM DONE`. `project.godot` restored.
+  - Next: focused defense/consolidation and allied-route coordination fixes using these reproducible cases,
+    freeze `f69ad3a` before tuning, and validate on new seeds. Human competitive play, map spells/fog/difficulty,
+    remaining machine wrecks and hot-seat remain open. Further commits/pushes require the user's instruction.
+- **Session49 pushed checkpoint (2026-10-21), `f69ad3a`:** `Improve AI counterattacks and campaign reinforcement`.
   The user requested committing and pushing the tested AI improvements below to `origin/main`. Previous pushed
-  checkpoint: **`4f126ec`** (`Add campaign benchmarks, AI coordination, and visual fixes`); use `git log -1` for
-  this checkpoint's hash. No new art, visual changes, judge run or score.
+  checkpoint: **`4f126ec`** (`Add campaign benchmarks, AI coordination, and visual fixes`).
+  No new art, visual changes, judge run or score.
   - Diagnosis: JSONL traces of 84-day campaigns show large armies pinned in their own towns by much weaker
     raiders. Example pair 211: a strength-117576 defender took no action on 13 of the final 14 days; pair 212
     had defenders stationary throughout those 14 days. Turns without action are observations, not proof of a

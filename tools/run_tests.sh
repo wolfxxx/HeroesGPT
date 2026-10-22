@@ -6,6 +6,7 @@
 #   BATTLE AI TEST: N checks, failures: 0
 #   ADVENTURE AI TEST: N checks, failures: 0
 #   CAMPAIGN WEEK TEST: N checks, failures: 0
+#   CAMPAIGN FLOW TEST: N checks, failures: 0
 #   ADVENTURE TOURNAMENT: self=true, score delta 0.00 +/- 0.00
 #   ARTIFACT GLOW TEST: 4096 phase draws completed (no renderer errors)
 #   ADVENTURE CAMERA TEST: N checks, failures: 0
@@ -28,7 +29,9 @@ echo "--battle-visual"; timeout 60 $G --headless --path . res://tools/battle_vis
 echo "--battle-ai"; timeout 60 $G --headless --path . res://tools/battle_ai_test.tscn 2>&1 | grep -E "BATTLE AI TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--adventure-ai"; timeout 60 $G --headless --path . res://tools/adventure_ai_test.tscn 2>&1 | grep -E "ADVENTURE AI TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--campaign-week"; timeout 60 $G --headless --path . res://tools/campaign_week_test.tscn 2>&1 | grep -E "CAMPAIGN WEEK TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--campaign-flow"; timeout 180 $G --headless --path . res://tools/campaign_flow_test.tscn 2>&1 | grep -E "CAMPAIGN FLOW TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--campaign-control"; timeout 60 $G --headless --path . res://tools/adventure_tournament.tscn -- --self --pairs=2 2>&1 | grep -E "ADVENTURE TOURNAMENT|SCRIPT ERROR|FAIL" | tail -8
+echo "--campaign-control-four"; timeout 120 $G --headless --path . res://tools/adventure_tournament.tscn -- --self --pairs=1 --players=4 --size=48 --start=600 --days=14 2>&1 | grep -E "ADVENTURE TOURNAMENT|SCRIPT ERROR|FAIL" | tail -8
 echo "--artifact-glow"; timeout 60 $G --path . res://tools/artifact_glow_test.tscn 2>&1 | grep -E "ARTIFACT GLOW TEST|SCRIPT ERROR|Invalid polygon|FAIL" | tail -8
 echo "--adventure-camera"; timeout 60 $G --headless --path . res://tools/adventure_camera_test.tscn 2>&1 | grep -E "ADVENTURE CAMERA TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--war-machines"; timeout 120 $G --headless --path . res://tools/war_machine_test.tscn 2>&1 | grep -E "WAR MACHINE TEST|SCRIPT ERROR|FAIL" | tail -8

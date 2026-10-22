@@ -3,6 +3,8 @@
 python tools/campaign_trace_report.py shots/run.jsonl --after=42
 No recorded action can mean deliberate defense or no viable target, not necessarily a bug.
 Army deltas on moves exclude town reinforcement performed later by run_turn; end-turn armies include it.
+Each owner's last turn is a different instant: later players can capture those towns the same day.
+Use campaign_snapshot_report.tscn on --dump snapshots for a synchronized final world.
 """
 import argparse
 import collections
