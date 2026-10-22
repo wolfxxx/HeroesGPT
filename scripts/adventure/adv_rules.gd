@@ -737,6 +737,17 @@ func tick_townless() -> Array:
 	rebuild()
 	return out
 
+## Takes a player out of the game at once (hot-seat: a human whose champion fell in a "lose your hero" scenario):
+## their heroes leave and their towns, mines and dwellings fall neutral.
+func eliminate(p: Dictionary) -> void:
+	for hid in p["heroes"].duplicate():
+		_kill_hero(world["heroes"][hid])
+	for uid in p["towns"]:
+		world["towns"][uid]["owner"] = -1
+	p["towns"] = []
+	check_eliminations()
+	rebuild()
+
 func check_eliminations() -> void:
 	for p in world["players"]:
 		if p["alive"] and p["heroes"].is_empty() and p["towns"].is_empty():

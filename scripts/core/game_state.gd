@@ -36,7 +36,8 @@ var return_scene := SCENE_ADVENTURE
 var map_zoom := 0.8
 var battle_speed := 1.0  # battle: how fast it plays (combat options), applied as the engine's time scale
 var show_grid := false  # battle: the whole hex grid (G), or only where the active stack can go (the default)
-var new_game_settings := {"faction": "haven", "hero": "sir_aldric", "difficulty": 1, "map_size": 48, "seed": 0, "townless_limit": 0}
+var new_game_settings := {"faction": "haven", "hero": "sir_aldric", "difficulty": 1, "map_size": 48, "seed": 0, "townless_limit": 0,
+	"seat_human": [true, false, false, false], "seat_faction": ["", "", "", ""]}
 var _uid := 1000
 
 var _fade_layer: CanvasLayer
@@ -384,10 +385,49 @@ func current_player() -> Dictionary:
 		return {}
 	return world["players"][world["current_player"]]
 
+## The player whose eyes the screen shows: the human whose turn it is, and during the computer players' turns the
+## human who moved last (hot-seat: world["viewer"]), else the first human.
 func human_player_index() -> int:
 	if world.is_empty():
 		return 0
+	var cur: Dictionary = world["players"][world["current_player"]]
+	if not cur["is_ai"] and cur["alive"]:
+		return cur["index"]
+	var v: int = world.get("viewer", -1)
+	var vp: Dictionary = world["players"][v] if v >= 0 and v < world["players"].size() else {}
+	if not vp.is_empty() and not vp["is_ai"] and vp["alive"]:
+		return v
+	for p in world["players"]:
+		if not p["is_ai"] and p["alive"]:
+			return p["index"]
+	if not cur["is_ai"]:
+		return cur["index"]  # (every human has fallen: the one who fell last, for the defeat)
+	if not vp.is_empty() and not vp["is_ai"]:
+		return v
 	for p in world["players"]:
 		if not p["is_ai"]:
 			return p["index"]
 	return 0
+
+## Hot-seat: the player the screen was last handed to, in this very world (not saved, so a loaded or new game
+## first names whose turn it is, the map hidden).
+var _handed := [null, -1]
+
+func handed_over(to: int) -> void:
+	_handed = [world, to]
+
+func was_handed(to: int) -> bool:
+	return is_same(_handed[0], world) and _handed[1] == to
+
+## Hot-seat: more than one human player still in the game.
+func hotseat() -> bool:
+	return _humans_alive() > 1
+
+## Some human player is still in the game.
+func hotseat_alive() -> bool:
+	return _humans_alive() > 0
+
+func _humans_alive() -> int:
+	if world.is_empty():
+		return 0
+	return world["players"].filter(func(p): return not p["is_ai"] and p["alive"]).size()

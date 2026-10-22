@@ -228,3 +228,14 @@ class _BuildMark extends Control:
 		else:
 			draw_line(Vector2(6, 19), Vector2(15, 9), Color(0.65, 0.46, 0.24), 3, true)
 			draw_colored_polygon(PackedVector2Array([Vector2(10, 5), Vector2(13, 2), Vector2(21, 10), Vector2(18, 13)]), Color(0.6, 0.9, 0.55))
+
+## A pennant in the player's colour (hot-seat: the New Game seats and the turn dialogs).
+static func flag_icon(col: Color) -> Texture2D:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(14, 6, 5, 54), Color(0.35, 0.24, 0.12))  # the pole
+	for y in range(8, 40):
+		var tail := 8 - absi(y - 24) / 2 if absi(y - 24) < 16 else 0  # (a swallowtail notch at the fly end)
+		for x in range(19, 56 - maxi(0, tail)):
+			var edge := y < 10 or y > 37 or x < 21
+			img.set_pixel(x, y, col.darkened(0.35) if edge else col)
+	return ImageTexture.create_from_image(img)

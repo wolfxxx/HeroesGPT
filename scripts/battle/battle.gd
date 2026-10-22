@@ -2038,6 +2038,8 @@ func _end_battle(winner: int) -> void:
 	var wh = L.heroes[winner]
 	var necro := Necromancy.calculate(wh, L.army_out(winner), L.necromancy_casualties(loser), L.players[winner])
 	var human_side := 0 if not L.ai_side[0] else (1 if not L.ai_side[1] else -1)
+	if not L.ai_side[0] and not L.ai_side[1]:
+		human_side = winner  # (hot-seat, two people: the result as the winner sees it)
 	var human_won := human_side == winner
 	Audio.music("victory" if human_won or human_side < 0 else "defeat")
 	await get_tree().create_timer(0.8).timeout

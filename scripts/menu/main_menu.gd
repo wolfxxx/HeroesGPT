@@ -23,7 +23,8 @@ var _preview: TextureRect   # the chosen scenario's map in miniature (as the cla
 var _preview_info: Label    # the land, then the towns and mines (the line under it)
 var _preview_info2: Label
 var _preview_box: Control
-var _preview_cache := {}    # "scenario/faction" -> [texture, text]
+var _seats_box: HBoxContainer  # hot-seat: who plays each colour
+var _preview_cache := {}    # "scenario/faction/extra humans' towns" -> [texture, text]
 var _logo: Control
 var _menu_band: Control
 
@@ -359,6 +360,16 @@ Play on: heroes carry on without a town for as long as they last.
 	pv.add_child(_preview_info2)
 	_preview_box = pm
 	rv.add_child(pm)
+	# the players: Red is you; every other colour is a computer lord or another person at this screen (hot-seat)
+	var srow := HBoxContainer.new()
+	srow.add_theme_constant_override("separation", 10)
+	var sl := UI.label("Players", 22, UI.GOLD)
+	sl.custom_minimum_size.x = 76
+	srow.add_child(sl)
+	_seats_box = HBoxContainer.new()
+	_seats_box.add_theme_constant_override("separation", 8)
+	srow.add_child(_seats_box)
+	rv.add_child(srow)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rv.add_child(spacer)
@@ -479,7 +490,8 @@ func _refresh_preview() -> void:
 	_preview_box.visible = not sc.get("random", false)
 	if sc.get("random", false):
 		return
-	var key := "%s/%s" % [sc["id"], _settings.get("faction", "haven")]
+	var seats := range(1, int(sc["opponents"]) + 1).map(func(i): return _seat_faction(i) if _seat_human(i) else "")
+	var key := "%s/%s/%s" % [sc["id"], _settings.get("faction", "haven"), ",".join(PackedStringArray(seats))]
 	if not _preview_cache.has(key):
 		var s := _settings.duplicate()
 		s["seed"] = int(sc["seed"])
@@ -540,7 +552,11 @@ func _refresh_scenario() -> void:
 			size_name = m[0]
 	var n: int = int(_settings.get("opponents", 1))
 	var ms: int = int(_settings.get("map_size", 48))
-	_scen_info.text = "Map: %s (%d x %d)     Players: you and %d %s" % [size_name, ms, ms, n, "rival" if n == 1 else "rivals"]
+	var people := range(n + 1).filter(func(i): return _seat_human(i)).size()
+	if people > 1:  # (hot-seat)
+		_scen_info.text = "Map: %s (%d x %d)     Players: %d at this screen, %d computer" % [size_name, ms, ms, people, n + 1 - people]
+	else:
+		_scen_info.text = "Map: %s (%d x %d)     Players: you and %d %s" % [size_name, ms, ms, n, "rival" if n == 1 else "rivals"]
 	for pair in [[_vic_row, "Victory", sc["victory"], GameData.victory_text(sc["victory"])],
 			[_loss_row, "Defeat", sc["loss"], GameData.loss_text(sc["loss"], int(_settings.get("townless_limit", 0)))]]:
 		var row: HBoxContainer = pair[0]
@@ -633,7 +649,72 @@ func _refresh_options() -> void:
 			b.button_pressed = b.get_meta("value") == _settings.get(key)
 	for k in _bonus_buttons:
 		_bonus_buttons[k].button_pressed = k == _settings.get("bonus", "")
+	_refresh_seats()
 	_refresh_scenario()
+
+func _seat_human(i: int) -> bool:
+	var a: Array = _settings.get("seat_human", [])
+	return i == 0 or (i < a.size() and bool(a[i]))
+
+func _seat_faction(i: int) -> String:
+	var a: Array = _settings.get("seat_faction", [])
+	return str(a[i]) if i < a.size() else ""
+
+## Sets one seat's entry in a settings array (a fresh copy, so the saved defaults are not changed in place).
+func _set_seat(key: String, i: int, v) -> void:
+	var a: Array = _settings.get(key, []).duplicate()
+	while a.size() < 4:
+		a.append(false if key == "seat_human" else "")
+	a[i] = v
+	_settings[key] = a
+	Audio.sfx("click", -6)
+	_refresh_options()
+	_refresh_preview()
+
+## One button per colour in play: Red is you; a click on another colour cycles Computer, then a person at this
+## screen (hot-seat) with a random town, then with each faction's town.
+func _refresh_seats() -> void:
+	if _seats_box == null:
+		return
+	for c in _seats_box.get_children():
+		_seats_box.remove_child(c)
+		c.queue_free()
+	var n: int = int(_settings.get("opponents", 1)) + 1
+	for i in n:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(140, 54)
+		b.toggle_mode = true  # (lit for the people at this screen, as the other choices)
+		_ink(b)
+		b.button_pressed = _seat_human(i)
+		b.icon = UI.flag_icon(GameData.PLAYER_COLORS[i])
+		b.add_theme_constant_override("icon_max_width", 30)
+		b.add_theme_font_size_override("font_size", 17)
+		b.clip_text = true  # (four colours must fit the column)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var f := _seat_faction(i)
+		if i == 0:
+			b.text = "You"
+			b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		elif _seat_human(i):
+			b.text = "Human
+%s" % (GameData.FACTIONS[f]["name"] if GameData.FACTIONS.has(f) else "Random")
+		else:
+			b.text = "Computer"
+		if i > 0:
+			var si := i
+			b.pressed.connect(func():
+				var steps: Array = [""] + GameData.FACTIONS.keys()  # (the town choices a person cycles through)
+				if not _seat_human(si):
+					_set_seat("seat_faction", si, "")
+					_set_seat("seat_human", si, true)
+				elif steps.find(_seat_faction(si)) == steps.size() - 1:
+					_set_seat("seat_human", si, false)
+				else:
+					_set_seat("seat_faction", si, steps[steps.find(_seat_faction(si)) + 1]))
+			var tip := "%s: click to choose who plays this colour.
+Computer, or a person at this screen (hot-seat: players take turns, the map hidden between them), with a random town or a chosen one." % GameData.PLAYER_COLOR_NAMES[i]
+			(func(): if is_instance_valid(b): HoverInfo.attach(b, func(): return tip)).call_deferred()  # (not mid-setup)
+		_seats_box.add_child(b)
 
 func _select_faction(f: String) -> void:
 	_settings["faction"] = f

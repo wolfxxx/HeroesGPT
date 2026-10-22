@@ -108,6 +108,8 @@ func _post_ready() -> void:
 			GameData.victory_text(sc["victory"]), GameData.loss_text(sc["loss"], rules.townless_limit())]).closed
 	if world["players"][world["current_player"]]["is_ai"]:
 		_run_ai_turns()
+	elif GameState.hotseat() and not GameState.was_handed(world["current_player"]):
+		await _start_human_turn()  # (hot-seat: the first turn, or a loaded game: name whose turn it is first)
 	elif world.get("pending_turn_banner", false):
 		world["pending_turn_banner"] = false
 		_turn_banner()
@@ -864,6 +866,15 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 
 func _start_battle(setup: Dictionary, involves_human: bool) -> String:
 	if involves_human:
+		var dp: int = setup.get("defender_player", -1)
+		if (world["players"][world["current_player"]]["is_ai"] and GameState.hotseat() and dp >= 0
+				and not setup.get("defender_ai", true) and dp != _human()):
+			# (hot-seat: a computer player attacks a human who is not at the screen: call them to defend)
+			_cover()
+			world["viewer"] = dp
+			var p: Dictionary = world["players"][dp]
+			await Modal.message(self, "To Arms, %s!" % p["name"], "%s is attacked by %s. Take the field!" % [
+				_defender_name(setup), world["players"][world["current_player"]]["name"]], [[_flag_icon(p), p["name"]]]).closed
 		Audio.sfx("battle_start")
 		GameState.return_scene = GameState.SCENE_ADVENTURE
 		world["selected_hero"] = world.get("selected_hero", -1)
@@ -879,6 +890,13 @@ func _start_battle(setup: Dictionary, involves_human: bool) -> String:
 		await _handle_level_ups(world["heroes"][ev["hero"]])
 	view.rebuild_objects()
 	return ""
+
+func _defender_name(setup: Dictionary) -> String:
+	var dh = setup.get("defender_hero")
+	if dh is Dictionary and not dh.is_empty():
+		return dh["name"]
+	var town: Dictionary = world["towns"].get(setup.get("context", {}).get("town", -1), {})
+	return "The garrison of %s" % town.get("name", "your town")
 
 func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 	if ev.get("sfx", "") != "" and (human or _visible_to_human(hero["pos"])):
@@ -986,6 +1004,7 @@ func _advance_player() -> void:
 		cur = (cur + 1) % n
 		if cur == 0:
 			var info := rules.new_day()
+			info["seen_by"] = []
 			world["pending_week"] = info
 		if world["players"][cur]["alive"]:
 			break
@@ -1013,17 +1032,50 @@ func _run_ai_turns() -> void:
 	await _start_human_turn()
 
 func _start_human_turn() -> void:
-	_refresh_fog()
-	view.rebuild_objects()
-	_select_hero(_first_hero_with_mp())
-	hud.refresh()
 	if await _check_game_over():
 		return
+	var cover: CanvasLayer = null
+	if GameState.hotseat():
+		cover = _cover()  # (hot-seat: hide the last player's map before switching to the next one's)
+	world["viewer"] = world["current_player"]
+	GameState.handed_over(world["current_player"])
+	_refresh_fog()
+	view.rebuild_objects()
+	_select_hero(_first_hero_with_mp(), cover != null)
+	hud.refresh()
+	if cover:
+		var p := human_player()
+		await Modal.message(self, "%s's Turn" % p["name"], "%s. The realm awaits your orders." % rules.date_string(),
+			[[_flag_icon(p), p["name"]]]).closed
+		cover.queue_free()
 	await _turn_banner()
 
+## Hot-seat: a dark screen over the map and its panels (dialogs still show above it).
+func _cover() -> CanvasLayer:
+	var cover := CanvasLayer.new()
+	cover.layer = 80
+	var bg := ColorRect.new()
+	bg.color = Color(0.04, 0.03, 0.02)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_STOP
+	cover.add_child(bg)
+	add_child(cover)
+	return cover
+
+static func _flag_icon(p: Dictionary) -> Texture2D:
+	return UI.flag_icon(p["color"])
+
 func _turn_banner() -> void:
+	# the day's news, once for each human player (hot-seat: every one of them hears of the new week)
 	var info: Dictionary = world.get("pending_week", {})
-	world["pending_week"] = {}
+	var me: int = human_player()["index"]
+	if info.has("seen_by"):
+		if me in info["seen_by"]:
+			info = {}
+		else:
+			info["seen_by"].append(me)
+	else:
+		world["pending_week"] = {}
 	Audio.sfx("new_day", -4)
 	hud.flash_date()
 	if info.get("new_week", false):
@@ -1043,10 +1095,18 @@ func _turn_banner() -> void:
 func _check_game_over() -> bool:
 	if world.get("game_over", false):
 		return true
+	await _hotseat_defeats()
+	var cur: Dictionary = world["players"][world["current_player"]]
+	if not cur["is_ai"] and not cur["alive"] and GameState.hotseat_alive():
+		# (hot-seat: the player whose turn it is fell; the others play on)
+		busy = false
+		_advance_player()
+		_run_ai_turns()
+		return true
 	var me := human_player()
 	var others_alive := false
 	for p in world["players"]:
-		if p["is_ai"] and p["alive"]:
+		if p["index"] != me["index"] and p["alive"]:
 			others_alive = true
 	# the scenario's own conditions (a capture, a hoard of gold, the starting hero, a deadline)
 	var sc: Dictionary = world.get("scenario", {})
@@ -1057,7 +1117,7 @@ func _check_game_over() -> bool:
 		lost = "Seven days have passed without a town to call your own. Your followers have deserted you."
 	elif not me["alive"]:
 		lost = "Your last hero has fallen and your towns are lost. The Shattered Crown will never be whole again."
-	elif loss.get("type", "") == "hero" and not world["heroes"].has(world.get("start_hero", -1)):
+	elif loss.get("type", "") == "hero" and not world["heroes"].has(me.get("start_hero", world.get("start_hero", -1))):
 		lost = "Your champion has fallen, and with them the last hope of the old order."
 	elif loss.get("type", "") == "days" and world["day"] > int(loss.get("days", 112)):
 		lost = "The snows have melted and your enemies' hosts have joined together. Time has run out."
@@ -1070,14 +1130,16 @@ func _check_game_over() -> bool:
 		return true
 	var won := ""
 	if not others_alive:
-		won = "All your enemies have been vanquished. The lands bow before you, and the Shattered Crown is yours."
+		won = ("%s is the last lord standing. " % me["name"] if _human_count() > 1 else "") + "All your enemies have been vanquished. The lands bow before you, and the Shattered Crown is yours."
 	elif vic.get("type", "") == "capture":
 		for t in world["towns"].values():
-			if t["owner"] == me["index"] and t.get("start_owner", -1) > 0:
+			if t["owner"] == me["index"] and t.get("start_owner", -1) >= 0 and t["start_owner"] != me["index"]:
 				won = "%s is yours. With the enemy's stronghold taken, the border is secure." % t["name"]
 	elif vic.get("type", "") == "gold" and me["resources"]["gold"] >= int(vic.get("amount", 0)):
 		won = "Your treasury overflows with the gold of the old kings. The realm's lords flock to your banner."
 	if won != "":
+		if _human_count() > 1 and not won.begins_with(me["name"]):
+			won = "%s wins! %s" % [me["name"], won]
 		world["game_over"] = true
 		Audio.music("victory")
 		await Modal.message(self, "Victory!", won).closed
@@ -1085,6 +1147,33 @@ func _check_game_over() -> bool:
 		GameState.change_scene(GameState.SCENE_MENU)
 		return true
 	return false
+
+func _human_count() -> int:
+	return world["players"].filter(func(p): return not p["is_ai"]).size()
+
+## Hot-seat: a human who falls (or loses their champion) while another human plays on is told so and leaves the
+## game; the others carry on. (When every human has fallen, the plain defeat follows.)
+func _hotseat_defeats() -> void:
+	if _human_count() < 2:
+		return
+	var loss: Dictionary = world.get("scenario", {}).get("loss", {})
+	var out := []
+	for p in world["players"]:
+		if p["is_ai"] or p.get("defeat_told", false):
+			continue
+		if p["alive"] and loss.get("type", "") == "hero" and not world["heroes"].has(p.get("start_hero", -1)):
+			rules.eliminate(p)  # (their champion fell: they are out)
+		if not p["alive"]:
+			out.append(p)
+	if out.is_empty() or not GameState.hotseat_alive():
+		return
+	view.rebuild_objects()
+	for p in out:
+		p["defeat_told"] = true
+		var why := ("Seven days have passed without a town to call their own, and their followers have deserted them."
+			if p.get("defeated_townless", false) else "Their last hero has fallen and their towns are lost.")
+		await Modal.message(self, "%s Is Defeated" % p["name"], "%s %s The game goes on for the others." % [
+			p["name"], why], [[_flag_icon(p), p["name"]]]).closed
 
 # ---------------------------------------------------------------------------------------------
 func _refresh_fog() -> void:

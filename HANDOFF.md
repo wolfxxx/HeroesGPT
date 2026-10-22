@@ -16,7 +16,24 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Playtest polish (2026-10-22), uncommitted:** the user approved fixing the remaining playtest findings.
+- **Hot-seat multiplayer (2026-10-22), committed with this HANDOFF update:** the user agreed to the hot-seat milestone after the polish
+  batch. New Game has a **Players** row: one button per colour; Red is you, a click on another colour cycles
+  Computer → Human (random town) → Human (Haven) → Human (Necropolis) → Computer (`main_menu._refresh_seats`,
+  settings `seat_human` / `seat_faction`). Extra humans get a human's starting resources for the difficulty, a
+  random hero of their town and a random starting bonus (HoMM3's "Random" choice for each); names become "Red
+  Player", "Blue Player" (a one-human game is generated exactly as before, tested). The viewpoint is
+  `GameState.human_player_index()`: the human whose turn it is, during computer turns the last human who moved
+  (`world["viewer"]`). Each human turn in hot-seat starts behind a dark cover with "<Colour> Player's Turn" and a
+  pennant (`adventure._start_human_turn`, `_cover`, `UI.flag_icon`); the first turn and a loaded game do the same
+  (`GameState.handed_over / was_handed`, deliberately not saved). The new-week dialog reaches every human
+  (`pending_week["seen_by"]`). Battles between humans are played by both from the screen (BattleLogic already took
+  per-side control); the result is titled as the winner sees it. A computer attacking a human who is not at the
+  screen first shows "To Arms, <Colour> Player!" behind the cover (an aid, not a rule). A human who falls is told
+  "<Colour> Player Is Defeated" and the others play on (in a "lose your champion" scenario `AdvRules.eliminate`
+  takes them out); a human who falls on their own turn passes it on; the last player standing wins. New
+  `tools/hotseat_test.tscn` (33 checks, in the suite). Inspected `shots/session53/seat*.png`, `handover.png`,
+  `blue.png` (Blue's own fog and resources in a real 2-human game) and `hotseat_defend.png`. Full suite passed.
+- **Playtest polish (2026-10-22), committed and pushed as `1dfa88b` at the user's request:** the user approved fixing the remaining playtest findings.
   (1) Hero hidden behind a building: a claimed mine/visited windmill is rebuilt (`MapView.refresh_object`) and added
   after the hero at the same y-sort depth; `MapView.hero_foot` now sits 1px lower, so a hero in a doorway always
   draws in front. Verified by claiming the Ore Pit in the real game (`shots/session52/mine_after.png`).
@@ -652,8 +669,8 @@ step 3 for the cases still unresolved, step 5 for Necropolis and a human playtes
 early rushes; judge long-game changes mainly on four-player/larger maps. Next map IDs to reserve: 1700+ (1300–1323,
 1400–1407 validation and 1500–1523, 1600–1607 development were used in session52).
 
-**Following milestone:** hot-seat multiplayer (human/computer selection, private turn handoff, human-versus-human
-battles, saving and turn ownership). Fog-information policy, map-spell planning, difficulty settings, remaining
+**Hot-seat multiplayer is built (session53, see §2).** Worth a human playtest with two people: turn handover,
+human-versus-human battles, a computer attacking the player not at the screen. Fog-information policy, map-spell planning, difficulty settings, remaining
 machine wrecks and visual findings stay on the backlog; online multiplayer remains a separate larger project.
 
 ### Playtest findings (session52, one Haven campaign on Normal; not yet fixed)
@@ -802,9 +819,8 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
    Remaining work: better conquest/reinforcement priorities, map-spell planning, fog policy and difficulty.
    Adventure AI still enumerates world targets regardless of fog. Keep the frozen baseline and use fresh map
    pairs for comparisons; strategic scores and eliminations measure different outcomes.
-3. **Multiplayer.** None today (`world_gen.gd`: `"is_ai": i != 0`). Step 1, hot-seat (players sharing one
-   computer, as HoMM3): choose human/computer per player on New Game, a "pass to the next player" screen,
-   human-vs-human battles. Step 2, online play, is its own large project: an authoritative host, deterministic
+3. **Multiplayer.** Step 1, hot-seat (players sharing one computer, as HoMM3) — BUILT in session53 (§2, §9).
+   Step 2, online play, is its own large project: an authoritative host, deterministic
    seeded randomness in battle and on the map, disconnects, saving. Keep these rules from now on: all game state
    stays in saveable dictionaries, all randomness goes through a seeded generator, screens never change the rules'
    state directly (the split of `adv_rules`/`battle_logic` from the views already helps).
@@ -813,6 +829,13 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
    width for each; the battle loader now scales native-resolution wrecks to their idle footprint.
 
 ## 9. Where the recent systems live
+
+- **Hot-seat (session53):** seats on New Game `main_menu._refresh_seats` / `_set_seat`; generation
+  `WorldGen.generate` (`humans`, `_player_name`, per-human `start_hero`, random bonus for extra humans); viewpoint
+  `GameState.human_player_index`, `hotseat()`, `hotseat_alive()`, `handed_over` / `was_handed`; turn flow
+  `adventure._start_human_turn`, `_cover`, `_turn_banner` (`seen_by`), `_start_battle` (the defence call),
+  `_check_game_over` + `_hotseat_defeats`; `AdvRules.eliminate`; battle result `battle._end_battle`; pennant
+  `UI.flag_icon`. Test `tools/hotseat_test.gd`.
 
 - **Conquest work (session49):** `AdvAI._counterattack` relieves threatened towns; `_unlocks_assault` evaluates
   substantial deliveries; `_merge_stacks` frees duplicate army slots; `dwelling_recruits` shares purchase
@@ -860,6 +883,11 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   xp / speed `icons/stat_*.png`, the hero screen's closed spellbook `icons/spellbook_closed.png`.
 
 ## 10. Gotchas learned the hard way
+
+- Keep screen-only state out of `GameState.world`: `campaign_flow_test` checks that a save/load round trip returns the
+  world byte for byte, so a marker erased on load fails it (hot-seat's handover marker lives in `GameState._handed`).
+- Python edits sent through a Bash heredoc lost GDScript's backslash line continuations; use parentheses for
+  multi-line conditions instead.
 
 - Map reachability must use the game's diagonal rule (AStarGrid2D `DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE`): two
   obstacles touching at a corner are a wall. Any later footprint can seal a pocket, so check access after all

@@ -76,6 +76,12 @@ func _generate(settings: Dictionary) -> Dictionary:
 	var opponents: int = clampi(int(settings.get("opponents", 1)), 1, 3)
 	var nplayers := opponents + 1
 	var difficulty: int = settings.get("difficulty", 1)
+	# hot-seat: which seats a person plays (Red always), and the town each extra human chose ("" = random)
+	var seat_human: Array = settings.get("seat_human", [])
+	var seat_faction: Array = settings.get("seat_faction", [])
+	var humans := []
+	for i in nplayers:
+		humans.append(i == 0 or (i < seat_human.size() and bool(seat_human[i])))
 
 	world = {
 		"seed": seed_v, "size": Vector2i(w, h), "day": 1, "current_player": 0,
@@ -93,6 +99,9 @@ func _generate(settings: Dictionary) -> Dictionary:
 			factions.append(human_faction)
 		else:
 			factions.append(GameData.FACTIONS.keys()[rng.randi() % GameData.FACTIONS.size()])
+			var chosen: String = str(seat_faction[i]) if humans[i] and i < seat_faction.size() else ""
+			if GameData.FACTIONS.has(chosen):  # (drawn first all the same, so the rest of the map stays as it was)
+				factions[i] = chosen
 
 	# ---- terrain zones --------------------------------------------------------------------
 	var zone_centers := []
@@ -295,13 +304,13 @@ func _generate(settings: Dictionary) -> Dictionary:
 	var ai_amounts: Array = [[15000, 15, 7], [20000, 20, 10], [30000, 30, 15]][clampi(difficulty, 0, 2)]
 	var used_heroes := []
 	for i in nplayers:
-		var amounts: Array = res_amounts if i == 0 else ai_amounts
+		var amounts: Array = res_amounts if humans[i] else ai_amounts
 		var resources := {}
 		for r in GameData.RESOURCES:
 			resources[r] = amounts[0] if r == "gold" else (amounts[1] if r in ["wood", "ore"] else amounts[2])
 		var player := {
-			"index": i, "name": "You" if i == 0 else "%s Lord" % GameData.PLAYER_COLOR_NAMES[i],
-			"color": GameData.PLAYER_COLORS[i], "is_ai": i != 0, "faction": factions[i],
+			"index": i, "name": _player_name(i, humans), "color": GameData.PLAYER_COLORS[i], "is_ai": not humans[i],
+			"faction": factions[i],
 			"resources": resources, "heroes": [], "towns": [town_list[i]["uid"]], "alive": true,
 			"explored": PackedByteArray(),
 		}
@@ -320,6 +329,8 @@ func _generate(settings: Dictionary) -> Dictionary:
 		hero["pos"] = town_list[i]["pos"]  # heroes start inside their town (at the gate), as in HoMM
 		world["heroes"][hero["uid"]] = hero
 		player["heroes"].append(hero["uid"])
+		if humans[i]:
+			player["start_hero"] = hero["uid"]  # (a scenario's "lose your champion" condition, per human)
 	for t in town_list:
 		world["towns"][t["uid"]] = t
 	for k in GameData.HEROES:
@@ -334,7 +345,16 @@ func _generate(settings: Dictionary) -> Dictionary:
 	for t in town_list:
 		t["start_owner"] = t["owner"]
 	_start_bonus(world["players"][0], world["heroes"][world["start_hero"]], settings.get("bonus", ""))
+	for p in world["players"]:  # (other humans: a random bonus, HoMM3's default choice)
+		if p["index"] > 0 and not p["is_ai"]:
+			_start_bonus(p, world["heroes"][p["start_hero"]], GameData.START_BONUSES.keys()[rng.randi() % GameData.START_BONUSES.size()])
 	return world
+
+## "You" when one person plays; in hot-seat each human is named by colour ("Blue Player").
+static func _player_name(i: int, humans: Array) -> String:
+	if not humans[i]:
+		return "%s Lord" % GameData.PLAYER_COLOR_NAMES[i]
+	return "You" if humans.count(true) == 1 else "%s Player" % GameData.PLAYER_COLOR_NAMES[i]
 
 ## The starting bonus chosen on the New Game screen.
 func _start_bonus(p: Dictionary, hero: Dictionary, bonus: String) -> void:

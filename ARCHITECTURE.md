@@ -67,6 +67,24 @@ Town visits: `adventure._enter_own_town(hero, town)` -> `{hero, learned, mana}` 
 dialog (also after building a guild level or hiring, via `_learn_guild_spells`). `Modal.add_icon_flow` wraps long
 icon lists. Test: `tools/announce_test.tscn` (real battle end -> adventure transfer; real visit -> town dialog).
 
+## Hot-seat
+Seats: New Game settings `seat_human` / `seat_faction` (arrays of 4; Red is always human, "" = random town), edited
+by `main_menu._refresh_seats`. `WorldGen.generate` draws every computer-style faction from the rng first and then
+applies a chosen one, so a one-human game is unchanged; humans get the difficulty's human resources, a per-player
+`start_hero`, and (beyond Red) a random starting bonus. `player["is_ai"]` is the only switch the rules read.
+Viewpoint: `GameState.human_player_index()` = the current player if it is a living human, else `world["viewer"]`
+(set at each human turn start), else the first living human (all fallen: the last one, for the defeat). Everything
+that shows "your" kingdom (fog, HUD, town fallback, remote `state`) goes through it. `GameState.hotseat()` = two or
+more living humans. Turn handover: `adventure._start_human_turn` covers the screen (`_cover`, CanvasLayer 80 under
+the modal layer 90), switches the view, selects that player's hero, then shows "<name>'s Turn"; `_post_ready` does the
+same for the first turn and a loaded game, using the unsaved `GameState.handed_over / was_handed` (tied to the world
+instance). `_turn_banner` shows the new week to each human once (`pending_week["seen_by"]`). `_start_battle`: a
+computer attacking a human other than the viewer shows "To Arms" behind the cover and makes them the viewer.
+`_check_game_over` first runs `_hotseat_defeats` (each fallen human told once, `defeat_told`; a lost champion in a
+hero scenario -> `AdvRules.eliminate`), passes the turn on if the current human fell, then checks defeat/victory for
+the viewer (others alive = any other living player). Battles: `BattleLogic.ai_side` per side; `battle._end_battle`
+titles a human-vs-human result from the winner's side. Test: `tools/hotseat_test.tscn`.
+
 ## Map right-click and depth
 Right button down on the map: `adventure._right_click` shows `_tile_info(t, true)` (the hover panel; heroes add
 `_army_row`, own towns their garrison) via `HoverInfo.show_for(self, …, 0.0)`; release hides it (`_rclick_info`).
@@ -202,7 +220,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `adventure_camera_test` (33 movement/visibility/turn-camera checks),
   `war_machine_test` (purchases, factory persistence, AI, generated access and battle ammo),
   `necromancy_test` (46 checks of raising rules, slots, casualties and rewards on both sides),
-  `meet_test` (18 meeting-by-click and artifact hand-over checks), `announce_test` (10 captured-artifact and town-learning announcement checks), `map_reach_report` (every object reachable on 36 maps),
+  `meet_test` (18 meeting-by-click and artifact hand-over checks), `announce_test` (10 captured-artifact and town-learning announcement checks), `hotseat_test` (33 hot-seat checks), `map_reach_report` (every object reachable on 36 maps),
   `click_test` (map clicks, drag, queued clicks), `visit_test` (hover "visited" lines), `artifact_test` (every
   artifact's effect, slots, combinations, tiered placement), `sim_test` (all-AI soak).
 - `tools/adventure_camera_test.tscn` — real adventure scene/camera assertions for visible and hidden movement,
@@ -293,6 +311,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/map_reach_report.tscn` — in the full suite: generates 36 maps (sizes 36/48/64) and counts objects/towns the
   first town cannot reach with the game's movement rule; must print `"maps_with_cut": 0` (exit code 1 otherwise).
   `-- --save=user://x.dat` checks a saved world; `-- --scenario=<id>` lists the tiles the access pass cleared.
+- `tools/hotseat_test.tscn` — in the full suite: seats and generation, the turn handover cover, Blue's own view,
+  the new week for each human, save/load handover, a human-versus-human battle, the defence call, hot-seat defeats
+  and the last player standing.
 - `tools/meet_test.tscn` — in the full suite: real clicks on a second own hero show the route, then walk over and open
   the Hero Meeting dialog; an unreachable hero is selected instead.
 - Remote play (`scripts/core/shot.gd`, `--remote=<dir>`): runs the real game from the main menu and executes
