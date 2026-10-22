@@ -24,8 +24,10 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   ("Seven days have passed without a town..."). Defeat texts in the menu and briefing mention it. A townless AI under
   the rule accepts a town assault at 1.1x instead of 1.4x and values it 3x. Tournament `--townless=7` plays with it.
   Eight new checks (87 adventure AI checks). Screenshots inspected: `shots/session52/tl_option.png`,
-  `tl_brief.png`, `tl_warning.png`. Full suite passed (`tests4.log`); player's save unchanged. Not measured: how
-  often the rule ends long AI games (a tournament with `--townless=7` would show it).
+  `tl_brief.png`, `tl_warning.png`. Full suite passed (`tests4.log`); player's save unchanged. Measured afterwards
+  (`docs/AI_COORDINATION.md`): it ends few AI games (5 -> 4 of 32 at the limit on maps 1700–1707; the nine saved
+  stalemates unchanged), because stalled games are between players who all still hold towns.
+  `campaign_resume_test --townless=7` added.
 - **Session52 AI round (2026-10-22), committed and pushed at the user's request:** §8 steps 1 and 4 done; steps 2–3 partly (see
   **`docs/AI_COORDINATION.md` "Session52"**). Frozen baseline `tools/ai/adventure_ai_session51.gd` (`555fedc`,
   control 0.00 ± 0.00); resume tool `--before=`. Kept one change, `AdvAI._leave_rear_guard` (a hero leaving a town an

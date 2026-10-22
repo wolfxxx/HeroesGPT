@@ -1,6 +1,7 @@
 extends Node
 ## Paired diagnostic continuations of unfinished session50 worlds, not a fresh strength benchmark.
 ## Snapshots lack RNG state: both variants restart with the same explicit seed/UID, not the original stream.
+## --townless=7 plays the continuation under the optional seven-day rule.
 ## --before=res://tools/ai/adventure_ai_session51.gd selects the "before" policy (default: frozen f69ad3a, session49);
 ## the other seats keep the worlds' original 4f126ec opponent either way.
 const Driver = preload("res://tools/ai/campaign_driver.gd")
@@ -15,12 +16,14 @@ func _run() -> void:
 	var only_case := ""
 	var trace_path := ""
 	var before_path := "res://tools/ai/adventure_ai_session49.gd"
+	var townless := 0
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--dir="): directory = arg.substr(6)
 		if arg.begins_with("--days="): days = int(arg.substr(7))
 		if arg.begins_with("--case="): only_case = arg.substr(7)
 		if arg.begins_with("--trace="): trace_path = arg.substr(8)
 		if arg.begins_with("--before="): before_path = arg.substr(9)
+		if arg.begins_with("--townless="): townless = int(arg.substr(11))  # (the optional seven-day rule)
 	var Before = load(before_path)
 	print("CAMPAIGN RESUME: before policy ", before_path)
 	var names := DirAccess.get_files_at(directory)
@@ -43,6 +46,7 @@ func _run() -> void:
 		var side := int(name.get_basename().get_slice("_", 1))
 		for variant in 2:
 			var w := original.duplicate(true)
+			w["townless_limit"] = townless
 			GameState._uid = 1000
 			for key in ["heroes", "towns", "objects"]:
 				for uid in w[key]: GameState._uid = maxi(GameState._uid, uid)

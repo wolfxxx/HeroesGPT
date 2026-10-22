@@ -130,3 +130,14 @@ Benchmark note: two-player size-36 games are short (median about 16–18 days wi
 day-1 to day-5 captures of empty towns, so policies that trade tempo for safety lose there. Results on larger maps
 with more players are a better guide to long-game behaviour; neither showed a gain this round.
 Logs: ignored `shots/session52/{control51,dev1,dev2,final36,final48,resume1,resume2,resume3}.log`.
+
+### Seven-day townless rule and unfinished games (session52)
+
+Same eight four-player size-48 maps (1700–1707, 32 games, 84 days, current vs `555fedc`), rule off then on:
+off: 27 finished / 5 at the limit (score -1.45 ± 6.66); on (`--townless=7`): 28 / 4 (-3.81 ± 10.08); median end day
+37 both times. Every game still unfinished at the limit has two survivors who both hold towns (4/2, 5/1, 6/0+heroes
+split), so the rule rarely applies. The nine saved session50 stalemates (`campaign_resume_test --townless=7`,
+28 days) end exactly as without it: towns change hands but nobody stays townless for seven days.
+Conclusion: the rule is a faithful option, not a fix for AI stalemates; those are between town-holding armies that
+never commit to a decisive assault (see 427/0 above). Logs: `shots/session52/townless{0,7}.log`,
+`resume_townless{0,7}.log`.
