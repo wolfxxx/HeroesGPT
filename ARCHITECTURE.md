@@ -96,7 +96,8 @@ Fortification levels (`TownLogic.siege_level`: 0 none, 1 Fort, 2 Citadel, 3 Cast
 town screen's banner) and the siege: `BattleLogic` puts the moat in front of the wall only at level 2+
 (`is_moat`), the corner segments (rows 0 and 10, `SOLID_SEGS`) are never walkable and only a Castle's can be hit
 (`breakable`); `battle.gd` loads `battle/bg_siege_<faction>_<level>.png` and that level's breach overlays
-(`siege.json` key `<faction>_<level>`), `WALL_BANDS` and `ARCHER_SPOTS` matching the painted layout.
+(`siege.json` key `<faction>_<level>`), `WALL_BANDS` and `ARCHER_SPOTS` matching the painted layout. A segment hit
+once shows its painted battered overlay (`_battered`, `_show_battered`); `_Cracks` only draws for one without.
 
 ## Meeting your own hero
 `adventure.gd._click`: with a hero selected, a click on another of your heroes plans the `meet` route (status line
@@ -308,7 +309,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/artifact_glow_test.tscn` — render 32 glows over 128 frames, sampling appearance/disappearance thresholds
   and the wider cycle. Run windowed for actual renderer verification; `-- --shot=shots/x.png --delay=1` holds a
   labelled phase sheet. Restore `project.godot` after any windowed run (the full suite's exit trap does this).
-- `tools/battle_visual_test.tscn` — 25 headless assertions. Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck|movement`
+- `tools/battle_visual_test.tscn` — 40 headless assertions (with every machine's wreck and the battered wall). Add `-- --shot=shots/x.png --case=crowd|distant|corpses|lightning|wreck|movement`
   in a window to hold the same siege layout for screenshot comparison. Battle `_acting_uid` tracks the turn being
   animated (rules can already be on the next turn); `_figures_overlap` samples sprite alpha above the ground shadow.
   Checks also compare painted overlap with/without staggering, unchanged combat cells and smooth flyer movement.
@@ -352,13 +353,15 @@ Godot_v4.7.2-stable_win64_console.exe --path . -- --shot=shots/x.png --scene=res
 Options: `--shots=N --interval=S`, `--click=x,y;x,y` (`r` prefix = right click), `--keys=Space;Enter`, `--hover=x,y`,
 `--setup=<name>` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (with `--siege=1|2|3`),
 `town_levels` (adventure: the first town a Castle, the second a village), `necro_rich`,
-`necro_max`, `x`); adventure also `--seed --faction --reveal --cam=x,y --zoom`, battle `--broken=a,b` (breached walls).
+`necro_max`, `x`); adventure also `--seed --faction --reveal --cam=x,y --zoom`, battle `--broken=a,b` (breached walls),
+`--battered=a,b` (walls hit once).
 Window must not be headless (rendering needed). Screens are saved at the window resolution (1600x900 by default).
 
 ## Art & audio pipeline (see ASSETS.md)
 - Blender (via the Blender MCP) renders all sprites: `tools/art/blender/*.py`, driven by `batch.py`
   (`run(["creatures", "battle", "towns", ...])`). Textures/HDRIs are CC0 from Poly Haven, cached in tools/art/raw/.
-- Siege backdrops per fortification level: `tools/art/siege_levels_paint.py` (`collage`, `paint`, `breach`, `ingest`;
+- Siege backdrops per fortification level: `tools/art/siege_levels_paint.py` (`collage`, `paint`, `breach`, `damage`,
+  `retop`, `ingest`;
   imagegen/batch28); the earlier single painting's `siege_wall_paint.py` is superseded. Town map pictures per level:
   `tools/art/town_levels_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch29).
 - Python post-processing: `tools/art/postfx.py` (ink outline, saturation), `sky.py` (painted skies),
@@ -366,6 +369,8 @@ Window must not be headless (rendering needed). Screens are saved at the window 
   `terrain.py` (terrain textures), `ui_art.py` (panels, buttons, logo).
 - Audio: `tools/audio/gen_audio.py {sfx|music|voice}` — ElevenLabs (key from ELEVENLABS_API_KEY).
 
-- Machine wrecks: `battle.gd._pose` scales `<machine>_dead.png` by its painted width relative to the idle sprite;
-  missing death sprites retain the existing fallback. First implemented: ballista. `tools/art/sprite_sizes.py`
-  accepts optional filenames to update only those metadata entries. Prompt/provenance: `tools/art/ballista_wreck_prompt.md`.
+- Machine wrecks: `battle.gd._pose` scales `<machine>_dead.png` by its painted width relative to the idle sprite,
+  and `_anim_death` keeps a wreck's colours (saturation 0.8, dimmed) instead of the corpse grey; a machine without a
+  wreck sprite keeps the old tipped-over fallback. All four machines have one: `tools/art/machine_wreck_paint.py`
+  (`prep`, `paint`, `ingest`, `shrink`), the ballista's provenance in `tools/art/ballista_wreck_prompt.md`.
+  `tools/art/sprite_sizes.py` accepts optional filenames to update only those metadata entries.

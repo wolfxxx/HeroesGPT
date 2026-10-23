@@ -3,8 +3,11 @@ keep and the moat, a Castle the two round arrow towers at the ends of the wall),
 python tools/art/siege_levels_paint.py collage            ->  imagegen/batch28/in/collage_<faction>.png (layout guide)
 python tools/art/siege_levels_paint.py paint [names...]   ->  imagegen/batch28/out/<level>_<faction>.png
 python tools/art/siege_levels_paint.py breach [names...]  ->  imagegen/batch28/out/breach_<level>_<faction>_<seg>.png
+python tools/art/siege_levels_paint.py retop              ->  the Castle's lower tower gets a battlement top (then breach
+                                                              breach_castle_<faction>_5/6 again, then ingest)
+python tools/art/siege_levels_paint.py damage [names...]  ->  imagegen/batch28/out/dmg_<level>_<faction>_<seg>.png (hit once)
 python tools/art/siege_levels_paint.py ingest             ->  assets/battle/bg_siege_<faction>_<level>.png,
-                                                              assets/battle/siege_<faction>_<level>_ruin_<seg>.png,
+                                                              assets/battle/siege_<faction>_<level>_{ruin,dmg}_<seg>.png,
                                                               assets/battle/siege.json ("<faction>_<level>": positions)
 Levels: 1 fort, 2 citadel, 3 castle.
 
@@ -229,6 +232,89 @@ def breach(names):
                     print("FAILED", n, flush=True)
 
 
+# A segment hit once (of its two hits) stands battered, as the classic's damaged wall pieces: still whole, no way through.
+_BATTERED = ("battered by catapult fire but STILL STANDING AND WHOLE: several merlons of its battlements knocked off, "
+             "a few big chunks of stone chipped out of its face leaving rough pale scars with dark shadowed edges, "
+             "two or three cracks running along the joints of the masonry, a little rubble and a few loose blocks at "
+             "its foot{moat}")
+DMG_WHAT = {
+    0: "the tall round tower at the top " + _BATTERED,
+    1: "the stretch of curtain wall that runs straight down through the MIDDLE band of the picture (and nothing else) "
+       + _BATTERED,
+    2: "the crenellated top of the gatehouse " + _BATTERED,
+    3: ("the gatehouse's gate: its heavy wooden doors battered and splintered, a few planks cracked and broken, an iron "
+        "band bent, but the doors still SHUT and the gatehouse itself unchanged"),
+    6: "the smaller round tower at the bottom " + _BATTERED,
+}
+DMG_WHAT[4] = DMG_WHAT[5] = DMG_WHAT[1]
+DAMAGE = ("This is a crop of a castle siege battlefield from a fantasy strategy game. Paint EXACTLY the same picture, "
+          "same framing, every shape in the same place, but with {what}; the stone keeps exactly its colours and "
+          "material ({mat}). There is NO hole or gap through the wall: it still blocks the way. Only that part "
+          "changes; the top and bottom edges of the picture, the grass, the courtyard and the town behind stay "
+          "exactly as they are. {style}\nNo units, no people, no text.")
+
+
+def damage(names):
+    from google import genai
+    import vertex_paint as vp
+    client = genai.Client(vertexai=True, project=vp.PROJECT, location=vp.LOCATION)
+    for fac in FACTIONS:
+        for lvl, lname in LEVELS.items():
+            wall = Image.open(f"{BATCH}/out/{lname}_{fac}.png").convert("RGB").resize((1920, 1080), Image.LANCZOS)
+            for i in breakable(lvl):
+                n = f"dmg_{lname}_{fac}_{i}"
+                if names and n not in names:
+                    continue
+                dst = f"{BATCH}/out/{n}.png"
+                if os.path.exists(dst) and not names:
+                    print("skip", n); continue
+                src = f"{BATCH}/in/{n}.png"
+                wall.crop(_breach_box(i)).resize((1024, 1024), Image.LANCZOS).save(src)
+                prompt = DAMAGE.format(what=DMG_WHAT[i].format(moat=MOAT[lvl]), style=vp.STYLE, mat=MAT[fac])
+                img = vp.paint(client, "gemini-nano-banana-2.1", src, prompt, "1:1", "1K")
+                if img:
+                    img.save(dst); print("done", n, flush=True)
+                else:
+                    print("FAILED", n, flush=True)
+
+
+# The lower tower stands on row 10, at the command bar: only its top shows. Painted with a conical roof, its archer
+# stood on the spire; like the upper tower it gets a crenellated fighting top for the archer instead.
+RETOP = ("This is a crop of a castle siege battlefield from a fantasy strategy game. Paint EXACTLY the same picture, "
+         "same framing, every shape in the same place, except the small round tower at the bottom centre: take off its "
+         "pointed conical roof and give it a FLAT crenellated battlement top instead, a ring of square merlons around "
+         "an open round fighting platform where an archer can stand, the platform's floor visible; the top of the "
+         "merlons where the roof's lower rim is now, the tower's body, width and position unchanged; same stone and "
+         "colours ({mat}). The wall, the moat, the grass and the courtyard stay exactly as they are. {style}"
+         "\nNo units, no people, no text.")
+RETOP_BOX = (1155, 620, 1615, 1080)  # (= _breach_box(6))
+RETOP_CUT = (1240, 840, 1490, 1080)  # (only the tower's top is taken from the repaint)
+
+
+def retop():
+    from google import genai
+    import vertex_paint as vp
+    client = genai.Client(vertexai=True, project=vp.PROJECT, location=vp.LOCATION)
+    for fac in FACTIONS:
+        p, keep = f"{BATCH}/out/castle_{fac}.png", f"{BATCH}/out/castle_{fac}_cone.png"
+        if not os.path.exists(keep):
+            Image.open(p).convert("RGB").resize((1920, 1080), Image.LANCZOS).save(keep)
+        wall = Image.open(keep).convert("RGB")
+        src = f"{BATCH}/in/retop_{fac}.png"
+        wall.crop(RETOP_BOX).resize((1024, 1024), Image.LANCZOS).save(src)
+        img = vp.paint(client, "gemini-nano-banana-2.1", src, RETOP.format(style=vp.STYLE, mat=MAT[fac]), "1:1", "1K")
+        if not img:
+            print("FAILED", fac); continue
+        img.save(f"{BATCH}/out/retop_{fac}.png")
+        bw, bh = RETOP_BOX[2] - RETOP_BOX[0], RETOP_BOX[3] - RETOP_BOX[1]
+        new = wall.copy()
+        new.paste(img.convert("RGB").resize((bw, bh), Image.LANCZOS), RETOP_BOX[:2])
+        m = Image.new("L", wall.size, 0)
+        ImageDraw.Draw(m).rectangle(RETOP_CUT, fill=255)
+        m = m.filter(ImageFilter.GaussianBlur(10))
+        Image.composite(new, wall, m).save(p)
+        print("retopped", fac, flush=True)
+
 FEATHER = 24
 # (the cut of a segment's overlay: its band, but the gatehouse's top reaches down into the gatehouse and the gate's
 # up over the whole door, so each hole reads as a way through)
@@ -236,8 +322,8 @@ CUT_BANDS = {2: (380, 540), 3: (490, 668)}
 
 
 def ingest():
-    """Per level the finished backdrop, and per breakable segment a feathered cut of its breach painting (where it
-    differs from the intact wall) with its position on the screen."""
+    """Per level the finished backdrop, and per breakable segment a feathered cut of its breach painting and of its
+    battered painting (where each differs from the intact wall) with their position on the screen (the same for both)."""
     meta = {}
     for fac in FACTIONS:
         for lvl, lname in LEVELS.items():
@@ -247,8 +333,8 @@ def ingest():
             wall = Image.open(w).convert("RGB").resize((1920, 1080), Image.LANCZOS)
             wall.save(f"assets/battle/bg_siege_{fac}_{lvl}.png")
             segs = {}
-            for i in breakable(lvl):
-                bp = f"{BATCH}/out/breach_{lname}_{fac}_{i}.png"
+            for i, kind in [(i, k) for i in breakable(lvl) for k in ("breach", "dmg")]:
+                bp = f"{BATCH}/out/{kind}_{lname}_{fac}_{i}.png"
                 if not os.path.exists(bp):
                     continue
                 y0, y1 = CUT_BANDS.get(i, BANDS[i])
@@ -259,7 +345,7 @@ def ingest():
                 src = wall.copy()
                 src.paste(Image.open(bp).convert("RGB").resize((bb[2] - bb[0], bb[3] - bb[1]), Image.LANCZOS), bb[:2])
                 a = np.abs(np.asarray(src.crop(box), np.int16) - np.asarray(wall.crop(box), np.int16)).sum(2)
-                grow = 25 if i in (0, 6) else 9  # (a fallen tower's soft edge must cover its old outline)
+                grow = 25 if i in (0, 6) and kind == "breach" else 9  # (a fallen tower's edge covers its outline)
                 m = Image.fromarray(np.clip((a - 18) * 6, 0, 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(grow))
                 ma = np.asarray(m.filter(ImageFilter.GaussianBlur(6)), np.float32)
                 ramp = np.ones(ma.shape[0], np.float32)
@@ -273,7 +359,7 @@ def ingest():
                 ma = ma * ramp[:, None] * side[None, :]
                 out = src.crop(box).convert("RGBA")
                 out.putalpha(Image.fromarray(ma.astype(np.uint8)))
-                out.save(f"assets/battle/siege_{fac}_{lvl}_ruin_{i}.png")
+                out.save(f"assets/battle/siege_{fac}_{lvl}_{'ruin' if kind == 'breach' else 'dmg'}_{i}.png")
                 segs[str(i)] = [x0, y0]
             meta[f"{fac}_{lvl}"] = segs
             print("ingested", fac, lname)
@@ -289,5 +375,9 @@ if __name__ == "__main__":
         paint(sys.argv[2:])
     elif cmd == "breach":
         breach(sys.argv[2:])
+    elif cmd == "damage":
+        damage(sys.argv[2:])
+    elif cmd == "retop":
+        retop()
     elif cmd == "ingest":
         ingest()

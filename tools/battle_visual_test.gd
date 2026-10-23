@@ -76,10 +76,18 @@ func _run() -> void:
 	_check(not battle._unit(_stack("bone_dragon")).get_node("Badge").visible, "corpse has no count badge")
 	_wreck()
 	await get_tree().create_timer(0.7).timeout
-	var wreck: Sprite2D = battle._unit(_stack("ballista")).get_node("Sprite")
-	_check(wreck.texture.resource_path.ends_with("ballista_dead.png"), "destroyed ballista uses its wreck")
-	_check(is_zero_approx(wreck.rotation), "wreck lies level instead of rotating the intact machine")
-	_check(wreck.get_rect().size.x * wreck.scale.x < 230.0, "native-resolution wreck fits the machine footprint")
+	for id in ["ballista", "first_aid_tent", "ammo_cart", "catapult"]:
+		if _stack(id).is_empty():
+			continue
+		var wreck: Sprite2D = battle._unit(_stack(id)).get_node("Sprite")
+		_check(wreck.texture.resource_path.ends_with(id + "_dead.png"), "destroyed %s uses its wreck" % id)
+		_check(is_zero_approx(wreck.rotation), "%s wreck lies level instead of rotating the intact machine" % id)
+		_check(wreck.get_rect().size.x * wreck.scale.x < 230.0, "%s wreck fits the machine footprint" % id)
+		_check(wreck.material.get_shader_parameter("saturation") > 0.5, "%s wreck keeps its painted colours" % id)
+	battle.L.walls[2]["hp"] = 1
+	battle._show_battered()
+	_check(battle._battered[2].texture != null and battle._battered[2].visible, "a wall hit once shows its battered painting")
+	_check(not battle._battered[4].visible and not battle._battered[1].visible, "battered look only on the hit segment")
 	print("BATTLE VISUAL TEST: %d checks, failures: %d" % [checks, failures])
 	battle.queue_free()
 	await get_tree().process_frame
@@ -160,10 +168,13 @@ func _corpses() -> void:
 
 func _wreck() -> void:
 	_focus("pikeman")
-	var s := _stack("ballista")
-	s["alive"] = false
-	s["count"] = 0
-	battle._anim_death(s)
+	for id in ["ballista", "first_aid_tent", "ammo_cart", "catapult"]:
+		var s := _stack(id)
+		if s.is_empty():
+			continue
+		s["alive"] = false
+		s["count"] = 0
+		battle._anim_death(s)
 
 func _check(ok: bool, label: String) -> void:
 	checks += 1

@@ -34,11 +34,14 @@ Drawn by the image model from the painted idle sprite on a magenta backdrop (`to
 scaled to the idle figure, with a synthetic cast shadow. Battle swaps to them during attacks, on damage, and
 leaves the `_dead` sprite on the hex as a corpse.
 
-**First machine wreck (round47):** `creatures/ballista_dead.png` is a native 1655x950 RGBA sprite, generated with
-built-in imagegen from `ballista.png`; exact prompt in `tools/art/ballista_wreck_prompt.md`. Alpha is unmodified,
-anchor is the solid bottom centre, and battle scales its painted width to the idle ballista's footprint. It uses
-existing corpse shading. First aid tent, ammo cart and catapult wrecks remain to be made. Measure a new sprite with
-`python tools/art/sprite_sizes.py ballista_dead.png` to preserve unrelated hand-tuned entries in `sizes.json`.
+**Machine wrecks:** `creatures/{ballista,first_aid_tent,ammo_cart,catapult}_dead.png` — a destroyed war machine's
+broken remains, left level on its hex. The ballista's came from built-in imagegen in round47 (prompt in
+`tools/art/ballista_wreck_prompt.md`); the tent, cart and catapult from `tools/art/machine_wreck_paint.py`
+(imagegen/batch30: the idle sprite on magenta, repainted wrecked, keyed, a cast shadow added). Its `shrink` step
+resamples every wreck to about 1.5x its on-screen size (the battle draws them at a quarter of their painted size or
+less, without mipmaps, which speckled the splinters). Anchor = the solid bottom centre; battle scales a wreck's
+painted width to the idle machine's footprint and keeps its colours (dimmed, not the creatures' grey corpse tone).
+Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrelated hand-tuned entries in `sizes.json`.
 
 ## Heroes
 - `heroes/portraits/<hero_id>.png` — 256x256 painted portrait (ids in `GameData.HEROES`).
@@ -86,8 +89,10 @@ existing corpse shading. First aid tent, ammo cart and catapult wrecks remain to
 - `battle/bg_siege_<faction>_<level>.png` — the siege backdrop of each fortification level (1 Fort: the wall and
   gate; 2 Citadel: + moat and keep; 3 Castle: + round towers at the wall's ends), painted so the wall stands on grid
   column 11 with a tower (or the wall's end) on rows 0 and 10, stretches on rows 1-2, 3-4, 6-7, 8-9 and the gate on
-  row 5. `battle/siege_<faction>_<level>_ruin_<segment>.png` — each breakable segment's breach overlay, placed by
-  `battle/siege.json` (`"<faction>_<level>": {segment: [x, y]}`). By `tools/art/siege_levels_paint.py`
+  row 5. `battle/siege_<faction>_<level>_ruin_<segment>.png` — each breakable segment's breach overlay, and
+  `_dmg_<segment>.png` its battered look after one hit (still standing), both placed by `battle/siege.json`
+  (`"<faction>_<level>": {segment: [x, y]}`). The Castle's lower tower has a crenellated top for its archer
+  (`retop`; it stands at the command bar, so only its top shows). By `tools/art/siege_levels_paint.py`
   (imagegen/batch28: a collage of the first siege painting moved into that layout, repainted, then the lower levels
   and the breaches derived from it). `battle/siege_<faction>_archer.png` — the arrow-tower crew.
 - `battle/fx_<fire|frost|spark|arcane|holy|dark>.png` — spell effects, 4x4 flipbooks of 256 px frames on black,

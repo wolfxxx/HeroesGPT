@@ -103,6 +103,12 @@ func _ready() -> void:
 			if i >= 0 and i < L.walls.size() and L.walls[i]["kind"] != "tower":
 				L.walls[i]["hp"] = 0
 				_set_wall(i, true)
+	if L.siege > 0 and Shot.args.has("battered"):  # (--battered=0,2: those segments hit once)
+		for t in str(Shot.args["battered"]).split(","):
+			var i := int(t)
+			if i >= 0 and i < L.walls.size() and L.breakable(i):
+				L.walls[i]["hp"] = 1
+		_show_battered()
 	_build_ui()
 	Audio.music("battle")
 	Audio.sfx("battle_start", -2)
@@ -1424,9 +1430,12 @@ func _anim_death(st: Dictionary) -> void:
 		var home: Vector2 = s.get_meta("home", Vector2.ZERO)
 		s.position = home + Vector2(0, -16)
 		var tw0 := s.create_tween().set_parallel(true)
-		tw0.tween_property(s, "modulate", Color(0.82, 0.82, 0.82), 0.5)
+		var machine: bool = st.get("machine", false)
+		tw0.tween_property(s, "modulate", Color(0.78, 0.76, 0.74) if machine else Color(0.82, 0.82, 0.82), 0.5)
 		var cm := s.material as ShaderMaterial
-		if cm:  # low contrast mid-grey, without crushing the painted body into charcoal
+		if cm and machine:  # a wreck keeps its painted timber and canvas, a little dimmed (grey reads as stone)
+			cm.set_shader_parameter("saturation", 0.8)
+		elif cm:  # low contrast mid-grey, without crushing the painted body into charcoal
 			cm.set_shader_parameter("saturation", 0.18)
 			cm.set_shader_parameter("corpse_tone", 0.65)
 		tw0.tween_property(s, "position", home, 0.22).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
@@ -1533,6 +1542,7 @@ func _play_fx(fx: String, p: Vector2, sc: Vector2, dur := 0.8, alpha := 1.0, par
 # each level (tools/art/siege_levels_paint.py); a breached segment shows its painted breach, a cracked one cracks.
 var _wall_layer: Node2D
 var _ruins: Array = []     # per wall segment: the overlay of its ruin (hidden while it stands)
+var _battered: Array = []  # per wall segment: the overlay of it hit once, still standing (as the classic)
 var _cracks: _Cracks
 ## The band of the screen (y) each wall segment owns in the painting (as tools/art/siege_levels_paint.py BANDS).
 const WALL_BANDS := [[0, 306], [306, 442], [442, 578], [578, 646], [646, 782], [782, 918], [918, 1080]]
@@ -1547,16 +1557,17 @@ func _build_walls() -> void:
 	var mp := Assets.path("battle/siege.json")  # (where each segment's ruin overlay sits, from the paint script)
 	var meta = JSON.parse_string(FileAccess.get_file_as_string(mp)) if FileAccess.file_exists(mp) else null
 	var spots: Dictionary = meta.get("%s_%d" % [L.siege_faction, L.siege], {}) if meta is Dictionary else {}
-	for i in L.walls.size():
-		var s := Sprite2D.new()
-		var p := "battle/siege_%s_%d_ruin_%d.png" % [L.siege_faction, L.siege, i]
-		if Assets.has(p) and spots.has(str(i)):
-			s.texture = Assets.tex(p)
-			s.centered = false
-			s.position = Vector2(spots[str(i)][0], spots[str(i)][1])
-		s.visible = false
-		_wall_layer.add_child(s)
-		_ruins.append(s)
+	for kind in ["dmg", "ruin"]:  # (a ruin over its battered look: both cut from the same place)
+		for i in L.walls.size():
+			var s := Sprite2D.new()
+			var p := "battle/siege_%s_%d_%s_%d.png" % [L.siege_faction, L.siege, kind, i]
+			if Assets.has(p) and spots.has(str(i)):
+				s.texture = Assets.tex(p)
+				s.centered = false
+				s.position = Vector2(spots[str(i)][0], spots[str(i)][1])
+			s.visible = false
+			_wall_layer.add_child(s)
+			(_ruins if kind == "ruin" else _battered).append(s)
 	_cracks = _Cracks.new()
 	_cracks.b = self
 	_wall_layer.add_child(_cracks)
@@ -1574,6 +1585,17 @@ func _set_wall(i: int, broken: bool) -> void:
 		if broken:
 			s.modulate.a = 0.0
 			s.create_tween().tween_property(s, "modulate:a", 1.0, 0.25)
+	_show_battered()
+
+## A segment hit once shows its battered painting (fading in when it is hit); without one, drawn cracks.
+func _show_battered() -> void:
+	for i in mini(_battered.size(), L.walls.size()):
+		var s: Sprite2D = _battered[i]
+		var on: bool = s.texture != null and L.walls[i]["hp"] == 1
+		if on and not s.visible:
+			s.modulate.a = 0.0
+			s.create_tween().tween_property(s, "modulate:a", 1.0, 0.25)
+		s.visible = on
 	_cracks.queue_redraw()
 
 ## The catapult's boulder: a high arc onto a wall segment; a hit throws up dust, a breach turns it to rubble.
@@ -1608,8 +1630,8 @@ func _anim_catapult(ev: Dictionary) -> void:
 				d2.position = to + Vector2(randf_range(-40, 40), 50 + k * 20)
 				d2.big = true
 				_fx.add_child(d2)
-		else:  # cracked
-			_cracks.queue_redraw()
+		else:  # battered
+			_show_battered()
 	await get_tree().create_timer(0.35).timeout
 
 ## A slain stack leaves the turn queue at once (not with the next turn).
@@ -2422,7 +2444,7 @@ class _Cracks extends Node2D:
 	func _draw() -> void:
 		for i in b.L.walls.size():
 			var w: Dictionary = b.L.walls[i]
-			if w["hp"] != 1:
+			if w["hp"] != 1 or (i < b._battered.size() and b._battered[i].texture):
 				continue
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 77 + i

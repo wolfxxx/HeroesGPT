@@ -16,6 +16,30 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session57 siege polish and machine wrecks (2026-10-23), committed with this HANDOFF update:** the user approved finishing the sieges
+  (step 1 of three offered) and asked that the destroyed First Aid Tent and Ballista look correct. Before: the tent
+  and ammo cart had no wreck and tipped over as faded ghosts; the ballista's wreck showed as a flat silver heap
+  (the creatures' grey corpse tone on wood) and, drawn at a tenth of its 1655 px size without mipmaps, speckled.
+  Now: wrecks for the tent, ammo cart and catapult (`tools/art/machine_wreck_paint.py`, batch30), every wreck
+  resampled to about 1.5x its on-screen size, and wrecks keep their painted colours. The Castle's lower tower (at
+  the command bar, only its top shows) had a conical roof with its archer on the spire: it now has a crenellated
+  top like the upper tower (`siege_levels_paint.py retop`, its two nearby breaches repainted). A segment hit once
+  now shows a painted battered overlay (34, `siege_levels_paint.py damage`) instead of drawn cracks that looked like
+  stick figures. Verified in screenshots (`shots/session57/wreck_after2.png`, `castle_h.png`, `bat_*.png`,
+  `bat_zoom.png`), `battle_visual_test` 40/40 and the full suite (`shots/session57/tests.log`). Known: on the black
+  Necropolis stone the chips are painted pale (like its merlon tops).
+- **Session57 Necropolis playtest (2026-10-23), with this entry:** step 2 the user approved. The assistant played
+  "The Last Champion" (Normal, Necropolis, Kragor the Pale; Vesna hired) through the real UI with the remote-play
+  harness, on `user://playtest_save.dat` (the player's save hash-checked unchanged). **Outcome: defeat on day 9
+  (Month 1, Week 2, Day 2)**, when the champion Kragor fell to the Green AI's Ilsa Grimveil next to Brightwater.
+  Exercised: building (Citadel, Mage Guild, Tavern, Archers' Tower), recruiting, Tavern hire, chests, campfire,
+  sawmill, a creature dwelling, artifacts, guarded resources, 12 battles (spells by hand, manual moves, Auto), a
+  real Fort siege of a neutral town with the battered gate and wall overlays visible, retreat, losing both towns
+  to the AI while their hero was away (and retaking one), level-ups, the week change, Ctrl+S, menu Load, looting
+  of artifacts, the scenario's defeat. Opponent pressure was **real** this time: the two AIs took both towns when
+  left empty, and their heroes came back for the town and the champion. Findings are in §8 under "Playtest findings
+  (session57)"; one confirmed bug (guarded artifacts are not picked up after the fight). Evidence in ignored
+  `shots/session57/play/` (`findings.md`, `p###.png`, `q###.png`).
 - **Session56 sieges and town pictures by fortification (2026-10-23), committed with this HANDOFF update:** the user reported that a town
   always looks like a castle on the map and in a siege, and that an enemy knight walked out "at the top where there
   isn't a gate". Cause: one map picture and one siege painting per faction for every level, and a painting whose tall
@@ -586,7 +610,7 @@ Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space
 `--shot --scene --delay --shots --interval --click=x,y;x,y (prefix r for right click) --keys=A;S --hover=x,y`;
 scenes also read `--setup=` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (`--siege=1|2|3`,
 default 3), `town_levels`,
-`necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b`. The harness parks the
+`necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b`. The harness parks the
 mouse before each capture (except hover and right-click shots). The window must not be headless for shots.
 
 ## 6. The round workflow
@@ -711,6 +735,32 @@ early rushes; judge long-game changes mainly on four-player/larger maps. Next ma
 **Hot-seat multiplayer is built (session53, see §2).** Worth a human playtest with two people: turn handover,
 human-versus-human battles, a computer attacking the player not at the screen. Fog-information policy, map-spell planning, difficulty settings, remaining
 machine wrecks and visual findings stay on the backlog; online multiplayer remains a separate larger project.
+
+### Playtest findings (session57, one Necropolis campaign on Normal; not yet fixed)
+Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has the details).
+1. **BUG (cause found): a guarded artifact is not picked up after beating its guard.** Walking onto the Orb of Power
+   at (15,27) triggered the adjacent Swordsmen; after the win the hero stood on the artifact without it (twice, also
+   at (18,30)); stepping off and back on picked it up. `adventure.gd move_hero` checks `rules.guards(p)` before the
+   `last` step's visit and returns after the battle, so the target is never visited (the AI's quick-resolved fights
+   too). Fix: after a won guard fight on the last step visit that tile's object (a human's across the battle scene,
+   resumed in `_post_ready`).
+2. **No garrison hero slot** (HoMM3 deviation): a hero at the gate blocks the Tavern ("send them out first") and can
+   not be moved up into the garrison row; HoMM3 lets a hero stand in the garrison.
+3. **Hero list click opens the hero screen** at once (HoMM3: the first click selects and centres the hero, a click on
+   the selected one opens the screen); switching heroes always needs a Close.
+4. Battle: the held right-click creature popup shows base Speed and no active spells, while the hover panel shows
+   "Speed 5 (4)" and "Slow (2 rounds left)".
+5. Battle: Slow cast in round 1 did not reorder the current round's turn queue (the next round's was right).
+6. Text: "Necromancy raises 1 skeletons" (plural with 1).
+7. Battle: the hero figure is per faction: the Death Knight Kragor rides with the Necromancer's staff.
+8. Battle (question, not a rule): stacks are coloured by side, attacker red, defender blue, not by owner, so when
+   the Blue AI attacked, my troops were blue. Check against HoMM3/HD before changing.
+9. To verify against HoMM3: a retreating hero also lost the First Aid Tent (listed among the casualties).
+10. Unconfirmed: a held right-click once showed no map popup in harness captures after a load; with debug prints the
+   panel was shown at the right place and later attempts worked. Likely the harness's synthetic input; needs a
+   human check.
+Worked well: Citadel growth (14 -> 21 Pikemen), the walled-town and village map pictures, the Fort siege with the
+battered overlays, wrecks, AI hero looting of artifacts, guard zones, week change, save/load, the defeat flow.
 
 ### Playtest findings (session52, one Haven campaign on Normal; not yet fixed)
 Ranked by impact. Evidence (screenshots `s###.png`, logs) is in ignored `shots/playtest/`.
@@ -863,9 +913,7 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
    seeded randomness in battle and on the map, disconnects, saving. Keep these rules from now on: all game state
    stays in saveable dictionaries, all randomness goes through a seeded generator, screens never change the rules'
    state directly (the split of `adv_rules`/`battle_logic` from the views already helps).
-4. **War-machine wrecks — STARTED.** Ballista is implemented and visually checked in round47d. First aid tent,
-   ammo cart and catapult still use the old rotated-sprite fallback. Add `<id>_dead.png`, an anchor and a measured
-   width for each; the battle loader now scales native-resolution wrecks to their idle footprint.
+4. **War-machine wrecks — DONE (session57).** All four machines leave a painted wreck (see §2).
 
 ## 9. Where the recent systems live
 
@@ -873,7 +921,8 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   (`assets/map/town_<faction>{_village,_fort,}.png`); siege `BattleLogic.is_moat` (Citadel+), `SOLID_SEGS` (corners),
   `breakable` (corners only with a Castle); `battle.gd` `bg_siege_<faction>_<level>`, `siege.json` per level,
   `WALL_BANDS`, `ARCHER_SPOTS`; art `tools/art/siege_levels_paint.py`, `tools/art/town_levels_paint.py`; checks
-  `battle_test._siege_rules`; shots `--setup=siege|siege_haven --siege=N`, `--setup=town_levels`.
+  `battle_test._siege_rules`; shots `--setup=siege|siege_haven --siege=N`, `--setup=town_levels`. Battered walls
+  (session57): `siege_<faction>_<level>_dmg_<seg>.png`, `battle.gd._show_battered`, shots `--battered=a,b`.
 - **Town garrisons (session54):** `AdvAI._collect_garrison` / `_garrison_keep` (garrison kept against a next-turn
   threat), `_counterattack` margin 1.3x; frozen previous policy `tools/ai/adventure_ai_session52.gd`; diagnostic
   `tools/ai/town_defense_report.tscn` (`--maps= --players= --size= --days= --policy= --verbose --trace=`; its RECALL
