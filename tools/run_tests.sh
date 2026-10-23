@@ -17,6 +17,7 @@
 #   GARRISON HERO TEST: N checks, failures: 0
 #   LIST CLICK TEST: N checks, failures: 0
 #   RETREAT TEST: N checks, failures: 0
+#   MAP FIGURE TEST: N checks, failures: 0
 #   ANNOUNCE TEST: N checks, failures: 0
 #   REACH SWEEP {... "maps_with_cut": 0 ...}
 #   CLICK TEST: N clicks, 0 without a path    + DRAG TEST ... plan unchanged: true   + PENDING TEST ... shown: true
@@ -48,6 +49,7 @@ echo "--guard-pickup"; timeout 120 $G --headless --path . res://tools/guard_pick
 echo "--garrison-hero"; timeout 120 $G --headless --path . res://tools/garrison_hero_test.tscn 2>&1 | grep -E "GARRISON HERO TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--list-click"; timeout 120 $G --headless --path . res://tools/list_click_test.tscn 2>&1 | grep -E "LIST CLICK TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--retreat"; timeout 120 $G --headless --path . res://tools/retreat_test.tscn 2>&1 | grep -E "RETREAT TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--map-figure"; timeout 120 $G --headless --path . res://tools/map_figure_test.tscn 2>&1 | grep -E "MAP FIGURE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--announce"; timeout 120 $G --headless --path . res://tools/announce_test.tscn 2>&1 | grep -E "ANNOUNCE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--hotseat"; timeout 300 $G --headless --path . res://tools/hotseat_test.tscn 2>&1 | grep -E "HOTSEAT TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--map-reach"; timeout 300 $G --headless --path . res://tools/map_reach_report.tscn 2>&1 | grep -E "REACH SWEEP|SCRIPT ERROR" | tail -3

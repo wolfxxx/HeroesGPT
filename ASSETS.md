@@ -46,6 +46,12 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 ## Heroes
 - `heroes/portraits/<hero_id>.png` — 256x256 painted portrait (ids in `GameData.HEROES`).
 - `heroes/map_<faction>.png` — mounted hero on horse, 3/4 top-down view for the adventure map, transparent, 160x160, facing right.
+  The faction's figure stands for its first class on the map (Haven a Knight, Necropolis a dark lance knight: the
+  Death Knight). `heroes/map_<class>.png` and `map_<class>_run<0-3>.png` (`cleric`, `necromancer`) — the other
+  classes, the same horses in the same standing and gallop poses repainted with another rider, all five poses in one
+  sheet so the rider stays the same, by `tools/art/map_class_paint.py` (imagegen/batch32; ingest aligns each figure's
+  hooves with its source, gives it the gallop frames' synthetic cast shadow and copies the source's anchor).
+  `MapView.hero_figure` picks the class's figure, else the faction's.
 - `heroes/battle_<faction>.png` — hero on horse for the battle screen corner, transparent, ~300x300, facing right:
   the faction's first class (Haven a Knight, Necropolis a Necromancer). `heroes/battle_<class>.png` (`cleric`,
   `death_knight`) — the other classes, the same horse repainted with another rider by `tools/art/hero_class_paint.py`

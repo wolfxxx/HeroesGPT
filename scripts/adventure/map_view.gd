@@ -457,14 +457,21 @@ func _hero_node(h: Dictionary) -> Node2D:
 	n.add_child(ring)
 	# the banner stands behind the hero, flying away from the horse
 	_add_flag(n, Vector2(-24, -16), h["owner"], 100.0, true)
-	var spr := _sprite("heroes/map_%s.png" % h["faction"], Vector2(0, 4), 0, h.get("face_left", false), 118.0, 1.35)
+	var fig := hero_figure(h)
+	var spr := _sprite("heroes/map_%s.png" % fig, Vector2(0, 4), 0, h.get("face_left", false), 118.0, 1.35)
 	spr.name = "Sprite"
-	spr.set_meta("faction", h["faction"])
+	spr.set_meta("faction", fig)  # (the figure's name: its gallop frames are map_<it>_run<k>.png)
 	outline(spr)
 	var tc: Color = GameData.PLAYER_COLORS[h["owner"]]
 	spr.material.set_shader_parameter("team", Color(tc.r, tc.g, tc.b, 0.85))  # owner colour ring: whose hero at a glance
 	n.add_child(spr)
 	return n
+
+## A hero's map figure, as the classic: its class's own (`heroes/map_cleric.png`, `map_necromancer.png`), else its
+## faction's (Haven's is the Knight, Necropolis's the Death Knight).
+static func hero_figure(h: Dictionary) -> String:
+	var cls := String(h.get("class", "")).to_lower().replace(" ", "_")
+	return cls if cls != "" and Assets.has("heroes/map_%s.png" % cls) else String(h["faction"])
 
 ## Owner banner, painted (tools/art/flag_paint.py): pos = foot of the pole, h = drawn height.
 func _add_flag(parent: Node2D, pos: Vector2, owner: int, h := 60.0, fly_left := false) -> void:

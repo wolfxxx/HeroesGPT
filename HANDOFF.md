@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session64 map hero figures per class (2026-10-23), committed with this HANDOFF update:** as the classic (each hero class has its own
+  adventure map figure), the Cleric and the Necromancer now ride their own figures on the map: new
+  `heroes/map_cleric.png`, `map_necromancer.png` and their four gallop frames each, the faction figures' horses in
+  the same poses repainted with a mace-raising Cleric in white and blue and a hooded Necromancer with a skull staff
+  (`tools/art/map_class_paint.py`, imagegen/batch32, all five poses in one sheet). The Knight keeps `map_haven`, the
+  Death Knight `map_necropolis` (a dark lance knight). `MapView.hero_figure` picks the figure (its gallop frames by
+  the same name). The new standing figures have the gallop frames' short synthetic shadow, not the Blender
+  renders' long one. New `tools/map_figure_test.tscn` (15 checks) in the full suite; seen in
+  `shots/session57/map_figures.png` and `map_figures_gallop.png`.
 - **Session63 battle colours (2026-10-23), committed with this HANDOFF update:** playtest finding 8. Checked against the classic (VCMI's
   `BattleStacksController`, the engine re-implementation: the amount box is chosen by the stack's spells only,
   never by side or owner). The user chose: count boxes as the classic, purple, green under good spells only, red
@@ -63,7 +72,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   great-sword Death Knight, `tools/art/hero_class_paint.py`, imagegen/batch31); `battle.gd` takes
   `heroes/battle_<class>.png`, else the faction's (Knight, Necromancer). Screenshots `shots/session57/card.png`,
   `heroes_kd.png`, `heroes_cn.png` (new shot flag `--heroes=attacker,defender`). The adventure map still has one
-  hero figure per faction.
+  hero figure per faction (done in session64).
 - **Session58 guarded treasure fix (2026-10-23), committed with this HANDOFF update:** the user asked to fix playtest finding 1. A hero
   who walked onto an artifact (or any pickup) beside a monster fought the monster and then stood on the treasure
   without it. Now, as the classic, the treasure is taken after the guard is beaten: `move_hero` remembers the
