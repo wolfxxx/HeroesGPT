@@ -1376,7 +1376,8 @@ func _anim_attack(ev: Dictionary) -> void:
 		proj.from = na.position + Vector2(0, -_top(a) * 0.6)
 		proj.to = nd.position + Vector2(0, -60)
 		_fx.add_child(proj)
-		Audio.sfx("magic_arrow" if proj.kind == "magic" else "arrow_shot", -2)
+		# (the ballista's heavy bolt its own deep thunk, not the archers' bow string)
+		Audio.sfx("magic_arrow" if proj.kind == "magic" else ("ballista_shot" if a["id"] == "ballista" else "arrow_shot"), -2)
 		var tw := spr.create_tween()  # recoil
 		tw.tween_property(spr, "position", home - dir * 10, 0.08).set_ease(Tween.EASE_OUT)
 		tw.tween_property(spr, "position", home, 0.25).set_trans(Tween.TRANS_SINE)

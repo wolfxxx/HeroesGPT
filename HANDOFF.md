@@ -16,6 +16,11 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 ballista sound (2026-10-23), committed with this HANDOFF update:** the user liked the new catapult sounds but found the
+  ballista "like someone shooting a little elastic": it used the archers' bow-string `arrow_shot`. New
+  `ballista_shot` (ElevenLabs: a heavy siege-crossbow thunk with creaking timber, no high twang), the deepest of
+  three takes (low 40-400 Hz to high 2-8 kHz energy 22.6, vs 12.6 and 16.1), peak -1.9 dB; `battle._anim_attack`
+  plays it for the ballista, archers keep the bow string. One new battle visual test check (54).
 - **Session67 catapult sounds (2026-10-23), committed with this HANDOFF update:** the user heard nothing when the catapult hit or missed.
   The catapult played `arrow_shot` on launch and `blunt_hit` on impact, and measured in a window these peaked at
   -21 dB and -33 dB (every other effect about -1 to -2 dB): effectively silent. New sounds (ElevenLabs,

@@ -115,6 +115,17 @@ func _run() -> void:
 			await battle._anim_catapult({"s": cat, "seg": 2, "hit": hit, "destroyed": false})
 			_check(Audio._last_played.has("catapult_launch") and Audio._last_played.has("catapult_hit" if hit else "catapult_miss"),
 				"a catapult %s is heard" % ("hit" if hit else "miss"))
+	# the ballista's shot is its own deep thunk, an archer's the bow string
+	var bal = null
+	var target = null
+	for st in battle.L.stacks:
+		if st["id"] == "ballista" and st["side"] == 0: bal = st
+		if st["side"] == 1 and st["alive"] and not st.get("machine", false) and target == null: target = st
+	if bal != null and target != null:
+		Audio._last_played.erase("ballista_shot")
+		Audio._last_played.erase("arrow_shot")
+		await battle._anim_attack({"a": bal, "d": target, "ranged": true, "killed": 0, "dmg": 1, "lucky": false})
+		_check(Audio._last_played.has("ballista_shot") and not Audio._last_played.has("arrow_shot"), "the ballista's shot is its own sound")
 	# the heroes beside the field: resting on their first idle frame, a loop through the frames, a cast pose
 	var f0 = battle._hero_figs[0]
 	_check(f0 != null and f0[0].texture.resource_path.ends_with("_idle0.png"), "the hero rests on its first idle frame")

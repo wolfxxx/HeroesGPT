@@ -37,6 +37,7 @@ SFX = {
     "arrow_hit": ("arrow hitting armor and flesh, thunk", 0.5),
     "sword_hit": ("sword slash hitting steel armor, metallic clang", 0.7),
     "blunt_hit": ("loud punchy impact of a heavy wooden club striking an armoured soldier, a booming thud and clank, close and powerful", 1.0),
+    "ballista_shot": ("massive wooden siege ballista firing a huge bolt, a deep heavy thunk of the thick bow arms slamming forward, creaking timber and a low powerful whoosh, no high twang", 1.2),
     "catapult_launch": ("loud wooden siege catapult firing, the creaking arm slamming forward with a heavy thump and a rope twang", 1.2),
     "catapult_hit": ("huge boulder smashing into a stone castle wall, loud crash with crumbling stones and rubble falling", 1.8),
     "catapult_miss": ("heavy boulder landing short in a castle moat, a deep splash and a thud into mud", 1.4),

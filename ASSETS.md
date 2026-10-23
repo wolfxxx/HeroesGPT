@@ -180,7 +180,8 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   new_day, new_week, level_up, spell_cast, magic_arrow, lightning, fireball, bless, curse, heal, meteor,
   arrow_shot, arrow_hit, sword_hit, blunt_hit, claw_hit, magic_hit, death_human, death_undead, death_beast,
   wings, battle_start, victory_cheer, defeat, move_step, retaliate, miss, flag_capture, mine_capture, error,
-  catapult_launch, catapult_hit (a boulder on the wall), catapult_miss (a splash short of it). All by
+  catapult_launch, catapult_hit (a boulder on the wall), catapult_miss (a splash short of it), ballista_shot (a deep
+  thunk; best of three takes by low-to-high frequency energy, measured with an `AudioEffectSpectrumAnalyzer`). All by
   `tools/audio/gen_audio.py sfx <names>` (ElevenLabs; prompts in its `SFX` table). Generated loudness varies a lot:
   measure a new sound's peak in a window (`AudioServer.get_bus_peak_volume_left_db` while it plays) and regenerate
   it if it peaks far below the others (about -2 dB); session67 found blunt_hit at -33 dB and arrow_shot at -21 dB.
