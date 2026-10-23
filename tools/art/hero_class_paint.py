@@ -19,8 +19,9 @@ MAGENTA = (255, 0, 255)
 W, H = 1920, 1080
 CLASSES = {
     "cleric": ("haven", "a Cleric: a holy battle priest in a long white and blue robe with gold trim over a light mail "
-               "shirt, a hood or a simple circlet instead of a helmet, holding a flanged gold mace raised in the right "
-               "hand (NO lance, NO spear), a small round holy symbol on the chest"),
+               "shirt, a hood or a simple circlet instead of a helmet, holding the reins in the left hand and a flanged "
+               "gold mace in the right hand resting on the right shoulder, the arm bent and relaxed, NOT raised "
+               "(NO lance, NO spear), a small round holy symbol on the chest, sitting naturally in the saddle"),
     "death_knight": ("necropolis", "a Death Knight: a hulking warrior in heavy black spiked plate armour with a horned "
                      "helm and glowing green eye slits, a tattered dark cape, holding a huge two-handed jagged black "
                      "sword upright in the right hand (NO staff, NO robes, NO hood)"),

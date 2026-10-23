@@ -83,6 +83,10 @@ var _ended := false
 var _acting_uid := -1  # the turn being displayed; rules may already have advanced while its events animate
 var _mouse := Vector2.ZERO
 var _hero_rects := [Rect2(), Rect2()]
+var _hero_figs := [null, null]  # per side: [sprite, figure name] of the mounted hero beside the field
+var _hero_idle := [0.0, 0.0]  # seconds until each hero's next idle loop
+var _hero_busy := [false, false]  # a hero acting out a cast or an idle loop
+var _hero_act := [0, 0]  # per side, counts its actions: a newer one (a cast) stops an older one (an idle loop)
 var _info_key := ""   # what the hover panel shows: "s<uid>" a stack, "h<side>" a hero, "" nothing
 
 func _ready() -> void:
@@ -283,7 +287,14 @@ func _build_scene() -> void:
 		var fig := "heroes/battle_%s.png" % String(hh.get("class", "")).to_lower().replace(" ", "_")
 		if not Assets.has(fig):
 			fig = "heroes/battle_%s.png" % hh["faction"]
+		var fig_name := fig.get_file().get_basename().trim_prefix("battle_")
+		# (as the classic, the heroes idle now and then and act out their spells: painted frames by
+		# tools/art/battle_anim_paint.py; the first idle frame is the resting picture so the loop starts and ends on it)
+		if Assets.has("heroes/battle_%s_idle0.png" % fig_name):
+			fig = "heroes/battle_%s_idle0.png" % fig_name
 		s.texture = Assets.tex(fig, Vector2i(200, 200))
+		_hero_figs[side] = [s, fig_name]
+		_hero_idle[side] = randf_range(2.0, 6.0) + side * 1.5
 		var sc := 230.0 / s.texture.get_height()
 		s.scale = Vector2(sc, sc)
 		s.flip_h = side == 1
@@ -1495,6 +1506,7 @@ func _anim_spell(ev: Dictionary) -> void:
 		"cure": "heal", "resurrection": "heal", "meteor_shower": "meteor", "death_ripple": "curse", "frost_ring": "magic_hit", "ice_bolt": "magic_hit"}
 	Audio.sfx(sfx_map.get(sp, "spell_cast"))
 	if sp != "death_cloud" and L.heroes[ev["side"]] != null:
+		_hero_cast(ev["side"])
 		_spell_banner(GameData.SPELLS[sp]["name"], ev["side"])
 		_flush_log(ev)  # (its log line with its banner, not only when it lands)
 	var targets: Array = ev["targets"]
@@ -1794,6 +1806,12 @@ func _settle_badges() -> void:
 
 func _process(_d: float) -> void:
 	_follow_rings()
+	for side in 2:  # the heroes beside the field idle now and then
+		if _hero_figs[side] != null and not _hero_busy[side]:
+			_hero_idle[side] -= _d
+			if _hero_idle[side] <= 0.0:
+				_hero_idle[side] = randf_range(5.0, 9.0)
+				_hero_loop(side)
 	if _grid and _grid.hover.x >= 0 and _modal_open():  # (a window is up: no hex lit under it)
 		_update_hover()
 	_crowd()
@@ -2045,6 +2063,37 @@ class _LabelTip extends Node2D:
 			draw_circle(to, 3.5, color)
 		draw_colored_polygon(PackedVector2Array([Vector2(-13, -1), Vector2(13, -1), Vector2(0, 14)]), Color(0, 0, 0, 0.6))
 		draw_colored_polygon(PackedVector2Array([Vector2(-10, -1), Vector2(10, -1), Vector2(0, 11)]), color)
+
+## A hero's idle loop: its four painted frames once through, back to the first (resting) one.
+func _hero_loop(side: int) -> void:
+	var f = _hero_figs[side]
+	if f == null or not Assets.has("heroes/battle_%s_idle1.png" % f[1]):
+		return
+	_hero_busy[side] = true
+	_hero_act[side] += 1
+	var act: int = _hero_act[side]
+	for k in [1, 2, 3, 2, 1, 0]:
+		if not is_instance_valid(f[0]) or _hero_act[side] != act:
+			return
+		f[0].texture = Assets.tex("heroes/battle_%s_idle%d.png" % [f[1], k])
+		await get_tree().create_timer(0.16).timeout
+	_hero_busy[side] = false
+
+## A hero casting a spell raises its weapon or hand for a moment (its painted cast pose), then rests again.
+func _hero_cast(side: int) -> void:
+	var f = _hero_figs[side]
+	if f == null or not Assets.has("heroes/battle_%s_cast.png" % f[1]):
+		return
+	_hero_act[side] += 1  # (cuts an idle loop short)
+	var act: int = _hero_act[side]
+	_hero_busy[side] = true
+	f[0].texture = Assets.tex("heroes/battle_%s_cast.png" % f[1])
+	await get_tree().create_timer(1.1).timeout
+	if not is_instance_valid(f[0]) or _hero_act[side] != act:
+		return
+	f[0].texture = Assets.tex("heroes/battle_%s_idle0.png" % f[1])
+	_hero_busy[side] = false
+	_hero_idle[side] = randf_range(4.0, 8.0)
 
 ## Spell name as a banner under the turn queue (not over the units), tinted by the caster's side.
 func _spell_banner(t: String, side: int) -> void:

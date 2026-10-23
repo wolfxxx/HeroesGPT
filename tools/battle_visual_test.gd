@@ -31,6 +31,9 @@ func _run() -> void:
 			"distant": _focus("pikeman")
 			"corpses": _corpses()
 			"wreck": _wreck()
+			"cast":  # the attacking hero acting out a spell (its painted cast pose)
+				await get_tree().create_timer(maxf(0.1, float(Shot.args.get("delay", "3")) - 0.6)).timeout
+				battle._hero_cast(0)
 			"movement":
 				await get_tree().create_timer(maxf(0.1, float(Shot.args.get("delay", "3")) - 0.35)).timeout
 				_move_ghost()
@@ -99,6 +102,18 @@ func _run() -> void:
 	_check(battle.side_color(0) == GameData.PLAYER_COLORS[1], "the attacker's colour is its player's flag (Blue attacking)")
 	_check(battle.side_color(1) not in GameData.PLAYER_COLORS, "neutral creatures are grey")
 	battle.L.players = keep
+	# the heroes beside the field: resting on their first idle frame, a loop through the frames, a cast pose
+	var f0 = battle._hero_figs[0]
+	_check(f0 != null and f0[0].texture.resource_path.ends_with("_idle0.png"), "the hero rests on its first idle frame")
+	if f0 != null:
+		battle._hero_loop(0)
+		await get_tree().create_timer(0.25).timeout
+		_check(f0[0].texture.resource_path.contains("_idle") and not f0[0].texture.resource_path.ends_with("_idle0.png"), "the idle loop shows the other frames")
+		battle._hero_cast(0)
+		await get_tree().create_timer(0.3).timeout
+		_check(f0[0].texture.resource_path.ends_with("_cast.png"), "casting a spell shows the cast pose")
+		await get_tree().create_timer(1.2).timeout
+		_check(f0[0].texture.resource_path.ends_with("_idle0.png") and not battle._hero_busy[0], "and the hero rests again")
 	print("BATTLE VISUAL TEST: %d checks, failures: %d" % [checks, failures])
 	battle.queue_free()
 	await get_tree().process_frame

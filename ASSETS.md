@@ -55,7 +55,13 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - `heroes/battle_<faction>.png` — hero on horse for the battle screen corner, transparent, ~300x300, facing right:
   the faction's first class (Haven a Knight, Necropolis a Necromancer). `heroes/battle_<class>.png` (`cleric`,
   `death_knight`) — the other classes, the same horse repainted with another rider by `tools/art/hero_class_paint.py`
-  (imagegen/batch31; ingest lays the new figure over the old one's ground shadow).
+  (imagegen/batch31; ingest lays the new figure over the old one's ground shadow). The Cleric holds the mace resting
+  on the shoulder (repainted in session67; it was raised in every pose).
+  `heroes/battle_<fig>_idle<0-3>.png` and `battle_<fig>_cast.png` (`fig` = `haven`, `cleric`, `necropolis`,
+  `death_knight`) — a 4-frame idle loop and a casting pose for each battle figure, painted from it on magenta by
+  `tools/art/battle_anim_paint.py` (imagegen/batch33: the four idle frames in one 2x2 sheet so the rider stays the
+  same); ingest stands each frame on the figure's feet on its canvas with a cast shadow of the frame's own outline.
+  `battle.gd` rests the hero on `_idle0`, plays the loop now and then and shows `_cast` while it casts.
   `battle_necropolis.png` (a necromancer on a skeletal horse) is painted over the old knight by
   `tools/art/hero_battle_paint.py` (imagegen/batch18); the knight is kept in `tools/art/raw/heroes/`.
 - `heroes/flag_<color>.png` optional (color = red/blue/green/gold).

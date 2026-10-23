@@ -16,6 +16,18 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 hero animation (2026-10-23), committed with this HANDOFF update:** the user, playing with Lady Seraphine, found her sitting
+  with the mace raised in every pose (standing, galloping, in battle) and the still battle heroes unnatural; they
+  chose "rest pose + battle anims". (1) The Cleric was repainted with the mace resting on the shoulder: the map
+  standing figure and four gallop frames (`tools/art/map_class_paint.py`) and the battle figure
+  (`tools/art/hero_class_paint.py`). (2) As the classic, every battle hero (Knight, Cleric, Necromancer, Death
+  Knight) now idles now and then (a 4-frame loop: the horse lowers its head, swishes its tail, lifts a hoof) and acts
+  out each spell it casts (the Knight raises a glowing hand, the Cleric the glowing mace, the Necromancer the
+  blazing staff, the Death Knight the green-glowing sword): `tools/art/battle_anim_paint.py` (imagegen/batch33),
+  `battle._hero_loop` / `_hero_cast`. Four new battle visual test checks (50) and a `--case=cast` shot. Seen in
+  `shots/session67/battle_rest.png`, `battle_cast.png`, `battle_cast_cleric.png`, `anim_scale2.png` (every frame at
+  battle size), `map_rest_zoom.png`. The idle frames differ a little from one another in the painting (a cape that
+  sways, the horse's head); played quickly they read as movement.
 - **Session67 map hero pennant (2026-10-23), committed with this HANDOFF update:** the user found the hero's flag on the map oversized and
   hanging low, and the owner-coloured outline around the whole figure unnecessary with a flag. Now, as the classic,
   a small pennant (58 px, was 100) on a pole rising from behind the rider flies above its head, mirrored with the

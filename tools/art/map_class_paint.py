@@ -23,8 +23,9 @@ CELL_W, CELL_H = 912, 768  # 3x2 cells: a 16:9 sheet (2736x1536)
 CELLS = ["", "_run0", "_run1", "_run2", "_run3", ""]
 CLASSES = {
     "cleric": ("haven", "a Cleric: a holy battle priest in a long white and blue robe with gold trim over a light mail "
-               "shirt, a simple gold circlet and no helmet, holding a flanged gold mace raised in the right hand "
-               "(NO lance, NO spear, NO banner)"),
+               "shirt, a simple gold circlet and no helmet, holding the reins and a flanged gold mace resting on the "
+               "right shoulder, the arm bent and relaxed, NOT raised (NO lance, NO spear, NO banner), sitting "
+               "naturally in the saddle as a rider does"),
     "necromancer": ("necropolis", "a Necromancer: a gaunt robed sorcerer in a hooded tattered black and deep purple "
                     "robe, a pale skull-like face in the hood, holding upright a long dark staff topped with a skull "
                     "and a faint green glow (NO lance, NO spear, NO plate armour, NO helmet)"),

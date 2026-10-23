@@ -401,6 +401,10 @@ Battle colours (as HoMM3): the count box (`battle._Badge`) is the same purple fo
 only, red under bad ones only (or disease), yellow under both (`_Badge.mood`: a spell targeting allies is good, enemies
 bad). Whose stack is whose shows by its facing and its ring, which with the turn queue's cards, the hero's name plate
 and spell banners take the player's flag colour (`battle.side_color`: `GameData.PLAYER_COLORS`, neutrals grey).
+Battle hero animation (as the classic): `battle._hero_figs` per side; the hero rests on `battle_<fig>_idle0.png`,
+`_process` plays `_hero_loop` (the idle frames 1-2-3-2-1-0) every 5-9 s, `_hero_cast` shows `battle_<fig>_cast.png` for
+1.1 s when its spell event plays; `_hero_act` counts actions so a cast cuts an idle loop short. Shot case
+`battle_visual_test --case=cast`.
 Battle heroes: `battle.gd` draws `heroes/battle_<class>.png` (Cleric, Death Knight) or the faction's figure
 (`battle_haven` a Knight, `battle_necropolis` a Necromancer). A right click on a stack opens `_show_stack_card` (the
 hover panel's live card in a dialog). Turn order: `BattleLogic._turn_before` everywhere; `_resort_order` after a
