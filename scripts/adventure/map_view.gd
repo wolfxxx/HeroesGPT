@@ -455,17 +455,27 @@ func _hero_node(h: Dictionary) -> Node2D:
 	ring.name = "Ring"
 	ring.visible = h["uid"] == selected_hero
 	n.add_child(ring)
-	# the banner stands behind the hero, flying away from the horse
-	_add_flag(n, Vector2(-24, -16), h["owner"], 100.0, true)
+	# the banner: a small pennant on a pole behind the rider, above its head (as the classic), flying backwards
+	_add_flag(n, Vector2.ZERO, h["owner"], HERO_FLAG_H, true)
+	var flag: Node2D = n.get_child(n.get_child_count() - 1)
+	flag.name = "Flag"
+	_face_flag(flag, h.get("face_left", false))
 	var fig := hero_figure(h)
 	var spr := _sprite("heroes/map_%s.png" % fig, Vector2(0, 4), 0, h.get("face_left", false), 118.0, 1.35)
 	spr.name = "Sprite"
 	spr.set_meta("faction", fig)  # (the figure's name: its gallop frames are map_<it>_run<k>.png)
-	outline(spr)
-	var tc: Color = GameData.PLAYER_COLORS[h["owner"]]
-	spr.material.set_shader_parameter("team", Color(tc.r, tc.g, tc.b, 0.85))  # owner colour ring: whose hero at a glance
+	outline(spr)  # (the ink outline only: the flag tells whose hero it is, as the classic, no owner-coloured ring)
 	n.add_child(spr)
 	return n
+
+const HERO_FLAG_H := 58.0  # drawn height of a hero's pennant and pole
+const HERO_FLAG_FOOT := Vector2(-3, -78)  # the pole's foot behind the saddle, for a hero facing right
+
+## Keep a hero's pennant behind the rider whichever way the hero faces (mirrored with the figure).
+func _face_flag(flag: Node2D, face_left: bool) -> void:
+	var sc := HERO_FLAG_H / float(_Flag.FH)
+	flag.position = Vector2(-HERO_FLAG_FOOT.x if face_left else HERO_FLAG_FOOT.x, HERO_FLAG_FOOT.y)
+	flag.scale = Vector2(sc if face_left else -sc, sc)
 
 ## A hero's map figure, as the classic: its class's own (`heroes/map_cleric.png`, `map_necromancer.png`), else its
 ## faction's (Haven's is the Knight, Necropolis's the Death Knight).
@@ -612,6 +622,9 @@ func move_hero_step(uid: int, to_tile: Vector2i, dur: float) -> Tween:
 	var flip := spr.flip_h
 	if absf(target.x - n.position.x) > 1.0:
 		flip = target.x < n.position.x
+	var flag: Node2D = n.get_node_or_null("Flag")
+	if flag:
+		_face_flag(flag, flip)
 	var tw := n.create_tween()
 	tw.tween_property(n, "position", target, dur)
 	# gallop: two frames of the 4-frame cycle per tile, a rocking stride and a little dust

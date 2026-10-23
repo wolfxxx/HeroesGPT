@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 map hero pennant (2026-10-23), committed with this HANDOFF update:** the user found the hero's flag on the map oversized and
+  hanging low, and the owner-coloured outline around the whole figure unnecessary with a flag. Now, as the classic,
+  a small pennant (58 px, was 100) on a pole rising from behind the rider flies above its head, mirrored with the
+  hero's facing (`MapView._face_flag`, `HERO_FLAG_H`, `HERO_FLAG_FOOT`; also on each step), and the figure has only the
+  ink outline. Three new map figure test checks (18). Seen in `shots/session67/flag_before_zoom.png`,
+  `flag_after3_zoom.png`, `figs_zoom.png` (all four classes) and `left_zoom.png` (facing left).
 - **Session66 AI round (2026-10-23), committed with this HANDOFF update:** the user asked for the §8 plan's AI round, then the playtest.
   Steps 1 and 4 were done in session52; this round did steps 2 and 3 with step 4's validation against the policy
   just pushed (frozen as `tools/ai/adventure_ai_session65.gd`, control 0.00). Kept two changes

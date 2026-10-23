@@ -368,7 +368,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   hired again with them and the artifacts. `-- --capture=shots/dir` in a window saves the result window.
 - `tools/map_figure_test.tscn` — in the full suite: a hero of each class on the adventure map drawn with its class's
   figure (`MapView.hero_figure`: `heroes/map_<class>.png`, else the faction's), and the Cleric's gallop with its own
-  frames. `-- --capture=shots/dir` in a window saves the four side by side and the Cleric mid-gallop.
+  frames. Also the hero's pennant (`MapView._face_flag`: behind the rider, above its head, mirrored
+  with the facing) and no owner-coloured outline on the figure (the flag tells whose hero it is). `-- --capture=shots/dir` in a window saves the four side by side and the Cleric mid-gallop.
 - `tools/guard_pickup_test.tscn` — in the full suite: a hero walking onto an artifact beside a monster fights it and,
   having won, takes the artifact (a computer hero's fight quick-resolved; the human's through the battle scene and
   `_post_ready`). The pending visit is `hero["visit_after_guard"]`, done by `adventure.gd._visit_after_guard`.

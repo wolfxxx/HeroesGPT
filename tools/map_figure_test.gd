@@ -68,6 +68,16 @@ class Watcher extends Node:
 		await _capture("map_figures_gallop.png", 0)
 		await get_tree().create_timer(1.0).timeout
 		_ok(cs.texture.resource_path.ends_with("map_cleric.png"), "and stands again as the Cleric")
+		# the pennant flies behind the rider whichever way the hero faces, above its head; no owner-coloured outline
+		var node: Node2D = adv.view.hero_node(cl["uid"])
+		var flag: Node2D = node.get_node("Flag")
+		_ok(flag.position.x < 0 and flag.scale.x < 0 and flag.position.y < -60, "facing right, the pennant flies left, up behind the rider")
+		_ok(cs.material.get_shader_parameter("team") == null or cs.material.get_shader_parameter("team").a == 0.0, "no owner-coloured outline on the figure")
+		adv.view.move_hero_step(cl["uid"], cl["pos"] + Vector2i(-1, 1), 0.6)
+		await get_tree().create_timer(0.2).timeout
+		_ok(flag.position.x > 0 and flag.scale.x > 0, "facing left, the pennant flies right, still behind the rider")
+		await _capture("map_figures_left.png", 0)
+		await get_tree().create_timer(1.0).timeout
 		print("MAP FIGURE TEST: %d checks, failures: %d" % [checks, failures])
 		get_tree().quit()
 
