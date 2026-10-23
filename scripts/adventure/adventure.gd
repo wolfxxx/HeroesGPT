@@ -101,6 +101,9 @@ func _post_ready() -> void:
 		hud.refresh()
 		if ev["hero"] >= 0 and world["heroes"].has(ev["hero"]):
 			await _handle_level_ups(world["heroes"][ev["hero"]])
+		var mover: Dictionary = world["heroes"].get(result.get("context", {}).get("hero", -1), {})
+		if mover.has("visit_after_guard"):
+			await _visit_after_guard(mover, not rules.player_of(mover)["is_ai"])
 		if not world["heroes"].has(world.get("selected_hero", -1)):
 			_select_hero(_first_hero_with_mp())
 		if await _check_game_over():
@@ -808,13 +811,31 @@ func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
 		if gs.size() > 0:
 			hero.erase("dest")
 			var tgt: Dictionary = plan["target"] if plan["target"] in gs else gs[0]
-			return await _interact_with(hero, {"kind": "object", "uid": tgt["uid"]}, human)
+			if last and occ.get("kind", "") == "object":
+				hero["visit_after_guard"] = occ["uid"]  # (the treasure the guard stood over: taken once it is beaten)
+			var r := await _interact_with(hero, {"kind": "object", "uid": tgt["uid"]}, human)
+			if r == "":
+				await _visit_after_guard(hero, human)
+			return r
 		if last:
 			hero.erase("dest")
 			if occ.get("kind", "") != "":
 				return await _interact_with(hero, occ, human)
 	_follow = -1
 	return ""
+
+## A hero who stepped onto a guarded object and won the fight gets the object, as in the classic (a guarded artifact,
+## chest or resource is fought for, then taken). Lost, fled or moved on: nothing.
+func _visit_after_guard(hero: Dictionary, human: bool) -> void:
+	var uid = hero.get("visit_after_guard", -1)
+	hero.erase("visit_after_guard")
+	if uid < 0 or not world["heroes"].has(hero["uid"]) or not world["objects"].has(uid):
+		return
+	var o: Dictionary = world["objects"][uid]
+	if o["pos"] != hero["pos"] or o["type"] == "monster" or rules.guards(hero["pos"]).size() > 0:
+		return
+	await _interact_with(hero, {"kind": "object", "uid": uid}, human)
+	view.rebuild_objects()
 
 func _move_hero_tile(hero: Dictionary, p: Vector2i) -> void:
 	var old: Vector2i = hero["pos"]

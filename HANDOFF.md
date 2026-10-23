@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session58 guarded treasure fix (2026-10-23), committed with this HANDOFF update:** the user asked to fix playtest finding 1. A hero
+  who walked onto an artifact (or any pickup) beside a monster fought the monster and then stood on the treasure
+  without it. Now, as the classic, the treasure is taken after the guard is beaten: `move_hero` remembers the
+  target as `hero["visit_after_guard"]` and `_visit_after_guard` visits it after a won fight (a computer's
+  quick-resolved fight in the same move; the human's in `_post_ready` after the battle scene); a lost or fled fight,
+  a second guard still beside the tile, or a moved object leave it. New `tools/guard_pickup_test.tscn` (14 checks;
+  4 fail on the old code) in the full suite; the find after a real battle seen in
+  `shots/session57/guard_pickup_found.png`.
 - **Session57 siege polish and machine wrecks (2026-10-23), committed with this HANDOFF update:** the user approved finishing the sieges
   (step 1 of three offered) and asked that the destroyed First Aid Tent and Ballista look correct. Before: the tent
   and ammo cart had no wreck and tipped over as faded ghosts; the ballista's wreck showed as a flat silver heap
@@ -738,7 +746,7 @@ machine wrecks and visual findings stay on the backlog; online multiplayer remai
 
 ### Playtest findings (session57, one Necropolis campaign on Normal; not yet fixed)
 Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has the details).
-1. **BUG (cause found): a guarded artifact is not picked up after beating its guard.** Walking onto the Orb of Power
+1. **FIXED (session58): a guarded artifact is not picked up after beating its guard.** Walking onto the Orb of Power
    at (15,27) triggered the adjacent Swordsmen; after the win the hero stood on the artifact without it (twice, also
    at (18,30)); stepping off and back on picked it up. `adventure.gd move_hero` checks `rules.guards(p)` before the
    `last` step's visit and returns after the battle, so the target is never visited (the AI's quick-resolved fights

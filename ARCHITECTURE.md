@@ -336,6 +336,10 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   New Game screen (greyed heroes, back to the computer and again), the turn handover cover, Blue's own view,
   the new week for each human, save/load handover, a human-versus-human battle, the defence call, hot-seat defeats
   and the last player standing.
+- `tools/guard_pickup_test.tscn` — in the full suite: a hero walking onto an artifact beside a monster fights it and,
+  having won, takes the artifact (a computer hero's fight quick-resolved; the human's through the battle scene and
+  `_post_ready`). The pending visit is `hero["visit_after_guard"]`, done by `adventure.gd._visit_after_guard`.
+  `-- --capture=shots/dir` in a window saves the find.
 - `tools/meet_test.tscn` — in the full suite: real clicks on a second own hero show the route, then walk over and open
   the Hero Meeting dialog; an unreachable hero is selected instead.
 - Remote play (`scripts/core/shot.gd`, `--remote=<dir>`): runs the real game from the main menu and executes

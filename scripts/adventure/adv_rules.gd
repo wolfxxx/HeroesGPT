@@ -684,6 +684,7 @@ func _set_army(dst: Array, src: Array) -> void:
 func _kill_hero(hero: Dictionary, kept := false) -> void:
 	if not world["heroes"].has(hero["uid"]):
 		return
+	hero.erase("visit_after_guard")
 	if kept:
 		if not world.has("tavern_keep"):
 			world["tavern_keep"] = {}
