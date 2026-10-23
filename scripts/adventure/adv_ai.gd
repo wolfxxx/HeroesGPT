@@ -34,7 +34,7 @@ func run_turn(adv, player: Dictionary) -> String:
 			if guard > 60:
 				return ""
 			var hero: Dictionary = world["heroes"].get(hid, {})
-			if hero.is_empty() or hero["movement"] < 50:
+			if hero.is_empty() or hero["movement"] < 50 or hero.get("in_town", false):  # (a garrison hero stays in)
 				break
 			var choice := {}
 			if hid in rally.get("donors", []):
@@ -359,6 +359,9 @@ func choose(hero: Dictionary) -> Dictionary:
 			var dh := rules.hero_at(t["pos"])
 			if not dh.is_empty():
 				def += _strength(dh)
+			var gh := rules.garrison_hero(t)  # (a hero waiting inside defends the walls)
+			if not gh.is_empty():
+				def += _strength(gh) * 1.25
 			if me > def * (1.1 if townless else 1.4):
 				v = 36000.0 if townless else 12000.0
 		elif t["pos"] != hp and rules.hero_at(t["pos"]).is_empty():
@@ -371,7 +374,7 @@ func choose(hero: Dictionary) -> Dictionary:
 		if e["owner"] != hero["owner"]:
 			# A hero at a town defends with its garrison: the town candidate above already
 			# evaluates that combined force. Do not add a deceptively cheap hero-only attack.
-			var in_town := false
+			var in_town: bool = e.get("in_town", false)
 			for t in world["towns"].values():
 				if t["pos"] == e["pos"] and t["owner"] != hero["owner"]:
 					in_town = true
@@ -498,6 +501,8 @@ func _unlocks_assault(leader: Dictionary, delivery: int) -> bool:
 		var defender := GameState.army_strength(town["garrison"]) * 1.25
 		var resident := rules.hero_at(town["pos"])
 		if not resident.is_empty(): defender += _strength(resident)
+		var inside := rules.garrison_hero(town)
+		if not inside.is_empty(): defender += _strength(inside) * 1.25
 		if strength > defender * 1.4 or combined <= defender * 1.4 or not _safe_gate(leader, town): continue
 		var plan := _plan_with_passage(leader, town["pos"])
 		if not plan["path"].is_empty() and plan["costs"].back() <= leader.get("max_movement", 1500) * 2:
@@ -508,7 +513,7 @@ func _unlocks_assault(leader: Dictionary, delivery: int) -> bool:
 func _town_threat(town: Dictionary) -> float:
 	var threat := 0.0
 	for enemy in world["heroes"].values():
-		if enemy["owner"] == town["owner"]:
+		if enemy["owner"] == town["owner"] or enemy.get("in_town", false):
 			continue
 		var budget: int = enemy.get("max_movement", enemy["movement"])
 		if Vector2(enemy["pos"] - town["pos"]).length() * 50.0 > budget:
@@ -566,7 +571,7 @@ func _defense(hero: Dictionary) -> Dictionary:
 func _counterattack(hero: Dictionary, town: Dictionary) -> Dictionary:
 	var threats := []
 	for enemy in world["heroes"].values():
-		if enemy["owner"] == hero["owner"]: continue
+		if enemy["owner"] == hero["owner"] or enemy.get("in_town", false): continue
 		var route := rules.plan(enemy, town["pos"])
 		if not route["path"].is_empty() and route["costs"].back() <= enemy.get("max_movement", enemy["movement"]):
 			threats.append(enemy)

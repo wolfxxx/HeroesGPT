@@ -91,6 +91,14 @@ titles a human-vs-human result from the winner's side. Test: `tools/hotseat_test
 Right button down on the map: `adventure._right_click` shows `_tile_info(t, true)` (the hover panel; heroes add
 `_army_row`, own towns their garrison) via `HoverInfo.show_for(self, …, 0.0)`; release hides it (`_rclick_info`).
 `MapView.hero_foot` is 1px below `foot_of` so heroes win y-sort ties with buildings on their tile.
+Garrison hero (as HoMM3): `town["garrison_hero"]` = uid and `hero["in_town"] = true`; the hero keeps the town's pos but
+takes no tile in `AdvRules.occ` (the gate stays free, `MapView.rebuild_objects` draws no figure) and cannot plan a
+route. `AdvRules.garrison_hero`, `town_army` (its army, else the garrison), `visiting_hero`, `enter_garrison` (the
+garrison's troops join its army; false when they don't fit), `leave_garrison`, `swap_garrison`; `town_defender`
+returns it first. An enemy at the gate of a town that holds a garrison hero is fought in the open
+(`adventure._interact_with`), the garrison hero then in a siege. The town screen's portraits pick, move, swap and open
+(`town_screen._hero_slot`). The AI counts a garrison hero in a town's defence and never as a raider; it does not
+garrison its own heroes.
 Fortification levels (`TownLogic.siege_level`: 0 none, 1 Fort, 2 Citadel, 3 Castle) drive both the town's map picture
 (`MapView.town_sprite`: village / walled town / castle, also used by the HUD town list, the kingdom overview and the
 town screen's banner) and the siege: `BattleLogic` puts the moat in front of the wall only at level 2+
@@ -336,6 +344,10 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   New Game screen (greyed heroes, back to the computer and again), the turn handover cover, Blue's own view,
   the new week for each human, save/load handover, a human-versus-human battle, the defence call, hot-seat defeats
   and the last player standing.
+- `tools/garrison_hero_test.tscn` — in the full suite: a hero moved into a town's garrison by the town screen's
+  portraits (refused when the garrison's troops don't fit its army), the gate freed for the Tavern, the swap, no map
+  figure or route for the garrison hero, and an attacker meeting the gate hero outside first, then the garrison hero
+  in a siege. `-- --capture=shots/dir` in a window saves the town screen with both heroes.
 - `tools/guard_pickup_test.tscn` — in the full suite: a hero walking onto an artifact beside a monster fights it and,
   having won, takes the artifact (a computer hero's fight quick-resolved; the human's through the battle scene and
   `_post_ready`). The pending visit is `hero["visit_after_guard"]`, done by `adventure.gd._visit_after_guard`.

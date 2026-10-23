@@ -17,6 +17,8 @@ var _armies: VBoxContainer
 var _buttons: VBoxContainer
 var _res_labels := {}
 var _group := {}
+var _rules: AdvRules
+var _hero_pick := ""  # a hero portrait clicked once: "garrison" or "visiting" (a click on the other row moves it)
 
 func _ready() -> void:
 	theme = UI.theme()
@@ -78,11 +80,10 @@ func _resolve_state() -> void:
 			TownLogic.weekly_growth(t)
 	town = world["towns"][uid]
 	player = world["players"][town["owner"]] if town["owner"] >= 0 else world["players"][0]
+	_rules = AdvRules.new(world)
 	var huid: int = GameState.pending_town.get("hero_uid", -1)
-	for h in world["heroes"].values():
-		if h["pos"] == town["pos"] and h["owner"] == town["owner"]:
-			hero = h
-	if hero.is_empty() and world["heroes"].has(huid):
+	hero = _rules.visiting_hero(town)
+	if hero.is_empty() and world["heroes"].has(huid) and not world["heroes"][huid].get("in_town", false):
 		hero = world["heroes"][huid]
 
 # ---------------------------------------------------------------------------------------------
@@ -208,19 +209,28 @@ func refresh() -> void:
 	for c in _armies.get_children():
 		c.queue_free()
 	_group = {}
+	# The garrison row (its hero, else the town's flag) and the gate row (the visiting hero), as the classic: a hero
+	# portrait clicked once is picked, a click on the other row's portrait or empty place moves or swaps the heroes
+	# (into the garrison, its troops join the hero's army), a second click on the picked one opens the hero screen.
+	var gh := _rules.garrison_hero(town)
 	var row1 := HBoxContainer.new()
 	row1.add_theme_constant_override("separation", 12)
-	var flag := _Banner.new()
-	flag.custom_minimum_size = Vector2(92, 92)
-	flag.color = GameData.PLAYER_COLORS[town["owner"]] if town["owner"] >= 0 else Color.GRAY
-	if Assets.has(MapView.town_sprite(town)):
-		flag.town_tex = Assets.tex(MapView.town_sprite(town))
-	flag.tooltip_text = "Garrison"
-	row1.add_child(flag)
+	if gh.is_empty():
+		var flag := _Banner.new()
+		flag.custom_minimum_size = Vector2(92, 92)
+		flag.color = GameData.PLAYER_COLORS[town["owner"]] if town["owner"] >= 0 else Color.GRAY
+		if Assets.has(MapView.town_sprite(town)):
+			flag.town_tex = Assets.tex(MapView.town_sprite(town))
+		flag.tooltip_text = "Garrison" + ("\nClick to move %s into the garrison" % hero["name"] if _hero_pick == "visiting" else "")
+		flag.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if _hero_pick == "visiting" else Control.CURSOR_ARROW
+		flag.gui_input.connect(_slot_input.bind("garrison"))
+		row1.add_child(flag)
+	else:
+		row1.add_child(_hero_portrait(gh, "garrison"))
 	var g := ArmyStrip.new()
 	g.upgrade_town = town
 	g.upgrade_player = player
-	g.bind(town["garrison"], _group, false)
+	g.bind(gh["army"] if not gh.is_empty() else town["garrison"], _group, not gh.is_empty())
 	g.changed.connect(_on_army_changed)
 	row1.add_child(g)
 	_armies.add_child(row1)
@@ -229,17 +239,16 @@ func refresh() -> void:
 	if hero.is_empty():
 		var empty := Panel.new()
 		empty.custom_minimum_size = Vector2(92, 92)
-		empty.tooltip_text = "No visiting hero"
+		empty.tooltip_text = "No visiting hero" + ("\nClick to send %s out to the gate" % gh["name"] if _hero_pick == "garrison" else "")
+		empty.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if _hero_pick == "garrison" else Control.CURSOR_ARROW
+		empty.gui_input.connect(_slot_input.bind("visiting"))
 		row2.add_child(empty)
 		var l := UI.label("No hero is visiting. Hire one at the Tavern.", 20, Color(0.75, 0.7, 0.6))
 		l.custom_minimum_size = Vector2(600, 92)
 		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row2.add_child(l)
 	else:
-		var p := UI.portrait_button(Assets.hero_portrait(hero["id"]), Vector2(92, 92))
-		p.tooltip_text = "%s, level %d %s\nClick to open hero details" % [hero["name"], hero["level"], hero["class"]]
-		p.pressed.connect(_open_hero_screen)
-		row2.add_child(p)
+		row2.add_child(_hero_portrait(hero, "visiting"))
 		var hs := ArmyStrip.new()
 		hs.upgrade_town = town
 		hs.upgrade_player = player
@@ -347,20 +356,70 @@ func _creature_cell(tier: int) -> Button:
 func _on_army_changed() -> void:
 	pass
 
-func _open_hero_screen() -> void:
+func _hero_portrait(h: Dictionary, which: String) -> Button:
+	var p := UI.portrait_button(Assets.hero_portrait(h["id"]), Vector2(92, 92), _hero_pick == which)
+	var other := "visiting" if which == "garrison" else "garrison"
+	var hint := "Click to pick, again for hero details"
+	if _hero_pick == which:
+		hint = "Click again to open hero details"
+	elif _hero_pick == other:
+		hint = "Click to swap the two heroes"
+	p.tooltip_text = "%s, level %d %s%s\n%s" % [h["name"], h["level"], h["class"],
+		" (in the garrison)" if which == "garrison" else "", hint]
+	p.pressed.connect(_hero_slot.bind(which))
+	return p
+
+func _slot_input(e: InputEvent, which: String) -> void:
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+		_hero_slot(which)
+
+## A click on a hero row's portrait or empty place (see refresh).
+func _hero_slot(which: String) -> void:
+	var gh := _rules.garrison_hero(town)
+	var here: Dictionary = gh if which == "garrison" else hero
+	if _hero_pick == "":
+		if not here.is_empty():
+			Audio.sfx("click", -6)
+			_hero_pick = which
+			refresh()
+		return
+	if _hero_pick == which:
+		_hero_pick = ""
+		_open_hero_screen(here)
+		return
+	_hero_pick = ""
+	if not gh.is_empty() and not hero.is_empty():
+		_rules.swap_garrison(town)
+	elif which == "garrison":
+		if not _rules.enter_garrison(hero, town):
+			Audio.sfx("error")
+			await Modal.message(self, "Garrison", "The garrison's troops cannot join %s's army: there is no room for them." % hero["name"]).closed
+	elif not _rules.leave_garrison(town):
+		Audio.sfx("error")
+		await Modal.message(self, "Garrison", "The town gate is taken.").closed
+	hero = _rules.visiting_hero(town)
 	if hero.is_empty():
+		GameState.pending_town.erase("hero_uid")
+	else:
+		GameState.pending_town["hero_uid"] = hero["uid"]
+	Audio.sfx("click", -6)
+	refresh()
+
+func _open_hero_screen(h: Dictionary) -> void:
+	if h.is_empty():
 		return
 	Audio.sfx("click", -6)
-	var m := HeroScreen.open(self, hero)
+	var m := HeroScreen.open(self, h)
 	var r = await m.closed
 	if r == "dismiss":
-		var owner_player: Dictionary = world["players"][hero["owner"]]
+		var owner_player: Dictionary = world["players"][h["owner"]]
 		if owner_player["heroes"].size() <= 1 and owner_player["towns"].is_empty():
 			await Modal.message(self, "Dismiss", "You cannot dismiss your last hero.").closed
-		elif await Modal.confirm(self, "Dismiss Hero", "Dismiss %s? The hero and the army will leave you." % hero["name"]).closed:
-			AdvRules.new(world)._kill_hero(hero)
-			GameState.pending_town.erase("hero_uid")
-			hero = {}
+		elif await Modal.confirm(self, "Dismiss Hero", "Dismiss %s? The hero and the army will leave you." % h["name"]).closed:
+			_rules._kill_hero(h)
+			if h == hero:
+				GameState.pending_town.erase("hero_uid")
+				hero = {}
 	refresh()
 
 # ---------------------------------------------------------------------------------------------
@@ -825,7 +884,7 @@ func _open_tavern() -> void:
 
 func _hero_at_gate() -> bool:
 	for h in world["heroes"].values():
-		if h["pos"] == town["pos"]:
+		if h["pos"] == town["pos"] and not h.get("in_town", false):  # (the garrison hero waits inside)
 			return true
 	return false
 
@@ -946,7 +1005,7 @@ func _open_transformer() -> void:
 		row.custom_minimum_size.x = 1040
 		m.body.add_child(row)
 		var any := false
-		for army in ([hero["army"]] if not hero.is_empty() else []) + [town["garrison"]]:
+		for army in ([hero["army"]] if not hero.is_empty() else []) + [_rules.town_army(town)]:
 			for st in army:
 				if st == null or "undead" in GameData.CREATURES[st["id"]]["abilities"]:
 					continue

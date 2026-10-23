@@ -14,6 +14,7 @@
 #   NECROMANCY TEST: N checks, failures: 0
 #   MEET TEST: N checks, failures: 0
 #   GUARD PICKUP TEST: N checks, failures: 0
+#   GARRISON HERO TEST: N checks, failures: 0
 #   ANNOUNCE TEST: N checks, failures: 0
 #   REACH SWEEP {... "maps_with_cut": 0 ...}
 #   CLICK TEST: N clicks, 0 without a path    + DRAG TEST ... plan unchanged: true   + PENDING TEST ... shown: true
@@ -42,6 +43,7 @@ echo "--war-machines"; timeout 120 $G --headless --path . res://tools/war_machin
 echo "--necromancy"; timeout 60 $G --headless --path . res://tools/necromancy_test.tscn 2>&1 | grep -E "NECROMANCY TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--meet"; timeout 90 $G --headless --path . res://tools/meet_test.tscn 2>&1 | grep -E "MEET TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--guard-pickup"; timeout 120 $G --headless --path . res://tools/guard_pickup_test.tscn 2>&1 | grep -E "GUARD PICKUP TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--garrison-hero"; timeout 120 $G --headless --path . res://tools/garrison_hero_test.tscn 2>&1 | grep -E "GARRISON HERO TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--announce"; timeout 120 $G --headless --path . res://tools/announce_test.tscn 2>&1 | grep -E "ANNOUNCE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--hotseat"; timeout 300 $G --headless --path . res://tools/hotseat_test.tscn 2>&1 | grep -E "HOTSEAT TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--map-reach"; timeout 300 $G --headless --path . res://tools/map_reach_report.tscn 2>&1 | grep -E "REACH SWEEP|SCRIPT ERROR" | tail -3

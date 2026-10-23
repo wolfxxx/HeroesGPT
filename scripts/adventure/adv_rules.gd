@@ -54,7 +54,8 @@ func rebuild() -> void:
 	for t in world["towns"].values():
 		occ[t["pos"]] = {"kind": "town", "uid": t["uid"]}
 	for hh in world["heroes"].values():
-		occ[hh["pos"]] = {"kind": "hero", "uid": hh["uid"]}
+		if not hh.get("in_town", false):  # (a garrison hero waits inside, off the map: the gate stays free)
+			occ[hh["pos"]] = {"kind": "hero", "uid": hh["uid"]}
 	for y in h:
 		for x in w:
 			var p := Vector2i(x, y)
@@ -70,7 +71,7 @@ func refresh_tile(p: Vector2i) -> void:
 		if t["pos"] == p:
 			occ[p] = {"kind": "town", "uid": t["uid"]}
 	for hh in world["heroes"].values():
-		if hh["pos"] == p:
+		if hh["pos"] == p and not hh.get("in_town", false):
 			occ[p] = {"kind": "hero", "uid": hh["uid"]}
 	astar.set_point_solid(p, not walkable_ground(p) or occ.has(p) or is_guarded(p))
 
@@ -532,13 +533,74 @@ func battle_vs_town(att: Dictionary, town: Dictionary) -> Dictionary:
 		"siege_morale": 2 if TownLogic.has_building(town, "brotherhood") else 0,
 	}
 
-## Hero defending a town: one of the owner's heroes standing in the gate (never the attacker itself,
-## who is standing on the gate tile while assaulting it).
+## Hero defending a town's walls: its garrison hero, else one of the owner's heroes standing in the gate (never the
+## attacker itself, who is standing on the gate tile while assaulting it).
 func town_defender(town: Dictionary, attacker: Dictionary) -> Dictionary:
+	var gh := garrison_hero(town)
+	if not gh.is_empty():
+		return gh
 	for hh in world["heroes"].values():
 		if hh["pos"] == town["pos"] and hh["uid"] != attacker.get("uid", -1) and hh["owner"] == town["owner"]:
 			return hh
 	return {}
+
+# ---------------------------------------------------------------------------------------------
+# Garrison hero (as the classic: one hero may wait inside a town, off the map, leading its garrison; the gate stays
+# free for another, and the garrison hero defends the walls. A hero visiting the gate as well is met first, outside.)
+# ---------------------------------------------------------------------------------------------
+func garrison_hero(town: Dictionary) -> Dictionary:
+	var hh: Dictionary = world["heroes"].get(town.get("garrison_hero", -1), {})
+	return hh if hh.get("in_town", false) else {}
+
+## The troops holding a town: its garrison hero's army, else its garrison.
+func town_army(town: Dictionary) -> Array:
+	var gh := garrison_hero(town)
+	return gh["army"] if not gh.is_empty() else town["garrison"]
+
+## The town's own hero standing in its gate (not the garrison hero), or {}.
+func visiting_hero(town: Dictionary) -> Dictionary:
+	for hh in world["heroes"].values():
+		if hh["pos"] == town["pos"] and hh["owner"] == town["owner"] and not hh.get("in_town", false):
+			return hh
+	return {}
+
+## Moves the hero at the gate into the garrison; the garrison's troops join its army, so it fails (false) when they
+## do not fit in seven slots, or when another hero is already inside.
+func enter_garrison(hero: Dictionary, town: Dictionary) -> bool:
+	if not garrison_hero(town).is_empty() or hero["pos"] != town["pos"] or hero["owner"] != town["owner"]:
+		return false
+	var army: Array = hero["army"].duplicate(true)
+	for st in town["garrison"]:
+		if st and st["count"] > 0 and not GameState.add_to_army(army, st["id"], st["count"]):
+			return false
+	for i in 7:
+		hero["army"][i] = army[i]
+		town["garrison"][i] = null
+	hero["in_town"] = true
+	hero.erase("dest")
+	town["garrison_hero"] = hero["uid"]
+	refresh_tile(town["pos"])
+	return true
+
+## Moves the garrison hero out to the gate with its army (the garrison is left empty); fails when the gate is taken.
+func leave_garrison(town: Dictionary) -> bool:
+	var gh := garrison_hero(town)
+	if gh.is_empty() or not hero_at(town["pos"]).is_empty():
+		return false
+	gh.erase("in_town")
+	town.erase("garrison_hero")
+	refresh_tile(town["pos"])
+	return true
+
+## The hero at the gate and the garrison hero change places, each with its own army.
+func swap_garrison(town: Dictionary) -> bool:
+	var gh := garrison_hero(town)
+	var vh := visiting_hero(town)
+	if gh.is_empty() or vh.is_empty():
+		return false
+	gh.erase("in_town")
+	town.erase("garrison_hero")
+	return enter_garrison(vh, town)
 
 func _battle_terrain(p: Vector2i) -> String:
 	var t: String = WorldGen.TERRAIN_ORDER[terrain_at(p)]
@@ -685,6 +747,11 @@ func _kill_hero(hero: Dictionary, kept := false) -> void:
 	if not world["heroes"].has(hero["uid"]):
 		return
 	hero.erase("visit_after_guard")
+	if hero.get("in_town", false):
+		for t in world["towns"].values():
+			if t.get("garrison_hero", -1) == hero["uid"]:
+				t.erase("garrison_hero")
+		hero.erase("in_town")
 	if kept:
 		if not world.has("tavern_keep"):
 			world["tavern_keep"] = {}

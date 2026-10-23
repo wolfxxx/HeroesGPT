@@ -16,6 +16,18 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session60 garrison hero and hero-list click (2026-10-23), committed with this HANDOFF update:** the user approved playtest findings 2 and
+  3. (3) A click on a hero in the adventure hero list now selects and centres the hero; a click on the selected one
+  opens the hero screen (as the classic). (2) The garrison hero, as the classic (rules confirmed: the Heroes 3 wiki's
+  Tutorial and Tricks pages, a Heroes Community thread): one hero per town may wait in the garrison, off the map,
+  leading the garrison's troops (they join its army; the move is refused when they don't fit), so the gate is free
+  for the Tavern; in the town screen a portrait clicked once is picked, a click on the other row moves or swaps the
+  heroes, a second click on the picked one opens the hero screen. The garrison hero defends the walls in a siege; a
+  hero also standing at the gate is fought first in the open. Garrison heroes cannot move, are skipped by "next
+  hero" and the end-turn warning, and the AI counts them in a town's defence (it does not garrison its own heroes).
+  Code: `AdvRules.garrison_hero/town_army/visiting_hero/enter_garrison/leave_garrison/swap_garrison`,
+  `town_screen._hero_slot`, `adventure._interact_with`; new `tools/garrison_hero_test.tscn` (19 checks) in the full
+  suite; town screen seen in `shots/session57/garrison_hero_town.png`. Old saves load unchanged (no garrison heroes).
 - **Session59 small battle fixes (2026-10-23), committed with this HANDOFF update:** the user asked for playtest findings 4-7. (4) A right
   click on a battle stack opens its live card (`battle.gd._show_stack_card`: the hover panel's content, with the
   battle's numbers, the spells on it and their rounds left, and what changes them) instead of the book stats.
@@ -764,9 +776,9 @@ Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has
    `last` step's visit and returns after the battle, so the target is never visited (the AI's quick-resolved fights
    too). Fix: after a won guard fight on the last step visit that tile's object (a human's across the battle scene,
    resumed in `_post_ready`).
-2. **No garrison hero slot** (HoMM3 deviation): a hero at the gate blocks the Tavern ("send them out first") and can
+2. **FIXED (session60): No garrison hero slot** (HoMM3 deviation): a hero at the gate blocks the Tavern ("send them out first") and can
    not be moved up into the garrison row; HoMM3 lets a hero stand in the garrison.
-3. **Hero list click opens the hero screen** at once (HoMM3: the first click selects and centres the hero, a click on
+3. **FIXED (session60): Hero list click opens the hero screen** at once (HoMM3: the first click selects and centres the hero, a click on
    the selected one opens the screen); switching heroes always needs a Close.
 4. **FIXED (session59):** Battle: the held right-click creature popup showed base Speed and no active spells, while
    the hover panel showed "Speed 5 (4)" and "Slow (2 rounds left)".

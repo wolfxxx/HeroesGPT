@@ -464,9 +464,11 @@ func _click(t: Vector2i, _dbl: bool) -> void:
 	if not town.is_empty() and town["owner"] == me and t != town["pos"]:
 		open_town(town["uid"])
 		return
-	if hero.is_empty():
+	if hero.is_empty() or hero.get("in_town", false):
 		if not town.is_empty() and town["owner"] == me:
 			open_town(town["uid"])
+		elif not hero.is_empty():  # (a garrison hero waits inside: out through the town screen first)
+			hud.toast("%s is in a town's garrison: send them to the gate in the town screen" % hero["name"])
 		return
 	if t == _plan_target and not _plan.is_empty():
 		_execute_move()
@@ -475,7 +477,7 @@ func _click(t: Vector2i, _dbl: bool) -> void:
 
 func _make_plan(t: Vector2i) -> void:
 	var hero := selected_hero()
-	if hero.is_empty():
+	if hero.is_empty() or hero.get("in_town", false):
 		return
 	var p := rules.plan(hero, t)
 	if p["path"].is_empty():
@@ -516,7 +518,11 @@ func _tile_info(t: Vector2i, detailed := false):
 		HoverInfo.line(v, "%s town" % GameData.FACTIONS[town["faction"]]["name"])
 		HoverInfo.line(v, "Neutral" if town["owner"] < 0 else world["players"][town["owner"]]["name"], Color(0.8, 0.75, 0.65))
 		if detailed and town["owner"] == _human():
-			if GameState.army_is_empty(town["garrison"]):
+			var gh := rules.garrison_hero(town)
+			if not gh.is_empty():
+				HoverInfo.line(v, "Garrison led by %s:" % gh["name"], UI.GOLD, 18)
+				_army_row(v, gh["army"], true)
+			elif GameState.army_is_empty(town["garrison"]):
 				HoverInfo.line(v, "No garrison.", Color(0.8, 0.75, 0.65), 18)
 			else:
 				HoverInfo.line(v, "Garrison:", UI.GOLD, 18)
@@ -691,7 +697,8 @@ func select_hero(uid: int) -> void:
 func _first_hero_with_mp() -> int:
 	var p := human_player()
 	for hid in p["heroes"]:
-		if world["heroes"][hid]["movement"] > 0 and not world["heroes"][hid].get("asleep", false):
+		var hh: Dictionary = world["heroes"][hid]
+		if hh["movement"] > 0 and not hh.get("asleep", false) and not hh.get("in_town", false):
 			return hid
 	return p["heroes"][0] if p["heroes"].size() > 0 else -1
 
@@ -885,7 +892,8 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 				return ""
 			var involves_human: bool = human or not rules.player_of(other)["is_ai"]
 			for t in world["towns"].values():
-				if t["pos"] == other["pos"] and t["owner"] != hero["owner"]:
+				# (a hero at the gate of a town that also holds a garrison hero is met outside the walls, as the classic)
+				if t["pos"] == other["pos"] and t["owner"] != hero["owner"] and rules.garrison_hero(t).is_empty():
 					return await _start_battle(rules.battle_vs_town(hero, t), involves_human)
 			return await _start_battle(rules.battle_vs_hero(hero, other), involves_human)
 	return ""
@@ -1014,7 +1022,7 @@ func end_turn() -> void:
 	var p := human_player()
 	var idle := 0
 	for hid in p["heroes"]:
-		if world["heroes"][hid]["movement"] >= 300:
+		if world["heroes"][hid]["movement"] >= 300 and not world["heroes"][hid].get("in_town", false):
 			idle += 1
 	if idle > 0:
 		var ok = await Modal.confirm(self, "End Turn", "One or more heroes can still move. End your turn anyway?").closed
