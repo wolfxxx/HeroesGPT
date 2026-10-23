@@ -101,8 +101,10 @@ route. `AdvRules.garrison_hero`, `town_army` (its army, else the garrison), `vis
 garrison's troops join its army; false when they don't fit), `leave_garrison`, `swap_garrison`; `town_defender`
 returns it first. An enemy at the gate of a town that holds a garrison hero is fought in the open
 (`adventure._interact_with`), the garrison hero then in a siege. The town screen's portraits pick, move, swap and open
-(`town_screen._hero_slot`). The AI counts a garrison hero in a town's defence and never as a raider; it does not
-garrison its own heroes.
+(`town_screen._hero_slot`). The AI counts a garrison hero in a town's defence (`AdvAI._town_hold`) and never as a raider.
+A computer hero holding a threatened town from its gate (`_defense` -> "hold"; `choose` notes it in `holding`)
+moves into the garrison in `run_turn` (`AdvAI._garrison`, when the troops fit), and comes out at the start of a later day once no army can reach the town
+(`_release_garrisons`, before `manage_towns`, which can then hire at the free gate).
 Fortification levels (`TownLogic.siege_level`: 0 none, 1 Fort, 2 Citadel, 3 Castle) drive both the town's map picture
 (`MapView.town_sprite`: village / walled town / castle, also used by the HUD town list, the kingdom overview and the
 town screen's banner) and the siege: `BattleLogic` puts the moat in front of the wall only at level 2+
@@ -351,7 +353,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/garrison_hero_test.tscn` — in the full suite: a hero moved into a town's garrison by the town screen's
   portraits (refused when the garrison's troops don't fit its army), the gate freed for the Tavern, the swap, no map
   figure or route for the garrison hero, and an attacker meeting the gate hero outside first, then the garrison hero
-  in a siege. `-- --capture=shots/dir` in a window saves the town screen with both heroes.
+  in a siege; the computer garrisoning a hero that holds a threatened town and letting it out once the town is safe.
+  `-- --capture=shots/dir` in a window saves the town screen with both heroes.
 - `tools/list_click_test.tscn` — in the full suite: the adventure panel's hero and town lists (a first click selects
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).

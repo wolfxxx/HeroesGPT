@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session65 computer garrison heroes (2026-10-23), committed with this HANDOFF update:** the computer players now use the garrison as
+  the classic's do. A computer hero that holds a threatened town from its gate (`AdvAI._defense` returning "hold")
+  moves into the garrison in `run_turn` (`choose` stays side-effect free: it sets `AdvAI.holding`), leading all the
+  town's troops behind the walls (`AdvAI._garrison`; it stays at the gate
+  when they don't fit), which frees the gate for the Tavern. At the start of a later day it comes out once no army
+  can reach the town (`_release_garrisons`, before `manage_towns`). The AI's defence estimates count a garrison hero
+  (`_town_hold` in `_defense`, `_counterattack`, `_leave_rear_guard`), and a hero at an enemy gate with a garrison
+  hero inside is met alone. 8 new checks in `tools/garrison_hero_test.tscn` (27). In a traced simulated game
+  computer heroes went into garrisons and came out again a day or more later.
 - **Session64 map hero figures per class (2026-10-23), committed with this HANDOFF update:** as the classic (each hero class has its own
   adventure map figure), the Cleric and the Necromancer now ride their own figures on the map: new
   `heroes/map_cleric.png`, `map_necromancer.png` and their four gallop frames each, the faction figures' horses in
@@ -57,7 +66,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   for the Tavern; in the town screen a portrait clicked once is picked, a click on the other row moves or swaps the
   heroes, a second click on the picked one opens the hero screen. The garrison hero defends the walls in a siege; a
   hero also standing at the gate is fought first in the open. Garrison heroes cannot move, are skipped by "next
-  hero" and the end-turn warning, and the AI counts them in a town's defence (it does not garrison its own heroes).
+  hero" and the end-turn warning, and the AI counts them in a town's defence (it garrisons its own since session65).
   Code: `AdvRules.garrison_hero/town_army/visiting_hero/enter_garrison/leave_garrison/swap_garrison`,
   `town_screen._hero_slot`, `adventure._interact_with`; new `tools/garrison_hero_test.tscn` (19 checks) in the full
   suite; town screen seen in `shots/session57/garrison_hero_town.png`. Old saves load unchanged (no garrison heroes).

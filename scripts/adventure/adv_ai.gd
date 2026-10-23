@@ -10,6 +10,7 @@ const BUILD_ORDER := ["tavern", "dwelling_1", "dwelling_2", "town_hall", "dwelli
 
 var rules: AdvRules
 var world: Dictionary
+var holding := -1  # the hero whose last choice was to hold its town's gate (run_turn moves it into the garrison)
 
 func _init(r: AdvRules) -> void:
 	rules = r
@@ -18,6 +19,7 @@ func _init(r: AdvRules) -> void:
 func run_turn(adv, player: Dictionary) -> String:
 	if player.get("ai_day", -1) != world["day"]:
 		player["ai_day"] = world["day"]
+		_release_garrisons(player)
 		manage_towns(player)
 		adv.view.rebuild_objects()
 	var rally := _assault_rally(player)
@@ -44,6 +46,9 @@ func run_turn(adv, player: Dictionary) -> String:
 					if not meeting["path"].is_empty() and meeting["reach"] == meeting["path"].size() - 1:
 						choice = meeting
 			if choice.is_empty(): choice = choose(hero)
+			if choice.is_empty() and holding == hid and _garrison(hero):
+				adv.view.rebuild_objects()  # (it went into the garrison to hold the town)
+				break
 			if choice.is_empty():
 				# An idle hero may still need to step aside for a later army in this same turn.
 				break
@@ -324,10 +329,14 @@ func _strength(hero: Dictionary) -> float:
 	return s * (1.0 + 0.05 * (GameState.hero_stat(hero, "attack") + GameState.hero_stat(hero, "defense")))
 
 func choose(hero: Dictionary) -> Dictionary:
+	holding = -1
 	var defense := _defense(hero)
 	if not defense.is_empty():
 		hero.erase("ai_goal")
-		return {} if defense.has("hold") else defense
+		if defense.has("hold"):
+			holding = hero["uid"]
+			return {}
+		return defense
 	var me := _strength(hero)
 	var player := rules.player_of(hero)
 	var best := {}
@@ -436,7 +445,7 @@ func _leave_rear_guard(hero: Dictionary, choice: Dictionary) -> void:
 			town = t
 	if town.is_empty() or choice.get("path", []).size() < 2: return
 	var threat := _town_threat(town)
-	var need := threat * 1.4 / 1.25 - GameState.army_strength(town["garrison"])
+	var need := (threat * 1.4 - _town_hold(town)) / 1.25
 	if threat <= 0.0 or need <= 0.0 or need > GameState.army_strength(hero["army"]) * 0.25: return
 	# cheapest units first, whole units only; the hero keeps at least one creature
 	var order := []
@@ -523,6 +532,27 @@ func _town_threat(town: Dictionary) -> float:
 			threat = maxf(threat, _strength(enemy))
 	return threat
 
+## What holds a town's walls without the hero at its gate: its garrison, or its garrison hero's army (walls: x1.25).
+func _town_hold(town: Dictionary) -> float:
+	var gh := rules.garrison_hero(town)
+	return (_strength(gh) if not gh.is_empty() else float(GameState.army_strength(town["garrison"]))) * 1.25
+
+## Holding a threatened town from its gate (as the classic computer players): the hero moves into the garrison and
+## leads all its troops behind the walls, and the gate is free for the Tavern. Stays at the gate when they don't fit.
+func _garrison(hero: Dictionary) -> bool:
+	for town in world["towns"].values():
+		if town["pos"] == hero["pos"] and town["owner"] == hero["owner"] and rules.garrison_hero(town).is_empty():
+			return rules.enter_garrison(hero, town)
+	return false
+
+## At the start of the day, a garrison hero whose town no army can reach any more comes out to the gate (the gate
+## free) to campaign again.
+func _release_garrisons(player: Dictionary) -> void:
+	for tid in player["towns"]:
+		var town: Dictionary = world["towns"][tid]
+		if not rules.garrison_hero(town).is_empty() and _town_threat(town) <= 0.0:
+			rules.leave_garrison(town)
+
 func _safe_gate(hero: Dictionary, town: Dictionary) -> bool:
 	for guard in rules.guards(town["pos"]):
 		if GameData.CREATURES[guard["creature"]]["ai_value"] * guard["count"] * 1.6 > _strength(hero):
@@ -536,7 +566,7 @@ func _defense(hero: Dictionary) -> Dictionary:
 		if town["owner"] != hero["owner"]:
 			continue
 		var threat := _town_threat(town)
-		var garrison := GameState.army_strength(town["garrison"]) * 1.25
+		var garrison := _town_hold(town)
 		if threat <= 0.0 or garrison >= threat * 1.4:
 			continue
 		var resident := rules.hero_at(town["pos"])
@@ -575,12 +605,13 @@ func _counterattack(hero: Dictionary, town: Dictionary) -> Dictionary:
 		var route := rules.plan(enemy, town["pos"])
 		if not route["path"].is_empty() and route["costs"].back() <= enemy.get("max_movement", enemy["movement"]):
 			threats.append(enemy)
-	var garrison := GameState.army_strength(town["garrison"]) * 1.25
+	var garrison := _town_hold(town)
 	for enemy in threats:
 		var danger := _strength(enemy)
 		# A hero standing in a town fights with its garrison, not just the visible army.
+		# (with a garrison hero inside, the one at the gate is met outside, alone)
 		for target_town in world["towns"].values():
-			if target_town["pos"] == enemy["pos"]:
+			if target_town["pos"] == enemy["pos"] and rules.garrison_hero(target_town).is_empty():
 				danger += GameState.army_strength(target_town["garrison"]) * 1.25
 		for guard in rules.guards(enemy["pos"]):
 			danger = maxf(danger, GameData.CREATURES[guard["creature"]]["ai_value"] * guard["count"])

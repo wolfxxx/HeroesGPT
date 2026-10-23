@@ -108,8 +108,54 @@ class Watcher extends Node:
 		_ok(town["owner"] == 1, "the siege takes the town")
 		_ok(not w["heroes"].has(h1["uid"]) and not town.has("garrison_hero"), "the garrison hero fell with it")
 		me["is_ai"] = false
+		_computer()
 		print("GARRISON HERO TEST: %d checks, failures: %d" % [checks, failures])
 		get_tree().quit()
+
+	## The computer, as the classic computer players: a hero holding a threatened town from its gate moves into the
+	## garrison (the gate free for the Tavern), and comes out once no army can reach the town.
+	func _computer() -> void:
+		var s := GameState.new_game_settings.duplicate()
+		s["seed"] = 777
+		var w := WorldGen.generate(s)
+		GameState.world = w
+		var rules := AdvRules.new(w)
+		var ai := AdvAI.new(rules)
+		var cpu: Dictionary = w["players"][1]
+		var town: Dictionary = w["towns"][cpu["towns"][0]]
+		var h: Dictionary = w["heroes"][cpu["heroes"][0]]
+		h["pos"] = town["pos"]
+		h["army"] = [{"id": "swordsman", "count": 10}, null, null, null, null, null, null]
+		for i in 7:
+			town["garrison"][i] = null
+		town["garrison"][0] = {"id": "pikeman", "count": 1}
+		var foe: Dictionary = w["heroes"][w["players"][0]["heroes"][0]]
+		foe["army"] = [{"id": "swordsman", "count": 10}, null, null, null, null, null, null]
+		rules.rebuild()
+		for d in [Vector2i(0, 3), Vector2i(2, 3), Vector2i(-2, 3), Vector2i(3, 2), Vector2i(-3, 2), Vector2i(0, 4)]:
+			var p: Vector2i = town["pos"] + d
+			if rules.inside(p) and rules.walkable_ground(p) and rules.at(p).is_empty():
+				foe["pos"] = p
+				break
+		rules.rebuild()
+		# a garrison of a third of the threat: too weak alone, enough with the hero
+		var unit: int = GameData.CREATURES["pikeman"]["ai_value"]
+		town["garrison"][0]["count"] = maxi(1, int(ai._strength(foe) * 0.3 / unit))
+		_ok(ai._town_threat(town) > 0.0, "(computer) an enemy army can reach the town")
+		var total := GameState.army_strength(h["army"]) + GameState.army_strength(town["garrison"])
+		_ok(ai.choose(h).is_empty() and ai.holding == h["uid"] and not h.get("in_town", false), "(computer) the hero chooses to hold the town")
+		_ok(ai._garrison(h) and h.get("in_town", false), "(computer) and goes into its garrison to hold it (run_turn)")
+		_ok(GameState.army_is_empty(town["garrison"]) and GameState.army_strength(h["army"]) == total, "(computer) leading all its troops")
+		_ok(rules.hero_at(town["pos"]).is_empty(), "(computer) the gate is free for the Tavern")
+		_ok(is_equal_approx(ai._town_hold(town), ai._strength(h) * 1.25), "(computer) the town's defence counts the garrison hero")
+		ai._release_garrisons(cpu)
+		_ok(h.get("in_town", false), "(computer) it stays in while the enemy is near")
+		foe["pos"] = Vector2i(1, 1)
+		w["heroes"].erase(foe["uid"])
+		w["players"][0]["heroes"].erase(foe["uid"])
+		rules.rebuild()
+		ai._release_garrisons(cpu)
+		_ok(not h.get("in_town", false) and rules.hero_at(town["pos"]) == h, "(computer) and comes out once no army can reach the town")
 
 	func _capture(file: String) -> void:
 		var dir := ""
