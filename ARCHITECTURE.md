@@ -91,6 +91,12 @@ titles a human-vs-human result from the winner's side. Test: `tools/hotseat_test
 Right button down on the map: `adventure._right_click` shows `_tile_info(t, true)` (the hover panel; heroes add
 `_army_row`, own towns their garrison) via `HoverInfo.show_for(self, …, 0.0)`; release hides it (`_rclick_info`).
 `MapView.hero_foot` is 1px below `foot_of` so heroes win y-sort ties with buildings on their tile.
+Fortification levels (`TownLogic.siege_level`: 0 none, 1 Fort, 2 Citadel, 3 Castle) drive both the town's map picture
+(`MapView.town_sprite`: village / walled town / castle, also used by the HUD town list, the kingdom overview and the
+town screen's banner) and the siege: `BattleLogic` puts the moat in front of the wall only at level 2+
+(`is_moat`), the corner segments (rows 0 and 10, `SOLID_SEGS`) are never walkable and only a Castle's can be hit
+(`breakable`); `battle.gd` loads `battle/bg_siege_<faction>_<level>.png` and that level's breach overlays
+(`siege.json` key `<faction>_<level>`), `WALL_BANDS` and `ARCHER_SPOTS` matching the painted layout.
 
 ## Meeting your own hero
 `adventure.gd._click`: with a hero selected, a click on another of your heroes plans the `meet` route (status line
@@ -219,7 +225,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 ## Tools (see HANDOFF.md for the workflow and expected outputs)
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
-  rules), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
+  rules, plus `_siege_rules`: per fortification level the moat, which corner segments the catapult may hit, the solid
+  corners and no way out past a standing wall), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
   `battle_ai_test` (15 tactical checks), `adventure_ai_test` (94 spending/defense/coordination/transfer/garrison/RNG checks),
   `campaign_week_test` (63 integrated week/save checks), `campaign_flow_test` (29 real tactical-scene/return/save checks),
   `adventure_tournament --self` (two-player and four-player RNG controls),
@@ -343,13 +350,17 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 Godot_v4.7.2-stable_win64_console.exe --path . -- --shot=shots/x.png --scene=res://scenes/battle.tscn --delay=3
 ```
 Options: `--shots=N --interval=S`, `--click=x,y;x,y` (`r` prefix = right click), `--keys=Space;Enter`, `--hover=x,y`,
-`--setup=<name>` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven`, `necro_rich`,
+`--setup=<name>` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (with `--siege=1|2|3`),
+`town_levels` (adventure: the first town a Castle, the second a village), `necro_rich`,
 `necro_max`, `x`); adventure also `--seed --faction --reveal --cam=x,y --zoom`, battle `--broken=a,b` (breached walls).
 Window must not be headless (rendering needed). Screens are saved at the window resolution (1600x900 by default).
 
 ## Art & audio pipeline (see ASSETS.md)
 - Blender (via the Blender MCP) renders all sprites: `tools/art/blender/*.py`, driven by `batch.py`
   (`run(["creatures", "battle", "towns", ...])`). Textures/HDRIs are CC0 from Poly Haven, cached in tools/art/raw/.
+- Siege backdrops per fortification level: `tools/art/siege_levels_paint.py` (`collage`, `paint`, `breach`, `ingest`;
+  imagegen/batch28); the earlier single painting's `siege_wall_paint.py` is superseded. Town map pictures per level:
+  `tools/art/town_levels_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch29).
 - Python post-processing: `tools/art/postfx.py` (ink outline, saturation), `sky.py` (painted skies),
   `portrait_bg.py`, `icons2d.py` (spell icons, icon frames), `town_crop.py` (town layers + layout json),
   `terrain.py` (terrain textures), `ui_art.py` (panels, buttons, logo).

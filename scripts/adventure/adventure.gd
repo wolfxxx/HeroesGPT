@@ -39,6 +39,11 @@ func _ready() -> void:
 		GameState.world = WorldGen.generate(s)
 		if Shot.setup == "artifacts":  # (judge shot: one artifact of each tier laid out beside the first hero)
 			_shot_artifacts(GameState.world)
+		if Shot.setup == "town_levels":  # (shot: the first town a Castle, the second a village without a Fort)
+			var towns: Array = GameState.world["towns"].values()
+			towns[0]["buildings"].append_array(["citadel", "castle"])
+			towns[1]["buildings"].erase("fort")
+			for t in towns.slice(0, 3): print("TOWN %s at %s level %d" % [t["name"], t["pos"], TownLogic.siege_level(t)])
 		if Shot.setup == "all_spells":
 			for h in GameState.world["heroes"].values():  # a seasoned hero: spells, skills and some gear
 				h["spells"] = GameData.SPELLS.keys()

@@ -12,9 +12,9 @@ class_name BattleLogic
 ## War machines are stacks with "machine": true (they never move and don't count for victory). They stand on a back
 ## rank just outside the grid (column -1 for the attacker, COLS for the defender), where nothing else may stand but
 ## where they can be shot or struck from the first column. In a siege the defenders stand behind a wall (column
-## WALL_X, segments with hit points) with a gate only they can pass, a moat in front of it, and (with a citadel)
-## arrow towers in two wall towers and the keep: machine stacks with "tower": true that nothing can target; the
-## defending hero's own machines stay in the town.
+## WALL_X, segments with hit points) with a gate only they can pass; a Citadel adds a moat in front of it and an arrow
+## tower in the keep, a Castle two round arrow towers at the ends of the wall (machine stacks with "tower": true that
+## nothing can target); the defending hero's own machines stay in the town.
 
 const COLS := 15
 const ROWS := 11
@@ -34,7 +34,7 @@ var rng := RandomNumberGenerator.new()
 var start_counts := {}        # uid -> count at battle start
 var terrain := "grass"
 var _uid := 0
-var siege := 0                # 0: open field, 1: Fort (wall, gate, moat), 2: Citadel (+ keep turret), 3: Castle (+ two towers)
+var siege := 0                # 0: open field, 1: Fort (wall, gate), 2: Citadel (+ moat, keep turret), 3: Castle (+ two towers)
 var siege_morale := 0         # morale for the defenders of a siege (Brotherhood of the Sword)
 var siege_faction := "haven"
 var walls: Array = []         # segments: {"rows": [int], "kind": "wall"|"tower"|"gate", "hp": int}
@@ -44,10 +44,10 @@ const SEGMENTS := [[[0], "tower"], [[1, 2], "wall"], [[3, 4], "wall"], [[5], "ga
 	[[10], "tower"]]
 const MACHINE_ROWS := {"ballista": 2, "catapult": 4, "ammo_cart": 6, "first_aid_tent": 8}
 const SEG_NAMES := ["the upper tower", "the upper wall", "the wall above the gate", "the gate",
-	"the roof of the lower tower", "the side of the lower tower", "the lower tower"]
-## The painted lower tower stands over rows 6-10 of the wall: a breach there wrecks the tower, but no one walks
-## through a tower (as in the classic, where only wall stretches and the gate open a way in).
-const SOLID_SEGS := [4, 5, 6]
+	"the wall below the gate", "the lower wall", "the lower tower"]
+## Rows 0 and 10 hold the round towers (a Castle's) or the wall's unbroken ends: no one walks through them, fallen or
+## not (as in the classic, where only the four stretches of wall and the gate open a way in).
+const SOLID_SEGS := [0, 6]
 
 # ---------------------------------------------------------------------------------------------
 func setup(s: Dictionary) -> void:
@@ -197,15 +197,10 @@ func wall_blocks(h: Vector2i, side: int) -> bool:
 		return false
 	return not (walls[i]["kind"] == "gate" and side == 1)
 
-## Moat hexes half under a painted tower (the upper and lower towers stand out over the moat's zigzag): no footing.
-const TOWER_FOOT := [1, 7, 9]
-
-func tower_foot(h: Vector2i) -> bool:
-	return siege > 0 and h.x == MOAT_X and h.y in TOWER_FOOT
-
-## The moat in front of the wall (not before the gate: the bridge): walking into it ends the move.
+## The moat in front of the wall (a Citadel's or a Castle's; not before the gate: the bridge): walking into it ends
+## the move.
 func is_moat(h: Vector2i) -> bool:
-	return siege > 0 and h.x == MOAT_X and h.y != 5 and not tower_foot(h)
+	return siege >= 2 and h.x == MOAT_X and h.y != 5
 
 ## Shots from outside at a stack behind an unbroken stretch of wall do half damage.
 func behind_wall(a: Dictionary, d: Dictionary) -> bool:
@@ -246,12 +241,17 @@ func machine_act(s: Dictionary) -> Array:
 	finish_turn(s)
 	return ev
 
+## Can the catapult bring this segment down? The stretches of wall and the gate; the round towers only where a
+## Castle has them (otherwise rows 0 and 10 are the wall's ends, which it leaves alone).
+func breakable(i: int) -> bool:
+	return walls[i]["kind"] != "tower" or siege >= 3
+
 ## One boulder at a random standing stretch of wall (cracked ones more likely); a fallen tower falls silent.
 func _catapult_shot(s: Dictionary) -> Array:
 	var ev := []
 	var cands := []
 	for i in walls.size():
-		if walls[i]["hp"] > 0:  # (the crew keeps at a cracked stretch until it falls)
+		if walls[i]["hp"] > 0 and breakable(i):  # (the crew keeps at a cracked stretch until it falls)
 			for k in (2 if walls[i]["kind"] in ["gate", "tower"] else 1) * (4 if walls[i]["hp"] < 2 else 1):
 				cands.append(i)
 	if not cands.is_empty():
@@ -323,7 +323,7 @@ func stack_at(h: Vector2i) -> Variant:
 	return null
 
 func is_free(h: Vector2i) -> bool:
-	return in_bounds(h) and not obstacles.has(h) and stack_at(h) == null and wall_seg(h) < 0 and not tower_foot(h)
+	return in_bounds(h) and not obstacles.has(h) and stack_at(h) == null and wall_seg(h) < 0
 
 func is_wide(s: Dictionary) -> bool:
 	return has_ab(s, "two_hex")
@@ -343,7 +343,7 @@ func cells(s: Dictionary, head = null) -> Array:
 ## Can the stack stand with its head on `head` (in bounds, no obstacle, no other stack)?
 func fits(s: Dictionary, head: Vector2i) -> bool:
 	for c in cells(s, head):
-		if not in_bounds(c) or obstacles.has(c) or wall_blocks(c, s["side"]) or tower_foot(c):
+		if not in_bounds(c) or obstacles.has(c) or wall_blocks(c, s["side"]):
 			return false
 		var o = stack_at(c)
 		if o != null and o != s:

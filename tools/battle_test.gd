@@ -55,6 +55,7 @@ func _ready() -> void:
 				break
 		if L.is_over() >= 0:
 			ends += 1
+	fails += _siege_rules()
 	print("BATTLE TEST: %d battles ended of 40, failures: %d" % [ends, fails])
 	get_tree().quit()
 
@@ -64,7 +65,7 @@ func _check(L: BattleLogic) -> String:
 		for c in L.cells(s):
 			if not (BattleLogic.on_field(c) if s.get("machine", false) else BattleLogic.in_bounds(c)):
 				return "%s off the field at %s" % [s["id"], c]  # (machines stand on the back rank)
-			if L.obstacles.has(c) or L.tower_foot(c):
+			if L.obstacles.has(c):
 				return "%s on an obstacle at %s" % [s["id"], c]
 			if L.wall_blocks(c, s["side"]) and not s.get("tower", false):
 				return "%s on an intact wall at %s" % [s["id"], c]
@@ -72,3 +73,45 @@ func _check(L: BattleLogic) -> String:
 				return "%s and %s share %s" % [s["id"], seen[c], c]
 			seen[c] = s["id"]
 	return ""
+
+## The fortification levels (as the classic): a Fort's wall has no moat and no towers for the catapult; a Citadel adds
+## the moat; the corner towers (rows 0 and 10) never open a way through, standing or fallen, at any level, so with
+## every stretch of wall still up nobody leaves except through the gate.
+func _siege_rules() -> int:
+	var fails := 0
+	for level in [1, 2, 3]:
+		var L := BattleLogic.new()
+		L.setup({"attacker_army": [{"id": "pikeman", "count": 5}], "defender_army": [{"id": "cavalier", "count": 5}],
+			"attacker_hero": GameState.make_hero("sir_aldric", 0), "seed": level, "siege": level})
+		var problems := []
+		if L.is_moat(Vector2i(BattleLogic.MOAT_X, 2)) != (level >= 2):
+			problems.append("moat")
+		for i in [0, 6]:
+			if L.breakable(i) != (level >= 3):
+				problems.append("tower %d breakable" % i)
+		var catapult: Dictionary = L.stacks.filter(func(st): return st["id"] == "catapult")[0]
+		for k in 60:
+			L._catapult_shot(catapult)
+		if level < 3 and (L.walls[0]["hp"] < 2 or L.walls[6]["hp"] < 2):
+			problems.append("the catapult hit a wall end")
+		for w in L.walls:
+			w["hp"] = 0
+		var cav: Dictionary = L.alive_stacks(1)[0]
+		for r in [0, 10]:
+			if not L.wall_blocks(Vector2i(BattleLogic.WALL_X, r), 1) or L.fits(cav, Vector2i(BattleLogic.WALL_X, r)):
+				problems.append("a fallen corner on row %d lets a stack stand in it" % r)
+		for w in L.walls:
+			w["hp"] = 2
+		L.walls[3]["kind"] = "wall"  # (the gate shut too: there must be no way out at all)
+		for y in BattleLogic.ROWS:
+			for x in range(BattleLogic.WALL_X + 1, BattleLogic.COLS):
+				cav["hex"] = Vector2i(x, y)
+				if not L.fits(cav, cav["hex"]):
+					continue
+				for oy in BattleLogic.ROWS:
+					if L.path_to(cav, Vector2i(BattleLogic.MOAT_X - 1, oy)).size() > 0:
+						problems.append("a way out from %s to row %d past a standing wall" % [cav["hex"], oy])
+		for p in problems.slice(0, 3):
+			print("FAIL siege level %d: %s" % [level, p])
+		fails += mini(problems.size(), 1)
+	return fails

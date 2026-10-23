@@ -51,6 +51,9 @@ existing corpse shading. First aid tent, ammo cart and catapult wrecks remain to
 ## Adventure map
 - `terrain/<terrain>.png` — seamless tileable 512x512 top-down ground textures: grass dirt sand snow swamp water road.
 - `map/town_<faction>.png` — town as seen on adventure map (3/4 oblique top-down), transparent, ~384x288 (occupies ~5x3 tiles at 64px; the entrance gate at bottom centre).
+  This is the full castle (a town with a Castle). `map/town_<faction>_village.png` (no Fort: houses, no wall) and
+  `map/town_<faction>_fort.png` (Fort or Citadel: a plain wall and gatehouse, no round towers) are repaints of it on the
+  same canvas and anchor (`MapView.town_sprite`), by `tools/art/town_levels_paint.py` (imagegen/batch29).
 - `map/<mine_id>.png` — mines (ids in `GameData.MINES`), transparent, ~192x160.
 - `map/res_<resource>.png` — resource pile on the ground, transparent, ~96x80. `res_sulfur.png` was repainted
   (sheet `sulfur` of `button_icons_paint.py`, then `tools/art/map_pile.py`: smoke dropped, scaled to the old size, shadow).
@@ -80,6 +83,13 @@ existing corpse shading. First aid tent, ammo cart and catapult wrecks remain to
 ## Battle
 - `battle/bg_<terrain>.png` — 1920x1080 painted battlefield backdrop (side/elevated view, open flat ground in the
   middle where the hex grid goes, horizon/scenery in the top ~25%). terrains: grass dirt sand snow swamp.
+- `battle/bg_siege_<faction>_<level>.png` — the siege backdrop of each fortification level (1 Fort: the wall and
+  gate; 2 Citadel: + moat and keep; 3 Castle: + round towers at the wall's ends), painted so the wall stands on grid
+  column 11 with a tower (or the wall's end) on rows 0 and 10, stretches on rows 1-2, 3-4, 6-7, 8-9 and the gate on
+  row 5. `battle/siege_<faction>_<level>_ruin_<segment>.png` — each breakable segment's breach overlay, placed by
+  `battle/siege.json` (`"<faction>_<level>": {segment: [x, y]}`). By `tools/art/siege_levels_paint.py`
+  (imagegen/batch28: a collage of the first siege painting moved into that layout, repainted, then the lower levels
+  and the breaches derived from it). `battle/siege_<faction>_archer.png` — the arrow-tower crew.
 - `battle/fx_<fire|frost|spark|arcane|holy|dark>.png` — spell effects, 4x4 flipbooks of 256 px frames on black,
   drawn with additive blending (`battle.gd` FX_OF / _play_fx). Painted by `tools/art/vfx_paint.py` (imagegen/batch13).
 - `ui/spellbook.png` — 1536x1024 open leather spellbook with five school tabs (all, air, fire, water, earth), keyed

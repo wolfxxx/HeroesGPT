@@ -213,8 +213,8 @@ func refresh() -> void:
 	var flag := _Banner.new()
 	flag.custom_minimum_size = Vector2(92, 92)
 	flag.color = GameData.PLAYER_COLORS[town["owner"]] if town["owner"] >= 0 else Color.GRAY
-	if Assets.has("map/town_%s.png" % town["faction"]):
-		flag.town_tex = Assets.tex("map/town_%s.png" % town["faction"])
+	if Assets.has(MapView.town_sprite(town)):
+		flag.town_tex = Assets.tex(MapView.town_sprite(town))
 	flag.tooltip_text = "Garrison"
 	row1.add_child(flag)
 	var g := ArmyStrip.new()

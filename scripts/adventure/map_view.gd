@@ -368,7 +368,7 @@ func rebuild_objects() -> void:
 	for t in world["towns"].values():
 		var n := Node2D.new()
 		n.position = foot_of(t["pos"])
-		n.add_child(_sprite("map/town_%s.png" % t["faction"], Vector2.ZERO, 5.6 * TILE))
+		n.add_child(_sprite(town_sprite(t), Vector2.ZERO, 5.6 * TILE))
 		if t["owner"] >= 0:
 			_add_flag(n, Vector2(-1.9 * TILE, -1.9 * TILE), t["owner"], 64.0)
 		_sorted.add_child(n)
@@ -585,6 +585,13 @@ func refresh_object(uid: int) -> void:
 		if n:
 			_sorted.add_child(n)
 			_object_nodes[uid] = n
+
+## The town's picture grows with its fortifications, as in the classic: a village until the Fort is built, a walled
+## town with a Fort or a Citadel, the full castle with the Castle.
+static func town_sprite(t: Dictionary) -> String:
+	var level := TownLogic.siege_level(t)
+	var p := "map/town_%s%s.png" % [t["faction"], ["_village", "_fort", "_fort", ""][level]]
+	return p if Assets.has(p) else "map/town_%s.png" % t["faction"]
 
 func refresh_town(uid: int) -> void:
 	rebuild_objects()

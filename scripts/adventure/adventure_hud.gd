@@ -512,7 +512,7 @@ func _town_card(t: Dictionary) -> Control:
 		Audio.sfx("click", -6)
 		adv.open_town(t["uid"]))
 	var pic := TextureRect.new()
-	pic.texture = _trimmed("map/town_%s.png" % t["faction"])
+	pic.texture = _trimmed(MapView.town_sprite(t))
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED  # (the whole town, as the classic list: name in the tooltip)
@@ -718,7 +718,7 @@ func open_kingdom() -> void:
 		var t: Dictionary = world["towns"][tid]
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 14)
-		var pic := UI.icon(Assets.tex("map/town_%s.png" % t["faction"]), Vector2(96, 64))
+		var pic := UI.icon(Assets.tex(MapView.town_sprite(t)), Vector2(96, 64))
 		row.add_child(pic)
 		var g := TownLogic.daily_income(t)
 		income["gold"] += g

@@ -1,4 +1,7 @@
-"""The castle wall, moat and keep of a siege painted into the battle backdrop (as the classic game does), plus a
+"""SUPERSEDED by siege_levels_paint.py (session56: one backdrop per Fort / Citadel / Castle, the wall laid out on the
+rules' segments), which starts from this script's paintings (imagegen/batch25/out/wall_<faction>.png). Kept for the
+record; its outputs are no longer in assets/.
+The castle wall, moat and keep of a siege painted into the battle backdrop (as the classic game does), plus a
 ruined copy of it from which the breaches are cut.
 python tools/art/siege_wall_paint.py mock               ->  imagegen/batch25/in/mock_<faction>.png (layout sketch)
 python tools/art/siege_wall_paint.py paint [names...]   ->  imagegen/batch25/out/{wall,ruin}_<faction>.png

@@ -127,9 +127,9 @@ func _demo_setup() -> Dictionary:
 	var out := {"attacker_army": a["army"], "defender_army": d["army"], "attacker_hero": a, "defender_hero": d,
 		"terrain": "grass", "attacker_player": 0, "defender_player": 1, "attacker_ai": false, "defender_ai": true,
 		"context": {"type": "demo"}, "seed": int(Shot.args.get("seed", "7"))}
-	if Shot.setup.begins_with("siege"):  # Sir Aldric with all his machines before a Necropolis citadel
+	if Shot.setup.begins_with("siege"):  # Sir Aldric with all his machines before a Necropolis castle (--siege=1|2|3)
 		a["machines"] = GameData.WAR_MACHINES.duplicate()
-		out["siege"] = 3
+		out["siege"] = int(Shot.args.get("siege", "3"))
 		out["siege_faction"] = "haven" if Shot.setup == "siege_haven" else "necropolis"
 	return out
 
@@ -191,8 +191,8 @@ func pos_to_hex(p: Vector2) -> Vector2i:
 # ---------------------------------------------------------------------------------------------
 func _build_scene() -> void:
 	var bgp := "battle/bg_%s.png" % L.terrain
-	if L.siege > 0 and Assets.has("battle/bg_siege_%s.png" % L.siege_faction):
-		bgp = "battle/bg_siege_%s.png" % L.siege_faction
+	if L.siege > 0 and Assets.has("battle/bg_siege_%s_%d.png" % [L.siege_faction, L.siege]):
+		bgp = "battle/bg_siege_%s_%d.png" % [L.siege_faction, L.siege]  # (a painting per Fort, Citadel and Castle)
 	if Assets.has(bgp):
 		var bg := Sprite2D.new()
 		bg.texture = Assets.tex(bgp)
@@ -1529,30 +1529,31 @@ func _play_fx(fx: String, p: Vector2, sc: Vector2, dur := 0.8, alpha := 1.0, par
 # ---------------------------------------------------------------------------------------------
 # Siege
 # ---------------------------------------------------------------------------------------------
-# The wall, moat, towers and keep are painted into the siege backdrop (tools/art/siege_wall_paint.py); a breached
-# segment shows its band of the ruined painting, a cracked one painted cracks.
+# The wall, and with a Citadel the moat and keep, with a Castle the round towers, are painted into the siege backdrop of
+# each level (tools/art/siege_levels_paint.py); a breached segment shows its painted breach, a cracked one cracks.
 var _wall_layer: Node2D
 var _ruins: Array = []     # per wall segment: the overlay of its ruin (hidden while it stands)
 var _cracks: _Cracks
-## The band of the screen (y) each wall segment owns in the painting (as tools/art/siege_wall_paint.py BANDS).
-const WALL_BANDS := [[0, 270], [270, 400], [400, 470], [470, 645], [645, 750], [750, 885], [885, 1080]]
-## Where each arrow tower's crew stands on the painted towers (by wall segment; -1: the keep).
+## The band of the screen (y) each wall segment owns in the painting (as tools/art/siege_levels_paint.py BANDS).
+const WALL_BANDS := [[0, 306], [306, 442], [442, 578], [578, 646], [646, 782], [782, 918], [918, 1080]]
+## Where each arrow tower's crew stands on the painted towers (by wall segment; -1: the keep): in the upper tower's
+## doorway over the wall walk, on the lower tower's roof (its body is under the command bar).
 const ARCHER_SPOTS := {
-	"haven": {0: Vector2(1300, 418), 6: Vector2(1338, 800), -1: Vector2(1742, 660)},
-	"necropolis": {0: Vector2(1300, 418), 6: Vector2(1338, 800), -1: Vector2(1742, 660)},
+	"haven": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},
+	"necropolis": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},
 }
 
 func _build_walls() -> void:
 	var mp := Assets.path("battle/siege.json")  # (where each segment's ruin overlay sits, from the paint script)
 	var meta = JSON.parse_string(FileAccess.get_file_as_string(mp)) if FileAccess.file_exists(mp) else null
-	var spots: Array = meta.get(L.siege_faction, []) if meta is Dictionary else []
+	var spots: Dictionary = meta.get("%s_%d" % [L.siege_faction, L.siege], {}) if meta is Dictionary else {}
 	for i in L.walls.size():
 		var s := Sprite2D.new()
-		var p := "battle/siege_%s_ruin_%d.png" % [L.siege_faction, i]
-		if Assets.has(p) and i < spots.size():
+		var p := "battle/siege_%s_%d_ruin_%d.png" % [L.siege_faction, L.siege, i]
+		if Assets.has(p) and spots.has(str(i)):
 			s.texture = Assets.tex(p)
 			s.centered = false
-			s.position = Vector2(spots[i][0], spots[i][1])
+			s.position = Vector2(spots[str(i)][0], spots[str(i)][1])
 		s.visible = false
 		_wall_layer.add_child(s)
 		_ruins.append(s)
@@ -1573,13 +1574,6 @@ func _set_wall(i: int, broken: bool) -> void:
 		if broken:
 			s.modulate.a = 0.0
 			s.create_tween().tween_property(s, "modulate:a", 1.0, 0.25)
-	# a crew stood where this breach tears the stone out: the lower tower's up to its parapet, the upper tower's (on
-	# the gatehouse battlements) up into the tower's window
-	var moves := {5: [6, Vector2(1338, 758)], 2: [0, Vector2(1337, 232)]}
-	if broken and moves.has(i):
-		for st in L.stacks:
-			if st.get("tower", false) and st.get("seg", -1) == moves[i][0] and units.has(st["uid"]):
-				units[st["uid"]].position = moves[i][1]
 	_cracks.queue_redraw()
 
 ## The catapult's boulder: a high arc onto a wall segment; a hit throws up dust, a breach turns it to rubble.

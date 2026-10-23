@@ -16,6 +16,20 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session56 sieges and town pictures by fortification (2026-10-23), committed with this HANDOFF update:** the user reported that a town
+  always looks like a castle on the map and in a siege, and that an enemy knight walked out "at the top where there
+  isn't a gate". Cause: one map picture and one siege painting per faction for every level, and a painting whose tall
+  towers covered rows 0-2 and 6-10 while the rules put breakable wall on rows 1-2 (a breach there let units walk
+  through the painted tower); the Fort also had a moat (HoMM3: the Citadel's). Now, as HoMM3: a Fort is a wall and a
+  gate, a Citadel adds the moat and the keep, a Castle the two round towers; the corner segments are never walkable
+  and only a Castle's can be hit. New siege paintings per level and faction with the wall laid out on the rules'
+  segments (towers rows 0 and 10, wall 1-2, 3-4, 6-7, 8-9, gate 5) and 34 breach overlays
+  (`tools/art/siege_levels_paint.py`); new map pictures: a village without a Fort, a walled town with a Fort or
+  Citadel, the old castle with a Castle (`tools/art/town_levels_paint.py`, `MapView.town_sprite`). The old single
+  siege paintings were removed. `battle_test` gained the siege rule checks. Verified in screenshots
+  (`shots/session56/siege_{h,n}{1,2,3}.png`, `crew.png`, `map_levels.png`, `map_village.png`) and the full suite.
+  Known: the painted wall cracks (`_Cracks`, a stretch hit once) look like small dark stick figures up close; the
+  lower Castle tower is mostly under the command bar, its archer on its roof.
 - **Session55 AI round: calling heroes back (2026-10-23), committed with this HANDOFF update, nothing kept in the AI:** the user chose
   "heroes come home or join up when a strong army approaches". `town_defense_report` now prints a RECALL line:
   returning heroes could have held about 40% of captured towns but almost never a player's last town (1 of 34
@@ -570,7 +584,8 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space, images saved at 1600x900;
 `--setup=artifacts` lays an artifact of each tier beside the first hero):
 `--shot --scene --delay --shots --interval --click=x,y;x,y (prefix r for right click) --keys=A;S --hover=x,y`;
-scenes also read `--setup=` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven`,
+scenes also read `--setup=` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (`--siege=1|2|3`,
+default 3), `town_levels`,
 `necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b`. The harness parks the
 mouse before each capture (except hover and right-click shots). The window must not be headless for shots.
 
@@ -854,6 +869,11 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Fortification levels (session56):** `TownLogic.siege_level`; map picture `MapView.town_sprite`
+  (`assets/map/town_<faction>{_village,_fort,}.png`); siege `BattleLogic.is_moat` (Citadel+), `SOLID_SEGS` (corners),
+  `breakable` (corners only with a Castle); `battle.gd` `bg_siege_<faction>_<level>`, `siege.json` per level,
+  `WALL_BANDS`, `ARCHER_SPOTS`; art `tools/art/siege_levels_paint.py`, `tools/art/town_levels_paint.py`; checks
+  `battle_test._siege_rules`; shots `--setup=siege|siege_haven --siege=N`, `--setup=town_levels`.
 - **Town garrisons (session54):** `AdvAI._collect_garrison` / `_garrison_keep` (garrison kept against a next-turn
   threat), `_counterattack` margin 1.3x; frozen previous policy `tools/ai/adventure_ai_session52.gd`; diagnostic
   `tools/ai/town_defense_report.tscn` (`--maps= --players= --size= --days= --policy= --verbose --trace=`; its RECALL
