@@ -79,6 +79,7 @@ func _remote() -> void:
 				"ctile": await _click_tile(Vector2i(int(w[1]), int(w[2])), w.size() > 3 and w[3] == "right")
 				"rtile": await _hold_tile(Vector2i(int(w[1]), int(w[2])), float(w[3]) if w.size() > 3 else 0.8, dir, w)
 				"look": log_lines.append(_look(int(w[1]) if w.size() > 1 else 8))
+				"hoverstate": log_lines.append(_hover_state())
 				"quit": get_tree().quit()
 				_: log_lines.append("unknown command: " + raw)
 			await get_tree().process_frame
@@ -201,6 +202,20 @@ func _hold_tile(t: Vector2i, secs: float, dir: String, w: PackedStringArray) -> 
 	if w.size() > 4:
 		ww.append(w[4])
 	await _hold(win, MOUSE_BUTTON_RIGHT, secs, dir, ww)
+
+## The map's hover / right-click panel and the dialog layer, for diagnosing a panel that does not show.
+func _hover_state() -> String:
+	var l = get_tree().root.get_node_or_null("HoverLayer")
+	var ml = get_tree().root.get_node_or_null("ModalLayer")
+	var kids := []
+	if ml:
+		for c in ml.get_children():
+			kids.append("%s(%s,visible=%s,freed=%s)" % [c.name, c.get_class(), c.visible if c is CanvasItem else "-", c.is_queued_for_deletion()])
+	if l == null:
+		return "hover: no HoverLayer; modal children %s" % [kids]
+	return "hover: visible=%s content=%s owner=%s pos=%s size=%s mouse=%s wait=%.2f floor=%s area=%s layer_visible=%s; modal children %s; viewport mouse %s, OS cursor %s, window at %s" % [
+		l.panel.visible, l.content != null, l.owner_obj, l.panel.position, l.panel.size, l.mouse, l.wait, l.floor_y, l.area,
+		l.visible, kids, get_viewport().get_mouse_position(), DisplayServer.mouse_get_position(), DisplayServer.window_get_position()]
 
 ## The status-bar description of every explored object within r tiles of the selected hero (what hovering shows).
 func _look(r: int) -> String:

@@ -222,3 +222,55 @@ was not built: the report puts its gain at 15–18 captures of over 300 and no l
 finding: against another AI, a hero kept home costs more tempo than the town it saves. The AI-vs-AI benchmark may
 undervalue defence against a human, who brings one strong army; measuring that needs a different opponent or a
 playtest. Logs: ignored `shots/session55/{dev2_v*,dev4_v*,tdr2,tdr4,t1809}.log`.
+
+## Session66: full armies swap stacks; garrison heroes step out each turn
+
+Plan steps 2 and 3 (§8 of HANDOFF), measured against the policy just pushed. Frozen comparison
+`tools/ai/adventure_ai_session65.gd` (the policy at `efc9a86`: garrison heroes counted in defence, a computer hero
+holding a threatened town moves into its garrison); every function overridden, `BUILD_ORDER` renamed
+`SESSION65_BUILD_ORDER`. Same-policy control on maps 2000–2003: exactly 0.00 ± 0.00 (`control65.log`).
+
+**Step 2, full incompatible armies.** In the saved worlds every large army holds seven different creatures (409/1:
+three armies of 160k, 116k and 167k, nine kinds between them), so `_transfer` and `_collect_garrison`, which only
+add to a matching stack or an empty slot, moved nothing. Kept: when the receiving army is full, it gives its least
+valuable stack for the donor's most valuable one while that gains value (whole stacks change places, as the
+classic's exchange window and town screen allow; `_best_stack`, `_weakest_stack`, `_stack_value`). Nothing is lost,
+the donor always keeps creatures (it takes the weak stack), and in a threatened town a swap never takes the
+garrison below what holds the gate (`_garrison_keep`). Previews (`_transfer_value`) count the gain, so a courier
+with a valuable stack now meets a full main army.
+
+**Step 3, the unresolved cases.** Traces of 444/0 and 409/1 (`t444_0.jsonl`, `t409_1.jsonl`) show legal standoffs:
+the armies are within the 1.4x assault margin of each other and hold their gates. They also showed a flaw in
+session65's garrison: a computer hero that went into a garrison came out only once no army could reach the town, and
+did nothing meanwhile, so it could no longer strike a weaker raider as it could from the gate (409/1: the two
+strongest armies inside, the enemy's weaker hero never attacking). Kept: each turn a garrison hero steps out to the
+gate (`_step_out`, when the gate is free), decides as any hero (intercept, campaign, or hold, and then goes back in
+via `holding` / `_garrison`). Session65's `_release_garrisons` is gone. `manage_towns` still runs while the hero is
+inside, so the free gate can take a hire.
+
+Development maps (two-player 2000–2023, 28 days; four-player 2030–2037, 56 days), score delta vs the frozen policy:
+
+| Change | Dev 2p | Dev 4p |
+|---|---|---|
+| Swap only | +4.51 ± 8.33 (22/19/7) | -3.93 ± 17.06 (5/23/4) |
+| Step-out only | +27.85 ± 20.59 (25/12/11) | +0.97 ± 17.92 (8/23/1) |
+| **Swap + step-out (kept)** | **+30.60 ± 20.91 (26/11/11)** | **0.00 ± 17.82 (8/24/0)** |
+
+Against the older `adventure_ai_session54.gd` (before any garrison heroes) on the same maps, the kept version scores
++36.71 ± 21.84 (31/14/3) and +8.33 ± 24.40 (10/22/0), and the committed session65 version +40.67 ± 23.14 (32/13/3)
+and 0.00 ± 12.60 (8/24/0): against that older policy the two are about equal. So the head-to-head gain over
+session65 is largely the step-out fixing session65's stuck garrison heroes, not a general gain over earlier AIs.
+
+**Final validation, reserved fresh maps, 84 days, no tuning afterwards** (vs session65): 24 two-player size-36 maps
+(2100–2123, 48 games): **33 wins / 15 losses / 0 unresolved, +37.50 ± 20.19**. Eight four-player size-48 maps
+(2140–2147, 32 games): **15 / 17 / 0, +29.17 ± 15.11** (an equal policy wins about 8 of 32). Both intervals exclude
+zero: the kept version beats the session65 policy. Read with the session54 comparison above.
+
+Replays of the nine session50 cases (28 days, `resume_final.log`; before = session65): 415/1 won on day 170 (was
+188), 427/0 won on day 172 (was 188), 441/1 unchanged (won day 169), 404/0 unchanged (won day 170); 409/1 and
+444/0 end with much larger main armies (282k vs 226k, 329k vs 155k) but still unresolved standoffs; 425/0 and
+441/0 unchanged; **412/1 ends with one town instead of three** (worse in this window). The swap alone gave the same
+results except 412/1 (`resume_swap.log`). Ten new checks in `tools/adventure_ai_test.tscn` (104), three more in
+`tools/garrison_hero_test.tscn` (29). Logs: ignored `shots/session66/{control65,dev*,final36,final48,resume*}.log`.
+Remaining: the standoffs between armies within the assault margin (409/1, 425/0, 441/0, 444/0) are legal long
+games; the AI-vs-AI benchmark still says nothing about defence against a human.

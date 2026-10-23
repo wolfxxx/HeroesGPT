@@ -62,6 +62,21 @@ class Watcher extends Node:
 		rules.rebuild()
 		_ok(rules.hero_at(town["pos"]).is_empty() and rules.at(town["pos"]).get("kind", "") == "town", "the map's gate tile is the town again")
 		_ok(rules.town_army(town) == h1["army"], "the town is held by the garrison hero's army")
+		# recruiting with a hero in the garrison: the recruits join its army (no hidden town garrison)
+		var before_rec: int = 0
+		for st in h1["army"]:
+			if st and st["id"] == c[0]: before_rec = st["count"]
+		town["available"][0] = 7
+		town["buildings"].append("dwelling_1")
+		_close_soon("buy")
+		await ts._recruit_tier(1)
+		var after_rec: int = 0
+		for st in h1["army"]:
+			if st and st["id"] == c[0]: after_rec = st["count"]
+		_ok(after_rec > before_rec and GameState.army_is_empty(town["garrison"]), "recruits join the garrison hero's army")
+		town["garrison"][3] = {"id": c[3], "count": 2}  # (left by an older version under the garrison hero)
+		ts._resolve_state()
+		_ok(GameState.army_is_empty(town["garrison"]) and h1["army"].any(func(st): return st and st["id"] == c[3]), "troops stranded under a garrison hero join it when the town opens")
 
 		# a second hero at the gate, then swapped with the garrison hero by the portraits
 		var h2 := GameState.make_hero("lord_gareth" if town["faction"] == "haven" else "ilsa_grimveil", 0)
@@ -148,14 +163,27 @@ class Watcher extends Node:
 		_ok(GameState.army_is_empty(town["garrison"]) and GameState.army_strength(h["army"]) == total, "(computer) leading all its troops")
 		_ok(rules.hero_at(town["pos"]).is_empty(), "(computer) the gate is free for the Tavern")
 		_ok(is_equal_approx(ai._town_hold(town), ai._strength(h) * 1.25), "(computer) the town's defence counts the garrison hero")
-		ai._release_garrisons(cpu)
-		_ok(h.get("in_town", false), "(computer) it stays in while the enemy is near")
+		_ok(ai._step_out(h) and not h.get("in_town", false) and rules.hero_at(town["pos"]) == h, "(computer) each turn it steps out to the gate to decide again")
+		# (with the town's troops it could now strike a raider 1.3x weaker: make this one too strong for that)
+		var per: float = ai._strength(foe) / foe["army"][0]["count"]
+		foe["army"][0]["count"] = int(ceil(ai._strength(h) / 1.2 / per))
+		_ok(ai.choose(h).is_empty() and ai.holding == h["uid"] and ai._garrison(h), "(computer) and goes back in while the enemy is near")
 		foe["pos"] = Vector2i(1, 1)
 		w["heroes"].erase(foe["uid"])
 		w["players"][0]["heroes"].erase(foe["uid"])
 		rules.rebuild()
-		ai._release_garrisons(cpu)
-		_ok(not h.get("in_town", false) and rules.hero_at(town["pos"]) == h, "(computer) and comes out once no army can reach the town")
+		_ok(ai._step_out(h), "(computer) it steps out again the next turn")
+		ai.choose(h)
+		_ok(ai.holding != h["uid"], "(computer) and with no army near it does not hold the town")
+
+	## Answers the next dialog with `result` once it is up (for a dialog the code under test awaits).
+	func _close_soon(result) -> void:
+		for i in 120:
+			await get_tree().process_frame
+			var ml = get_tree().root.get_node_or_null("ModalLayer")
+			if ml and ml.get_child_count() > 0:
+				ml.get_child(ml.get_child_count() - 1).close(result)
+				return
 
 	func _capture(file: String) -> void:
 		var dir := ""

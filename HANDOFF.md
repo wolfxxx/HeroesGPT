@@ -16,12 +16,42 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session66 AI round (2026-10-23), committed with this HANDOFF update:** the user asked for the §8 plan's AI round, then the playtest.
+  Steps 1 and 4 were done in session52; this round did steps 2 and 3 with step 4's validation against the policy
+  just pushed (frozen as `tools/ai/adventure_ai_session65.gd`, control 0.00). Kept two changes
+  (**`docs/AI_COORDINATION.md` "Session66"**): (a) a full army swaps its weakest stacks for a courier's or a
+  garrison's stronger ones (whole stacks, nothing lost, the donor keeps creatures, a threatened gate keeps its
+  hold), which lets the saved armies of seven different creatures consolidate; (b) a computer garrison hero steps
+  out to the gate each turn and decides again (session65's hero stayed inside, unable to strike a raider, until no
+  army could reach the town). **Final validation on reserved fresh maps, 84 days, vs session65: two-player
+  33/15/0, +37.50 ± 20.19; four-player 15/17/0, +29.17 ± 15.11: both intervals exclude zero.** Against the older
+  session54 policy the kept version and session65 score about the same on development maps, so most of the gain is
+  undoing session65's stuck garrison heroes. Replays: 415/1 and 427/0 won 16–18 days sooner, 409/1 and 444/0 end
+  with much larger armies but still in legal standoffs, 412/1 ends with one town instead of three. 104 adventure AI
+  checks, 29 garrison hero checks (31 with the playtest fix below).
+- **Session66 Haven playtest (2026-10-23), committed with this HANDOFF update:** step 5 of the plan. The assistant played
+  "The Shattered Crown" (Normal, Haven, Lady Seraphine, a Cleric) through the real UI with the remote-play harness
+  on `user://playtest_save.dat` (the player's save hash-checked unchanged). **Outcome: victory on day 27** (Month 1,
+  Week 4, Day 6), every Blue hero beaten and all four towns held. The computer applied real pressure: it took every
+  town left empty (Aurelia twice, Kingsbridge, Brightwater), recruited in captured towns, rehired heroes each time,
+  beat Seraphine at Aurelia's gate on day 21 and took her artifacts (won back by Gareth on day 22); its armies stayed
+  small and never beat a strong army in the field. Exercised this session's work in play: the town list, the
+  garrison slot (move in, swap, troops join, Tavern at the freed gate and its refusal with a hero at the gate),
+  class map and battle figures, battle colours, guarded artifacts, retreat-free hero battles, sieges, level-ups,
+  Mage Guild announcements, week changes, Ctrl+S and Load. **Two bugs fixed in play:** (1) recruiting in a town
+  held by a garrison hero put the recruits in the hidden town garrison: `town_screen._recruit_tier` now recruits into
+  `AdvRules.town_army`, and troops already stranded there join the hero when the town opens (two garrison hero test
+  checks); (2) session57's "unconfirmed" missing right-click popup: after a scene change `adventure._process` hid the
+  hover panel because the OS cursor was outside the map, which only the harness can cause (it moves the input
+  events, not the OS cursor); the map now tracks the cursor from mouse events (`adventure._mouse`). Harness gained
+  `hoverstate`. Findings in §8 "Playtest findings (session66)"; evidence `shots/session66/play/` (`findings.md`,
+  `p###.png`, `q###.png`).
 - **Session65 computer garrison heroes (2026-10-23), committed with this HANDOFF update:** the computer players now use the garrison as
   the classic's do. A computer hero that holds a threatened town from its gate (`AdvAI._defense` returning "hold")
   moves into the garrison in `run_turn` (`choose` stays side-effect free: it sets `AdvAI.holding`), leading all the
   town's troops behind the walls (`AdvAI._garrison`; it stays at the gate
   when they don't fit), which frees the gate for the Tavern. At the start of a later day it comes out once no army
-  can reach the town (`_release_garrisons`, before `manage_towns`). The AI's defence estimates count a garrison hero
+  can reach the town (`_release_garrisons`, before `manage_towns`; replaced in session66 by a step-out each turn). The AI's defence estimates count a garrison hero
   (`_town_hold` in `_defense`, `_counterattack`, `_leave_rear_guard`), and a hero at an enemy gate with a garrison
   hero inside is met alone. 8 new checks in `tools/garrison_hero_test.tscn` (27). In a traced simulated game
   computer heroes went into garrisons and came out again a day or more later.
@@ -801,6 +831,10 @@ and handoff/architecture documentation identifies the final behavior and limitat
 result must not be described as stronger AI. No HoMM3 rule changes are part of this plan; flag and ask before
 any deviation. Update docs with implementation; commit/push only on the user's instruction.
 
+**Session66 progress:** step 5 done (a Haven campaign won on day 27, see §2); steps 2 and 3 done (stack swaps; garrison heroes step out; the remaining unresolved cases
+are legal standoffs within the 1.4x assault margin), validated as step 4 describes. Next map IDs to reserve: 2200+
+(2000–2037 development, 2100–2123 and 2140–2147 validation were used in session66).
+
 **Session52 progress on this plan:** steps 1 and 4 done with one kept fix and no measured strength change (see
 §2). Remaining: step 2 (incompatible full armies and couriers; leader-only garrisons was tried and rejected),
 step 3 for the cases still unresolved, step 5 for Necropolis and a human playtest. Two-player size-36 games are
@@ -810,6 +844,15 @@ early rushes; judge long-game changes mainly on four-player/larger maps. Next ma
 **Hot-seat multiplayer is built (session53, see §2).** Worth a human playtest with two people: turn handover,
 human-versus-human battles, a computer attacking the player not at the screen. Fog-information policy, map-spell planning, difficulty settings, remaining
 machine wrecks and visual findings stay on the backlog; online multiplayer remains a separate larger project.
+
+### Playtest findings (session66, one Haven campaign on Normal, won on day 27)
+Evidence in ignored `shots/session66/play/` (`findings.md`). Two bugs were fixed in play (see §2).
+1. **To verify against HoMM3:** a hero killed in battle comes back from the Tavern at level 1 (Lady Seraphine fell at
+   level 5 and Blue rehired her at level 1). Forum posts (Celestial Heavens "Hero buy-back") suggest HoMM3 keeps a
+   killed hero's experience and skills when they reappear, losing army and artifacts; no wiki page states it. Ask.
+2. Text: the battle result names the garrison of an enemy player's town with no hero "Neutral creatures" (Blue's
+   Brightwater). It should name the town or its owner.
+3. Visual: neutral stacks' grey rings are faint on grass.
 
 ### Playtest findings (session57, one Necropolis campaign on Normal; not yet fixed)
 Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has the details).
@@ -833,9 +876,8 @@ Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has
    the Blue AI attacked, my troops were blue. Now the classic count boxes (by spells) and flag-coloured rings.
 9. **FIXED (session62):** a retreating hero's First Aid Tent was listed among the casualties. The hero kept it (as
    HoMM3: machines are equipment, kept like artifacts); only the result window was wrong.
-10. Unconfirmed: a held right-click once showed no map popup in harness captures after a load; with debug prints the
-   panel was shown at the right place and later attempts worked. Likely the harness's synthetic input; needs a
-   human check.
+10. **FIXED (session66):** the missing map popup was harness-only: after a scene change the map hid the hover panel
+   because the OS cursor (which the harness does not move) was outside it; the map now reads the cursor from events.
 Worked well: Citadel growth (14 -> 21 Pikemen), the walled-town and village map pictures, the Fort siege with the
 battered overlays, wrecks, AI hero looting of artifacts, guard zones, week change, save/load, the defeat flow.
 
@@ -1005,6 +1047,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   `tools/ai/town_defense_report.tscn` (`--maps= --players= --size= --days= --policy= --verbose --trace=`; its RECALL
   line, session55, counts captures returning heroes could have prevented). Frozen session54 policy (`349549d`):
   `tools/ai/adventure_ai_session54.gd`.
+- **AI stack swaps and garrison step-out (session66):** `AdvAI._transfer` / `_collect_garrison` swap whole stacks
+  into a full army (`_best_stack`, `_weakest_stack`, `_stack_value`); `_step_out` (a garrison hero decides again each
+  turn); frozen previous policy `tools/ai/adventure_ai_session65.gd`. Write-up: `docs/AI_COORDINATION.md` "Session66".
 - **Hot-seat (session53):** seats on New Game `main_menu._refresh_seats`, per-colour choices `_edit` /
   `_choice` / `_set_choice` / `_fix_seats` / `_taken_heroes`; generation
   `WorldGen.generate` (`humans`, `_player_name`, per-human `start_hero`, `seat_hero` / `seat_bonus`); viewpoint

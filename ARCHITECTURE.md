@@ -103,8 +103,11 @@ returns it first. An enemy at the gate of a town that holds a garrison hero is f
 (`adventure._interact_with`), the garrison hero then in a siege. The town screen's portraits pick, move, swap and open
 (`town_screen._hero_slot`). The AI counts a garrison hero in a town's defence (`AdvAI._town_hold`) and never as a raider.
 A computer hero holding a threatened town from its gate (`_defense` -> "hold"; `choose` notes it in `holding`)
-moves into the garrison in `run_turn` (`AdvAI._garrison`, when the troops fit), and comes out at the start of a later day once no army can reach the town
-(`_release_garrisons`, before `manage_towns`, which can then hire at the free gate).
+moves into the garrison in `run_turn` (`AdvAI._garrison`, when the troops fit). Each turn a garrison hero steps out to
+the gate (`_step_out`, when it is free) and decides again, going back in if it still holds; `manage_towns` runs while
+it is inside, so the free gate can take a hire. A full army swaps its weakest stacks for a courier's or a garrison's
+stronger ones (`_transfer`, `_collect_garrison`; `_best_stack`, `_weakest_stack`; never below a threatened gate's
+keep, the donor keeps creatures).
 Fortification levels (`TownLogic.siege_level`: 0 none, 1 Fort, 2 Citadel, 3 Castle) drive both the town's map picture
 (`MapView.town_sprite`: village / walled town / castle, also used by the HUD town list, the kingdom overview and the
 town screen's banner) and the siege: `BattleLogic` puts the moat in front of the wall only at level 2+
@@ -163,7 +166,8 @@ A hero collecting a garrison (`_reinforce`, and `choose`'s value of a town's tro
 when `_town_threat` finds an army able to reach the gate next turn and the garrison can hold it (x1.25 >= threat x1.4),
 `_garrison_keep` leaves that much and the hero takes the rest, most valuable first. `_counterattack` strikes a raider
 at 1.3x, the margin of any attack on a hero. Frozen `1dfa88b` policy: `tools/ai/adventure_ai_session52.gd`;
-frozen `349549d` policy: `tools/ai/adventure_ai_session54.gd`.
+frozen `349549d` policy: `tools/ai/adventure_ai_session54.gd`; frozen `efc9a86` policy (session65, garrison
+heroes): `tools/ai/adventure_ai_session65.gd`.
 
 `_plan_with_passage` helps only the strongest army when its normal route is blocked. It temporarily relaxes
 eligible friendly occupancy in the AStar grid, restores the grid, then returns a transient `yield` plan for a
@@ -375,7 +379,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   command files written to `<dir>/cmd.txt` with real input events, then writes `<dir>/done.txt`. Commands: `click`,
   `rclick x y [hold] [shot]`, `dclick`, `move`, `park`, `key` (`ctrl+s` style), `keydown/keyup`, `wait`, `shot`,
   `state` (JSON of the human kingdom), `ctile x y [right]` (click a map tile, scrolling to it), `rtile x y seconds [file.png]` (hold right on a tile), `look [r]` (status
-  text, route kind and cost of nearby explored objects), `probe x y` (what a click there resolves to), `quit`.
+  text, route kind and cost of nearby explored objects), `probe x y` (what a click there resolves to),
+  `hoverstate` (the hover panel and dialog layer, the viewport and OS cursors), `quit`. The harness moves only input
+  events, never the OS cursor: code that needs the cursor reads it from events (`adventure._mouse`).
   Coordinates are window pixels (1600x900). Menus and Ctrl+S use `GameState.save_path` = `user://playtest_save.dat`,
   never the player's save; audio is muted; edge scrolling is off. Restore `project.godot` after the windowed run.
   Example: `Godot --path . -- --remote=shots/playtest`, then write commands to `shots/playtest/cmd.txt`.

@@ -81,6 +81,14 @@ func _resolve_state() -> void:
 	town = world["towns"][uid]
 	player = world["players"][town["owner"]] if town["owner"] >= 0 else world["players"][0]
 	_rules = AdvRules.new(world)
+	# troops left in the town's own garrison while a hero holds it (recruited there by an older version, or by a
+	# computer owner) join that hero's army, as far as they fit: the garrison row shows only the hero's army
+	var gh := _rules.garrison_hero(town)
+	if not gh.is_empty():
+		for i in 7:
+			var st = town["garrison"][i]
+			if st and GameState.add_to_army(gh["army"], st["id"], st["count"]):
+				town["garrison"][i] = null
 	var huid: int = GameState.pending_town.get("hero_uid", -1)
 	hero = _rules.visiting_hero(town)
 	if hero.is_empty() and world["heroes"].has(huid) and not world["heroes"][huid].get("in_town", false):
@@ -769,7 +777,8 @@ func _flash_building(id: String) -> void:
 
 func _recruit_tier(tier: int) -> void:
 	var cid := TownLogic.dwelling_creature(town, tier)
-	await AdventureHUD.recruit_dialog(self, cid, town["available"][tier - 1], player, town["garrison"], func(n): town["available"][tier - 1] -= n)
+	# (into the garrison hero's army when one is inside, as the classic: the town's own garrison row is its army)
+	await AdventureHUD.recruit_dialog(self, cid, town["available"][tier - 1], player, _rules.town_army(town), func(n): town["available"][tier - 1] -= n)
 	refresh()
 
 func _open_recruit_all() -> void:

@@ -23,6 +23,7 @@ var _drag_synced := false              # a motion event moved the map this frame
 var _left_down := false      # left button held on the map: a click on release, or a drag once it moves
 var _left_tile := Vector2i(-1, -1)
 var _info_tile := Vector2i(-2, -2)
+var _mouse := Vector2(-1, -1)  # the cursor from mouse events (simulated input too, unlike the OS cursor); off the window: -1
 var _rclick_info := false      # the right button is held: its information panel stays up until release
 var _pending_click := Vector2i(-1, -1)  # clicked while the hero was still moving: planned when it stops
 const DRAG_START := 10.0
@@ -240,7 +241,7 @@ func _process(delta: float) -> void:
 		cam.position = cam.position.lerp(_cam_target, minf(1.0, delta * 6.0))
 	else:
 		cam.position = cam.position.lerp(_cam_target, minf(1.0, delta * 10.0))
-	var mpos := get_viewport().get_mouse_position()
+	var mpos := _mouse
 	if _modal_open():
 		if _info_tile != Vector2i(-3, -3):  # a window is up: the status line and tile highlight would show under it
 			_info_tile = Vector2i(-3, -3)
@@ -308,6 +309,16 @@ func _modal_open() -> bool:
 # ---------------------------------------------------------------------------------------------
 # Input
 # ---------------------------------------------------------------------------------------------
+## Where the cursor is, for the hover panel to close when it leaves the map (over the side panel, the bottom bar or
+## out of the window). Read from the events, not the OS cursor: the remote-play harness moves only the events.
+func _input(e: InputEvent) -> void:
+	if e is InputEventMouse:
+		_mouse = e.position
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_MOUSE_EXIT:
+		_mouse = Vector2(-1, -1)
+
 func _unhandled_input(e: InputEvent) -> void:
 	if _modal_open():
 		return

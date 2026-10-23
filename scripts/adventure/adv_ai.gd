@@ -19,7 +19,6 @@ func _init(r: AdvRules) -> void:
 func run_turn(adv, player: Dictionary) -> String:
 	if player.get("ai_day", -1) != world["day"]:
 		player["ai_day"] = world["day"]
-		_release_garrisons(player)
 		manage_towns(player)
 		adv.view.rebuild_objects()
 	var rally := _assault_rally(player)
@@ -36,8 +35,14 @@ func run_turn(adv, player: Dictionary) -> String:
 			if guard > 60:
 				return ""
 			var hero: Dictionary = world["heroes"].get(hid, {})
-			if hero.is_empty() or hero["movement"] < 50 or hero.get("in_town", false):  # (a garrison hero stays in)
+			if hero.is_empty() or hero["movement"] < 50:
 				break
+			if hero.get("in_town", false):
+				# a garrison hero steps out to the gate and decides again (it can strike a raider, go campaigning, or
+				# go back in to hold); it stays in when another hero stands in the gate
+				if not _step_out(hero):
+					break
+				adv.view.rebuild_objects()
 			var choice := {}
 			if hid in rally.get("donors", []):
 				var leader: Dictionary = world["heroes"].get(rally["leader"], {})
@@ -225,7 +230,37 @@ func _collect_garrison(army: Array, town: Dictionary) -> int:
 		spare -= n * unit
 		value += n * unit
 		if s["count"] == 0: town["garrison"][i] = null
+	# a full army leaves its weakest stacks in the garrison for stronger ones there (whole stacks change places, as in
+	# the classic town screen), while the garrison still holds the gate
+	for k in 49:
+		var g := _best_stack(town["garrison"])
+		var a := _weakest_stack(army)
+		if g < 0 or a < 0: break
+		var gain := _stack_value(town["garrison"][g]) - _stack_value(army[a])
+		if gain <= 0 or (keep > 0.0 and gain > spare): break
+		var t = army[a]
+		army[a] = town["garrison"][g]
+		town["garrison"][g] = t
+		spare -= gain
+		value += gain
 	return value
+
+func _stack_value(s) -> int:
+	return int(s["count"]) * int(GameData.CREATURES[s["id"]]["ai_value"]) if s else 0
+
+func _best_stack(army: Array) -> int:
+	var best := -1
+	for i in army.size():
+		if army[i] and army[i]["count"] > 0 and (best < 0 or _stack_value(army[i]) > _stack_value(army[best])): best = i
+	return best
+
+## The least valuable stack of a full army (-1 while a slot is free: nothing has to make room).
+func _weakest_stack(army: Array) -> int:
+	var weak := -1
+	for i in army.size():
+		if army[i] == null: return -1
+		if weak < 0 or _stack_value(army[i]) < _stack_value(army[weak]): weak = i
+	return weak
 
 func _merge_stacks(army: Array) -> void:
 	var first := {}
@@ -255,6 +290,18 @@ func _transfer(receiver: Array, donor: Array, keep_one: bool) -> int:
 			value += count * GameData.CREATURES[s["id"]]["ai_value"]
 			s["count"] -= count
 			if s["count"] == 0: donor[i] = null
+	# a full receiver gives its weakest stacks for the donor's stronger ones (whole stacks change places, as in the
+	# classic exchange window); the donor is never left empty
+	for k in 49:
+		var d := _best_stack(donor)
+		var r := _weakest_stack(receiver)
+		if d < 0 or r < 0: break
+		var gain := _stack_value(donor[d]) - _stack_value(receiver[r])
+		if gain <= 0: break
+		var t = receiver[r]
+		receiver[r] = donor[d]
+		donor[d] = t
+		value += gain
 	return value
 
 func _transfer_value(receiver: Dictionary, donor: Array, keep_one: bool) -> int:
@@ -545,13 +592,12 @@ func _garrison(hero: Dictionary) -> bool:
 			return rules.enter_garrison(hero, town)
 	return false
 
-## At the start of the day, a garrison hero whose town no army can reach any more comes out to the gate (the gate
-## free) to campaign again.
-func _release_garrisons(player: Dictionary) -> void:
-	for tid in player["towns"]:
-		var town: Dictionary = world["towns"][tid]
-		if not rules.garrison_hero(town).is_empty() and _town_threat(town) <= 0.0:
-			rules.leave_garrison(town)
+## A garrison hero comes out to its town's gate (false while another hero stands there).
+func _step_out(hero: Dictionary) -> bool:
+	for town in world["towns"].values():
+		if town.get("garrison_hero", -1) == hero["uid"]:
+			return rules.leave_garrison(town)
+	return false
 
 func _safe_gate(hero: Dictionary, town: Dictionary) -> bool:
 	for guard in rules.guards(town["pos"]):

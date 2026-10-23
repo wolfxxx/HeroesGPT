@@ -13,6 +13,7 @@ func _ready() -> void:
 	_targets()
 	_coordination()
 	_transfers()
+	_swaps()
 	_reinforcement_targets()
 	_randomness()
 	await _meeting_turn()
@@ -242,6 +243,58 @@ func _transfers() -> void:
 	var cost := TownLogic.upgrade_cost("pikeman", "halberdier", 10)
 	ai._reinforce(leader, town, player)
 	_ok(leader["army"][0]["id"] == "halberdier" and player["resources"]["gold"] == 1000 - cost["gold"], "town reinforcement pays ordinary upgrade costs")
+
+## A full army swaps its weakest stacks for a courier's or a garrison's stronger ones (whole stacks change places, as
+## the classic exchange): nothing is lost, a courier keeps creatures, a threatened town keeps what holds its gate.
+func _swaps() -> void:
+	_reset()
+	var weak := ["pikeman", "archer", "griffin", "swordsman", "monk", "cavalier", "zombie"]
+	var leader := _hero(0, Vector2i(8, 8), 1)
+	leader["army"] = []
+	for id in weak:
+		leader["army"].append({"id": id, "count": 30})  # (the main army: stronger than the courier's angels)
+	var courier := _hero(0, Vector2i(7, 8), 1)
+	courier["army"] = [{"id": "angel", "count": 5}, null, null, null, null, null, null]
+	var count := func(army: Array) -> int:
+		var n := 0
+		for st in army:
+			if st: n += st["count"]
+		return n
+	_ok(ai._leader(world["players"][0]) == leader["uid"], "(the full army leads)")
+	var total: int = count.call(leader["army"]) + count.call(courier["army"])
+	var before := GameState.army_strength(leader["army"])
+	var preview := ai._transfer_value(leader, courier["army"], true)
+	_ok(preview > 0 and courier["army"][0]["id"] == "angel", "a full army's swap is previewed without changing either army")
+	_ok(ai.exchange_troops(courier, leader) == preview, "the meeting swaps the predicted value")
+	_ok(leader["army"].any(func(st): return st and st["id"] == "angel" and st["count"] == 5), "the full army takes the courier's angels whole")
+	_ok(GameState.army_strength(leader["army"]) - before == preview, "and gains exactly that value")
+	_ok(count.call(leader["army"]) + count.call(courier["army"]) == total, "a swap loses no creature")
+	_ok(count.call(courier["army"]) > 0, "the courier keeps creatures (the full army's weakest stack)")
+	_ok(ai._transfer_value(leader, courier["army"], true) == 0, "nothing more to gain: no swap back")
+	# a full army in a town takes the garrison's stronger stacks, leaving its weakest there
+	_reset()
+	var hero := _hero(0, Vector2i(8, 8), 1)
+	hero["army"] = []
+	for id in weak:
+		hero["army"].append({"id": id, "count": 2})
+	var town := _town(0, hero["pos"])
+	town["garrison"][0] = {"id": "angel", "count": 4}
+	ai._collect_garrison(hero["army"], town)
+	_ok(hero["army"].any(func(st): return st and st["id"] == "angel") and town["garrison"].any(func(st): return st != null),
+		"a full army swaps its weakest stack for the garrison's angels")
+	# a threatened town keeps what holds its gate: no swap that would weaken it below that
+	_reset()
+	hero = _hero(0, Vector2i(8, 8), 1)
+	hero["army"] = []
+	for id in weak:
+		hero["army"].append({"id": id, "count": 2})
+	town = _town(0, hero["pos"])
+	town["garrison"][0] = {"id": "angel", "count": 4}
+	var raider := _hero(1, Vector2i(11, 8), 1)
+	raider["army"][0] = {"id": "angel", "count": 2}
+	var keep := ai._garrison_keep(town)
+	ai._collect_garrison(hero["army"], town)
+	_ok(keep > 0.0 and GameState.army_strength(town["garrison"]) >= keep, "a threatened garrison keeps what holds the gate")
 
 func _randomness() -> void:
 	_reset()
