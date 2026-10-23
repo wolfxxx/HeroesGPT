@@ -2,7 +2,7 @@
 
 Read this first, then `ARCHITECTURE.md` (code map), `ASSETS.md` (every asset path and the art pipeline) and
 `CREDITS.md`. This file is written so that another person or another AI assistant can pick the work up exactly
-where it stopped. Last updated 2026-10-22 (HeroesGPT repository continuation; latest visual review: judge 47,
+where it stopped. Last updated 2026-10-23 (HeroesGPT repository continuation; latest visual review: judge 47,
 overall 9.4), branch `main`, remote `https://github.com/wolfxxx/HeroesGPT.git` (public repo).
 
 ## 1. The project in one paragraph
@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session61 town list click (2026-10-23), committed with this HANDOFF update:** as the classic (the HoMM3 manual's selector buttons; the
+  hero list works so since session60), a first click on a town in the adventure panel's town list selects
+  it and centres the map on it, a click on the selected town opens the town screen. Selecting a town drops the hero
+  selection (one or the other, as the classic): the town's button is shown pressed, the status window shows the
+  town (picture, fort, income, today's build, its garrison or garrison hero's army), Sleep is dimmed; a hero click
+  selects the hero again. The town stays selected on the way back from its screen. Code:
+  `adventure.select_town/_select_town/selected_town`, `adventure_hud._town_card/_town_view`; new
+  `tools/list_click_test.tscn` (15 checks) in the full suite; panel seen in `shots/session57/list_click_town.png`.
 - **Session60 garrison hero and hero-list click (2026-10-23), committed with this HANDOFF update:** the user approved playtest findings 2 and
   3. (3) A click on a hero in the adventure hero list now selects and centres the hero; a click on the selected one
   opens the hero screen (as the classic). (2) The garrison hero, as the classic (rules confirmed: the Heroes 3 wiki's
@@ -779,7 +787,8 @@ Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has
 2. **FIXED (session60): No garrison hero slot** (HoMM3 deviation): a hero at the gate blocks the Tavern ("send them out first") and can
    not be moved up into the garrison row; HoMM3 lets a hero stand in the garrison.
 3. **FIXED (session60): Hero list click opens the hero screen** at once (HoMM3: the first click selects and centres the hero, a click on
-   the selected one opens the screen); switching heroes always needs a Close.
+   the selected one opens the screen); switching heroes always needs a Close. The town list now works the same way
+   (session61).
 4. **FIXED (session59):** Battle: the held right-click creature popup showed base Speed and no active spells, while
    the hover panel showed "Speed 5 (4)" and "Slow (2 rounds left)".
 5. **FIXED (session59):** Battle: Slow cast in round 1 did not reorder the current round's turn queue.

@@ -91,6 +91,10 @@ titles a human-vs-human result from the winner's side. Test: `tools/hotseat_test
 Right button down on the map: `adventure._right_click` shows `_tile_info(t, true)` (the hover panel; heroes add
 `_army_row`, own towns their garrison) via `HoverInfo.show_for(self, …, 0.0)`; release hides it (`_rclick_info`).
 `MapView.hero_foot` is 1px below `foot_of` so heroes win y-sort ties with buildings on their tile.
+Selection (as HoMM3, one or the other): `world["selected_hero"]` (uid, -1 for none) or, while it is -1,
+`world["selected_town"]`; `adventure.select_town` (the town list's first click) drops the hero selection and centres
+the map, `_select_hero` erases the town, `selected_town()` returns the human's selected town or {}. The status
+window's view 0 shows the hero, else the town (`adventure_hud._town_view`), else the kingdom.
 Garrison hero (as HoMM3): `town["garrison_hero"]` = uid and `hero["in_town"] = true`; the hero keeps the town's pos but
 takes no tile in `AdvRules.occ` (the gate stays free, `MapView.rebuild_objects` draws no figure) and cannot plan a
 route. `AdvRules.garrison_hero`, `town_army` (its army, else the garrison), `visiting_hero`, `enter_garrison` (the
@@ -348,6 +352,10 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   portraits (refused when the garrison's troops don't fit its army), the gate freed for the Tavern, the swap, no map
   figure or route for the garrison hero, and an attacker meeting the gate hero outside first, then the garrison hero
   in a siege. `-- --capture=shots/dir` in a window saves the town screen with both heroes.
+- `tools/list_click_test.tscn` — in the full suite: the adventure panel's hero and town lists (a first click selects
+  and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
+  status window shows the selected town; the town stays selected on the way back from its screen).
+  `-- --capture=shots/dir` in a window saves the panel with the town selected.
 - `tools/guard_pickup_test.tscn` — in the full suite: a hero walking onto an artifact beside a monster fights it and,
   having won, takes the artifact (a computer hero's fight quick-resolved; the human's through the battle scene and
   `_post_ready`). The pending visit is `hero["visit_after_guard"]`, done by `adventure.gd._visit_after_guard`.

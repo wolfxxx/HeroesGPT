@@ -239,10 +239,12 @@ func refresh() -> void:
 	_view_dots.queue_redraw()
 	match _view:
 		0:
-			if hero.is_empty():
-				_kingdom_view(me)
-			else:
+			if not hero.is_empty():
 				_hero_view(hero)
+			elif not adv.selected_town().is_empty():
+				_town_view(adv.selected_town())
+			else:
+				_kingdom_view(me)
 		1:
 			_kingdom_view(me)
 		2:
@@ -361,6 +363,33 @@ func _hero_view(hero: Dictionary) -> void:
 			e.custom_minimum_size = Vector2(35, 35)
 			sk.add_child(e)
 	_detail.add_child(sk)
+
+## The status window's town view (a town picked in the town list): its picture, fort, income and garrison.
+func _town_view(t: Dictionary) -> void:
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 10)
+	top.add_child(UI.icon(_trimmed(MapView.town_sprite(t)), Vector2(84, 84)))
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 0)
+	info.add_child(UI.label(t["name"], 21, UI.GOLD))
+	info.add_child(UI.label(GameData.FACTIONS[t["faction"]]["name"], 17))
+	var fort := "castle" if TownLogic.has_building(t, "castle") else ("citadel" if TownLogic.has_building(t, "citadel") else "fort")
+	info.add_child(UI.label(GameData.BUILDINGS[fort]["name"] if TownLogic.has_building(t, fort) else "No fort", 17))
+	var inc := HBoxContainer.new()
+	inc.add_child(UI.icon(Assets.res_icon("gold"), Vector2(26, 26)))
+	inc.add_child(UI.label("+%d a day" % TownLogic.daily_income(t), 17, UI.GOLD))
+	info.add_child(inc)
+	top.add_child(info)
+	_detail.add_child(top)
+	_detail.add_child(UI.label(UI.build_status_text(t["built_today"]), 17, Color(0.9, 0.85, 0.72)))
+	var gh: Dictionary = adv.rules.garrison_hero(t)
+	_detail.add_child(UI.label("Garrison led by %s" % gh["name"] if not gh.is_empty() else "Garrison", 19, Color(0.9, 0.85, 0.72)))
+	var army := ArmyStrip.new()
+	army.slot_size = Vector2(40, 40)
+	army.editable = false
+	army.bind(adv.rules.town_army(t), {})
+	army.add_theme_constant_override("separation", 3)
+	_detail.add_child(army)
 
 ## The status window's kingdom view: the day's income of every resource, and what the kingdom holds.
 func _kingdom_view(me: Dictionary) -> void:
@@ -511,10 +540,20 @@ func _town_card(t: Dictionary) -> Control:
 	b.focus_mode = Control.FOCUS_NONE
 	var built: bool = t["built_today"]
 	var build_status := UI.build_status_text(built)
-	b.tooltip_text = "%s (%s): %d gold a day\n%s" % [t["name"], GameData.FACTIONS[t["faction"]]["name"], TownLogic.daily_income(t), build_status]
+	b.tooltip_text = "%s (%s): %d gold a day\n%s\nClick to select, click again to enter" % [t["name"],
+		GameData.FACTIONS[t["faction"]]["name"], TownLogic.daily_income(t), build_status]
+	if adv.selected_town().get("uid", -1) == t["uid"]:
+		b.add_theme_stylebox_override("normal", UI._button_style("pressed"))
 	b.pressed.connect(func():
+		if adv.busy:
+			return
 		Audio.sfx("click", -6)
-		adv.open_town(t["uid"]))
+		# (as the classic: the first click selects the town and centres the map on it, a click on the selected one
+		# opens the town screen)
+		if adv.selected_town().get("uid", -1) == t["uid"]:
+			adv.open_town(t["uid"])
+		else:
+			adv.select_town(t["uid"]))
 	var pic := TextureRect.new()
 	pic.texture = _trimmed(MapView.town_sprite(t))
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

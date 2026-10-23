@@ -82,9 +82,12 @@ func _ready() -> void:
 	_refresh_fog()
 
 	var sel: int = world.get("selected_hero", -1)
-	if not world["heroes"].has(sel) or world["heroes"][sel]["owner"] != _human():
-		sel = _first_hero_with_mp()
-	_select_hero(sel, true)
+	if not selected_town().is_empty() and sel == -1:
+		_select_town(world["selected_town"], true)  # (back from a town picked in the town list)
+	else:
+		if not world["heroes"].has(sel) or world["heroes"][sel]["owner"] != _human():
+			sel = _first_hero_with_mp()
+		_select_hero(sel, true)
 	_update_music()
 	_post_ready.call_deferred()
 
@@ -104,7 +107,7 @@ func _post_ready() -> void:
 		var mover: Dictionary = world["heroes"].get(result.get("context", {}).get("hero", -1), {})
 		if mover.has("visit_after_guard"):
 			await _visit_after_guard(mover, not rules.player_of(mover)["is_ai"])
-		if not world["heroes"].has(world.get("selected_hero", -1)):
+		if not world["heroes"].has(world.get("selected_hero", -1)) and selected_town().is_empty():
 			_select_hero(_first_hero_with_mp())
 		if await _check_game_over():
 			return
@@ -130,6 +133,13 @@ func human_player() -> Dictionary:
 
 func selected_hero() -> Dictionary:
 	return world["heroes"].get(world.get("selected_hero", -1), {})
+
+## The town picked in the town list while no hero is selected (as the classic: one or the other), else {}.
+func selected_town() -> Dictionary:
+	if world.get("selected_hero", -1) != -1:
+		return {}
+	var t: Dictionary = world["towns"].get(world.get("selected_town", -1), {})
+	return t if not t.is_empty() and t["owner"] == _human() else {}
 
 # ---------------------------------------------------------------------------------------------
 # Camera
@@ -677,6 +687,7 @@ func _describe_tile(t: Vector2i) -> String:
 # ---------------------------------------------------------------------------------------------
 func _select_hero(uid: int, instant := false) -> void:
 	world["selected_hero"] = uid
+	world.erase("selected_town")
 	view.set_selected(uid)
 	_plan = {}
 	_plan_target = Vector2i(-1, -1)
@@ -687,12 +698,28 @@ func _select_hero(uid: int, instant := false) -> void:
 		if hero.has("dest") and hero["dest"] != hero["pos"]:
 			_make_plan(hero["dest"])
 	elif human_player()["towns"].size() > 0:
-		center_on(world["towns"][human_player()["towns"][0]]["pos"], instant)
+		world["selected_town"] = human_player()["towns"][0]  # (no hero: the first town is selected)
+		center_on(world["towns"][world["selected_town"]]["pos"], instant)
 	hud.refresh()
 
 func select_hero(uid: int) -> void:
 	if not busy:
 		_select_hero(uid)
+
+## As the classic town list: selecting a town drops the hero selection and centres the map on the town.
+func _select_town(uid: int, instant := false) -> void:
+	world["selected_hero"] = -1
+	world["selected_town"] = uid
+	view.set_selected(-1)
+	_plan = {}
+	_plan_target = Vector2i(-1, -1)
+	view.clear_path()
+	center_on(world["towns"][uid]["pos"], instant)
+	hud.refresh()
+
+func select_town(uid: int) -> void:
+	if not busy:
+		_select_town(uid)
 
 func _first_hero_with_mp() -> int:
 	var p := human_player()
