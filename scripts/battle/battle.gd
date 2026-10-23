@@ -1652,14 +1652,14 @@ func _anim_catapult(ev: Dictionary) -> void:
 	var tw := spr.create_tween()
 	tw.tween_property(spr, "rotation", 0.12, 0.12)
 	tw.tween_property(spr, "rotation", 0.0, 0.3).set_trans(Tween.TRANS_BACK)
-	Audio.sfx("arrow_shot", -2)
+	Audio.sfx("catapult_launch")
 	var rock := _Boulder.new()
 	rock.from = n.position + Vector2(20, -90)
 	rock.to = to
 	_fx.add_child(rock)
 	await rock.fly(0.75)
 	_flush_log(ev)
-	Audio.sfx("blunt_hit", 0)
+	Audio.sfx("catapult_hit" if ev["hit"] else "catapult_miss")  # (stone on stone, or a splash in the moat)
 	var dust := _Dust.new()
 	dust.position = to + Vector2(0, 40)
 	dust.big = true

@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 catapult sounds (2026-10-23), committed with this HANDOFF update:** the user heard nothing when the catapult hit or missed.
+  The catapult played `arrow_shot` on launch and `blunt_hit` on impact, and measured in a window these peaked at
+  -21 dB and -33 dB (every other effect about -1 to -2 dB): effectively silent. New sounds (ElevenLabs,
+  `tools/audio/gen_audio.py`): `catapult_launch`, `catapult_hit` (a boulder crashing into stone), `catapult_miss` (a
+  splash and thud short of the wall), all about -1 dB; `battle._anim_catapult` plays them. `blunt_hit` (also every
+  Zombie and Monk attack) was regenerated (now -1.1 dB, best of three takes) and `arrow_shot` (every arrow) too
+  (now -8 dB). The old files are kept in ignored `shots/session67/sfx_old/`. Other effects measured: the quietest
+  left are mine_capture (-20 dB), resource_pickup (-16), death_undead and footstep_horse (-14). Three new battle
+  visual test checks (53): a catapult hit and a miss are heard.
 - **Session67 hero animation (2026-10-23), committed with this HANDOFF update:** the user, playing with Lady Seraphine, found her sitting
   with the mace raised in every pose (standing, galloping, in battle) and the still battle heroes unnatural; they
   chose "rest pose + battle anims". (1) The Cleric was repainted with the mace resting on the shoulder: the map

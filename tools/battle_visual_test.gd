@@ -102,6 +102,19 @@ func _run() -> void:
 	_check(battle.side_color(0) == GameData.PLAYER_COLORS[1], "the attacker's colour is its player's flag (Blue attacking)")
 	_check(battle.side_color(1) not in GameData.PLAYER_COLORS, "neutral creatures are grey")
 	battle.L.players = keep
+	# the catapult's shot is heard: its launch, then the stone on the wall or a splash short of it
+	var cat = null
+	for st in battle.L.stacks:
+		if st["id"] == "catapult": cat = st
+	_check(cat != null, "the attacker brings its catapult")
+	if cat != null:
+		for hit in [true, false]:
+			Audio._last_played.erase("catapult_launch")
+			Audio._last_played.erase("catapult_hit")
+			Audio._last_played.erase("catapult_miss")
+			await battle._anim_catapult({"s": cat, "seg": 2, "hit": hit, "destroyed": false})
+			_check(Audio._last_played.has("catapult_launch") and Audio._last_played.has("catapult_hit" if hit else "catapult_miss"),
+				"a catapult %s is heard" % ("hit" if hit else "miss"))
 	# the heroes beside the field: resting on their first idle frame, a loop through the frames, a cast pose
 	var f0 = battle._hero_figs[0]
 	_check(f0 != null and f0[0].texture.resource_path.ends_with("_idle0.png"), "the hero rests on its first idle frame")
