@@ -2053,6 +2053,17 @@ func _spell_banner(t: String, side: int) -> void:
 # ---------------------------------------------------------------------------------------------
 # End of battle
 # ---------------------------------------------------------------------------------------------
+## What a side lost (id -> count) for the result window: its casualties and, when its hero retreated, the creatures
+## left behind. Its surviving war machines leave with the hero (as the classic: they are equipment, kept like
+## artifacts; see machines_left).
+func _lost(side: int) -> Dictionary:
+	var cas := L.casualties(side)
+	if _retreated == side and not _surrendered:
+		for st in L.stacks:
+			if st["side"] == side and st["alive"] and not st.get("machine", false) and not st.get("tower", false):
+				cas[st["id"]] = cas.get(st["id"], 0) + st["count"]
+	return cas
+
 func _end_battle(winner: int) -> void:
 	if _ended:
 		return
@@ -2091,11 +2102,7 @@ func _end_battle(winner: int) -> void:
 		m.body.add_child(UI.label("%s — casualties" % who[side], 22, UI.GOLD))
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
-		var cas := L.casualties(side)
-		if _retreated == side and not _surrendered:
-			for st in L.stacks:
-				if st["side"] == side and st["alive"]:
-					cas[st["id"]] = cas.get(st["id"], 0) + st["count"]
+		var cas := _lost(side)
 		for id in cas:
 			var v := VBoxContainer.new()
 			v.add_child(UI.icon(Assets.creature_portrait(id), Vector2(64, 64)))

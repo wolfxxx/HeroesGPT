@@ -356,6 +356,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the
+  war machines still standing (`battle._lost` leaves them out of the result window), waits in the Tavern and is
+  hired again with them and the artifacts. `-- --capture=shots/dir` in a window saves the result window.
 - `tools/guard_pickup_test.tscn` — in the full suite: a hero walking onto an artifact beside a monster fights it and,
   having won, takes the artifact (a computer hero's fight quick-resolved; the human's through the battle scene and
   `_post_ready`). The pending visit is `hero["visit_after_guard"]`, done by `adventure.gd._visit_after_guard`.

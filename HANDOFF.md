@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session62 retreat and war machines (2026-10-23), committed with this HANDOFF update:** playtest finding 9. The rule: a retreated hero
+  keeps all artifacts and loses the army (Heroes 3 wiki, Retreat); war machines are equipment in the hero's own
+  slots (they can't go in the backpack or be dismissed), so they stay with the hero, unless destroyed in the battle.
+  No source states the machines case outright; this follows the artifact rule. The game already did this
+  (`battle_logic.machines_left` on the hero, `AdvRules._kill_hero(kept)`, `GameState.tavern_hero`); only the
+  battle's result window listed the retreating side's standing machines among the casualties. Fixed in
+  `battle._lost`; new `tools/retreat_test.tscn` (10 checks) in the full suite; result window seen in
+  `shots/session57/retreat_result.png`.
 - **Session61 town list click (2026-10-23), committed with this HANDOFF update:** as the classic (the HoMM3 manual's selector buttons; the
   hero list works so since session60), a first click on a town in the adventure panel's town list selects
   it and centres the map on it, a click on the selected town opens the town screen. Selecting a town drops the hero
@@ -796,7 +804,8 @@ Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has
 7. **FIXED (session59):** Battle: the hero figure was per faction (the Death Knight rode with the Necromancer's staff).
 8. Battle (question, not a rule): stacks are coloured by side, attacker red, defender blue, not by owner, so when
    the Blue AI attacked, my troops were blue. Check against HoMM3/HD before changing.
-9. To verify against HoMM3: a retreating hero also lost the First Aid Tent (listed among the casualties).
+9. **FIXED (session62):** a retreating hero's First Aid Tent was listed among the casualties. The hero kept it (as
+   HoMM3: machines are equipment, kept like artifacts); only the result window was wrong.
 10. Unconfirmed: a held right-click once showed no map popup in harness captures after a load; with debug prints the
    panel was shown at the right place and later attempts worked. Likely the harness's synthetic input; needs a
    human check.
