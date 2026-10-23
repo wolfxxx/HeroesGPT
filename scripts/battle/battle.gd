@@ -96,6 +96,14 @@ func _ready() -> void:
 		setup_d = _demo_setup()
 	L = BattleLogic.new()
 	L.setup(setup_d)
+	if Shot.args.has("effects"):  # (shots of the count boxes: --effects=bless;curse;bless+slow on the attacker's stacks)
+		var k := 0
+		for st in L.stacks:
+			if st["side"] == 0 and not st.get("machine", false) and k < str(Shot.args["effects"]).split(";").size():
+				for e in str(Shot.args["effects"]).split(";")[k].split("+"):
+					if e != "":
+						st["effects"][e] = 2
+				k += 1
 	_build_scene()
 	if L.siege > 0 and Shot.args.has("broken"):  # (shots of a siege some turns in: --broken=1,3 breaches those segments)
 		for t in str(Shot.args["broken"]).split(","):
@@ -132,7 +140,8 @@ func _demo_setup() -> Dictionary:
 		h["knowledge"] = 4
 		h["mana"] = 40
 	var out := {"attacker_army": a["army"], "defender_army": d["army"], "attacker_hero": a, "defender_hero": d,
-		"terrain": "grass", "attacker_player": 0, "defender_player": 1, "attacker_ai": false, "defender_ai": true,
+		"terrain": "grass", "attacker_player": int(str(Shot.args.get("players", "0,1")).split(",")[0]),
+		"defender_player": int(str(Shot.args.get("players", "0,1")).split(",")[-1]), "attacker_ai": false, "defender_ai": true,
 		"context": {"type": "demo"}, "seed": int(Shot.args.get("seed", "7"))}
 	if Shot.setup.begins_with("siege"):  # Sir Aldric with all his machines before a Necropolis castle (--siege=1|2|3)
 		a["machines"] = GameData.WAR_MACHINES.duplicate()
@@ -290,7 +299,7 @@ func _build_scene() -> void:
 		var nl := UI.label(hh["name"], 22, UI.GOLD, true)
 		var plate := StyleBoxFlat.new()  # dark plate: the name must read over any backdrop
 		plate.bg_color = Color(0.05, 0.035, 0.02, 0.78)
-		plate.border_color = Color(0.85, 0.25, 0.2, 0.9) if side == 0 else Color(0.3, 0.5, 1.0, 0.9)
+		plate.border_color = Color(side_color(side), 0.9)
 		plate.border_width_bottom = 3
 		plate.set_corner_radius_all(5)
 		plate.content_margin_left = 12
@@ -303,6 +312,12 @@ func _build_scene() -> void:
 		nl.size = nl.get_combined_minimum_size()
 		nl.position = Vector2((110 if side == 0 else 1810) - nl.size.x * 0.5, 292)
 
+## A side's colour: its player's flag colour (neutral creatures grey), for the stacks' rings, the turn queue's cards,
+## the hero's name plate and its spell banners. As the classic, the count boxes carry no side colour (see _Badge).
+func side_color(side: int) -> Color:
+	var p: int = L.players[side]
+	return GameData.PLAYER_COLORS[p] if p >= 0 and p < GameData.PLAYER_COLORS.size() else Color(0.62, 0.6, 0.55)
+
 func _make_unit(st: Dictionary) -> void:
 	var c: Dictionary = GameData.CREATURES[st["id"]]
 	var n := Node2D.new()
@@ -311,6 +326,7 @@ func _make_unit(st: Dictionary) -> void:
 	var shadow := _Shadow.new()
 	shadow.big = wide
 	shadow.side = st["side"]
+	shadow.col = side_color(st["side"])
 	shadow.position = n.position
 	_rings.add_child(shadow)
 	n.set_meta("shadow", shadow)
@@ -621,6 +637,7 @@ func _refresh_queue() -> void:
 		slots += 1
 		var q := _QueueIcon.new()
 		q.st = s
+		q.col = side_color(s["side"])
 		q.first = i == 0
 		if s.get("tower", false):
 			q.tex = Assets.tex("battle/siege_%s_archer.png" % L.siege_faction)
@@ -2036,7 +2053,7 @@ func _spell_banner(t: String, side: int) -> void:
 	l.add_theme_constant_override("outline_size", 8)
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.08, 0.05, 0.03, 0.8)
-	bg.border_color = Color(0.8, 0.25, 0.2) if side == 0 else Color(0.3, 0.45, 0.95)
+	bg.border_color = side_color(side)
 	bg.set_border_width_all(2)
 	bg.set_corner_radius_all(6)
 	bg.content_margin_left = 24
@@ -2229,6 +2246,7 @@ class _Shadow extends Node2D:
 	var on := true  # (off: the stack has fallen, or is a tower's crew)
 	var big := false
 	var side := 0
+	var col := Color.WHITE  # (battle.side_color)
 	var hit_until := 0  # (msec) its ring flashes while a damage label of this stack shows
 	var active := false:
 		set(v):
@@ -2241,8 +2259,8 @@ class _Shadow extends Node2D:
 		var w := 84.0 if big else 44.0
 		draw_set_transform(Vector2(0, -2), 0, Vector2(1, 0.32))
 		draw_circle(Vector2.ZERO, w, Color(0, 0, 0, 0.45))
-		# side colour (as the count badge): whose stack is whose, even when sprites overlap
-		draw_arc(Vector2.ZERO, w - 2, 0, TAU, 40, Color(0.85, 0.25, 0.2, 0.75) if side == 0 else Color(0.3, 0.5, 1.0, 0.75), 5.0, true)
+		# its player's flag colour: whose stack is whose, even when sprites overlap
+		draw_arc(Vector2.ZERO, w - 2, 0, TAU, 40, Color(col, 0.75), 5.0, true)
 		if active:
 			var a := 0.55 + 0.35 * sin(Time.get_ticks_msec() / 160.0)
 			draw_arc(Vector2.ZERO, w + 4, 0, TAU, 40, Color(1, 0.85, 0.3, a), 4.0, true)
@@ -2250,13 +2268,31 @@ class _Shadow extends Node2D:
 		if left > 0:
 			var k := minf(1.0, left / 400.0)
 			# (struck: its own side's colour flaring, not white, which read as the gold ring of the stack in play)
-			var hc := Color(1.0, 0.42, 0.32) if side == 0 else Color(0.5, 0.72, 1.0)
+			var hc := col.lightened(0.3)
 			draw_arc(Vector2.ZERO, w - 2, 0, TAU, 40, Color(hc, 0.95 * k), 9.0, true)
 		elif hit_until > 0:
 			hit_until = 0
 
+## A stack's count box, as the classic: the same purple for both sides, green while only good spells are on it, red
+## while only bad ones, yellow with both (which side it is shows by where it faces and by its ring).
 class _Badge extends Node2D:
+	const BOX_COLORS := {"none": Color(0.42, 0.16, 0.46), "good": Color(0.13, 0.42, 0.14), "bad": Color(0.58, 0.1, 0.08),
+		"both": Color(0.6, 0.48, 0.05)}
 	var st: Dictionary
+
+	## "none", "good", "bad" or "both": the spells on the stack (a spell cast on allies is good, on enemies bad;
+	## disease is bad).
+	static func mood(stack: Dictionary) -> String:
+		var good := false
+		var bad := false
+		for e in stack.get("effects", {}):
+			var t: String = GameData.SPELLS[e].get("target", "") if GameData.SPELLS.has(e) else ""
+			if t == "ally":
+				good = true
+			elif t == "enemy" or e == "disease":
+				bad = true
+		return "both" if good and bad else ("good" if good else ("bad" if bad else "none"))
+
 	func _draw() -> void:
 		if not st.get("alive", false):
 			return
@@ -2265,20 +2301,13 @@ class _Badge extends Node2D:
 		var fs := 19
 		var tw := maxf(30.0, f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 12)
 		var r := Rect2(Vector2(-tw * 0.5, -12), Vector2(tw, 24))
-		var col := Color(0.45, 0.12, 0.1) if st["side"] == 0 else Color(0.12, 0.2, 0.5)
-		if st["effects"].size() > 0:
-			var good: bool = st["effects"].has("bless") or st["effects"].has("haste") or st["effects"].has("shield") or st["effects"].has("stone_skin")
-			var bad: bool = st["effects"].has("curse") or st["effects"].has("slow") or st["effects"].has("weakness") or st["effects"].has("disease")
-			if good and not bad:
-				col = Color(0.15, 0.45, 0.15)
-			elif bad and not good:
-				col = Color(0.4, 0.15, 0.45)
-		draw_rect(r, col)
+		draw_rect(r, BOX_COLORS[mood(st)])
 		draw_rect(r, UI.GOLD, false, 1.5)
 		draw_string(f, Vector2(r.position.x, 6), txt, HORIZONTAL_ALIGNMENT_CENTER, tw, fs, Color.WHITE)
 
 class _QueueIcon extends Control:
 	var st: Dictionary
+	var col := Color.WHITE  # (battle.side_color)
 	var first := false
 	var tex: Texture2D = null  # (instead of the creature's sprite: an arrow tower's archer)
 	static var _crops := {}
@@ -2337,7 +2366,6 @@ class _QueueIcon extends Control:
 
 	func _draw() -> void:
 		var r := Rect2(Vector2.ZERO, size)
-		var col := Color(0.85, 0.22, 0.16) if st["side"] == 0 else Color(0.27, 0.45, 1.0)
 		# the side's colour as a lit backdrop (bright behind the head, dark at the edges), the creature's own head
 		# cut from its battle sprite over it, facing the way it faces on the field
 		draw_rect(r, col.darkened(0.72))

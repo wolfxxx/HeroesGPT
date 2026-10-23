@@ -88,6 +88,17 @@ func _run() -> void:
 	battle._show_battered()
 	_check(battle._battered[2].texture != null and battle._battered[2].visible, "a wall hit once shows its battered painting")
 	_check(not battle._battered[4].visible and not battle._battered[1].visible, "battered look only on the hit segment")
+	# count boxes as the classic (by the spells on a stack, not by side) and the rings in the players' flag colours
+	var mood: Callable = battle._Badge.mood
+	_check(mood.call({"effects": {}}) == "none", "a count box with no spell is the plain purple")
+	_check(mood.call({"effects": {"bless": 2, "haste": 1}}) == "good", "good spells only: green")
+	_check(mood.call({"effects": {"curse": 2}}) == "bad" and mood.call({"effects": {"disease": 3}}) == "bad", "bad spells or disease: red")
+	_check(mood.call({"effects": {"bless": 2, "slow": 1}}) == "both", "both: yellow")
+	var keep: Array = battle.L.players.duplicate()
+	battle.L.players = [1, -1]
+	_check(battle.side_color(0) == GameData.PLAYER_COLORS[1], "the attacker's colour is its player's flag (Blue attacking)")
+	_check(battle.side_color(1) not in GameData.PLAYER_COLORS, "neutral creatures are grey")
+	battle.L.players = keep
 	print("BATTLE VISUAL TEST: %d checks, failures: %d" % [checks, failures])
 	battle.queue_free()
 	await get_tree().process_frame

@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session63 battle colours (2026-10-23), committed with this HANDOFF update:** playtest finding 8. Checked against the classic (VCMI's
+  `BattleStacksController`, the engine re-implementation: the amount box is chosen by the stack's spells only,
+  never by side or owner). The user chose: count boxes as the classic, purple, green under good spells only, red
+  under bad ones only, yellow under both (`battle._Badge.mood`); the rings, turn queue cards, hero name plates and
+  spell banners in each player's flag colour instead of attacker red / defender blue, neutral creatures grey
+  (`battle.side_color`). New shot flags `--players=a,b` and `--effects=...`; 6 new checks in the battle visual test;
+  seen in `shots/session57/colors_blue_attacks.png` (Blue attacking, the three spell box colours) and
+  `colors_neutral.png` (Green against grey neutrals).
 - **Session62 retreat and war machines (2026-10-23), committed with this HANDOFF update:** playtest finding 9. The rule: a retreated hero
   keeps all artifacts and loses the army (Heroes 3 wiki, Retreat); war machines are equipment in the hero's own
   slots (they can't go in the backpack or be dismissed), so they stay with the hero, unless destroyed in the battle.
@@ -658,7 +666,8 @@ Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space
 `--shot --scene --delay --shots --interval --click=x,y;x,y (prefix r for right click) --keys=A;S --hover=x,y`;
 scenes also read `--setup=` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (`--siege=1|2|3`,
 default 3), `town_levels`,
-`necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b --heroes=a,b` (battle heroes by id). The harness parks the
+`necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b --heroes=a,b` (battle heroes by id), `--players=a,b` (demo battle flag colours, -1
+neutral), `--effects=bless;curse;bless+slow` (spells on the attacker's stacks). The harness parks the
 mouse before each capture (except hover and right-click shots). The window must not be headless for shots.
 
 ## 6. The round workflow
@@ -802,8 +811,8 @@ Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has
 5. **FIXED (session59):** Battle: Slow cast in round 1 did not reorder the current round's turn queue.
 6. **FIXED (session59):** Text: "Necromancy raises 1 skeletons" (plural with 1).
 7. **FIXED (session59):** Battle: the hero figure was per faction (the Death Knight rode with the Necromancer's staff).
-8. Battle (question, not a rule): stacks are coloured by side, attacker red, defender blue, not by owner, so when
-   the Blue AI attacked, my troops were blue. Check against HoMM3/HD before changing.
+8. **FIXED (session63):** Battle: stacks were coloured by side, attacker red, defender blue, not by owner, so when
+   the Blue AI attacked, my troops were blue. Now the classic count boxes (by spells) and flag-coloured rings.
 9. **FIXED (session62):** a retreating hero's First Aid Tent was listed among the casualties. The hero kept it (as
    HoMM3: machines are equipment, kept like artifacts); only the result window was wrong.
 10. Unconfirmed: a held right-click once showed no map popup in harness captures after a load; with debug prints the
@@ -1012,7 +1021,8 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   - `_settle_badges()` — count plates: front corner, moved in under their own figure when a front neighbour is
     taken, never on another stack's figure (body penalty, back-corner and raised spots).
   - `_under_figures()` — low obstacles fade where a figure stands over them.
-  - `_Shadow` — rings; a struck stack's ring flares in its own side colour.
+  - `_Shadow` — rings in the player's flag colour (`side_color`); a struck stack's ring flares lighter.
+  - `_Badge` — count boxes as the classic: purple, green / red / yellow by the spells on the stack (`mood`).
   - `_QueueIcon` — turn queue; machines and towers drawn whole with a name band.
   - `_Burst` (bolt) — narrow 220px lightning strike above its target, on the rings layer under figures; no cloud.
   - Damage labels vanish at once (no fade) — `_float_text`.

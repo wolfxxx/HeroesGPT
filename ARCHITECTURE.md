@@ -381,7 +381,13 @@ Options: `--shots=N --interval=S`, `--click=x,y;x,y` (`r` prefix = right click),
 `--setup=<name>` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (with `--siege=1|2|3`),
 `town_levels` (adventure: the first town a Castle, the second a village), `necro_rich`,
 `necro_max`, `x`); adventure also `--seed --faction --reveal --cam=x,y --zoom`, battle `--broken=a,b` (breached walls),
-`--battered=a,b` (walls hit once), `--heroes=attacker,defender` (battle heroes by id).
+`--battered=a,b` (walls hit once), `--heroes=attacker,defender` (battle heroes by id), `--players=a,b` (the demo
+battle's player indices, -1 neutral: the flag colours), `--effects=bless;curse;bless+slow` (spells on the attacker's
+stacks in order: the count box colours).
+Battle colours (as HoMM3): the count box (`battle._Badge`) is the same purple for both sides, green under good spells
+only, red under bad ones only (or disease), yellow under both (`_Badge.mood`: a spell targeting allies is good, enemies
+bad). Whose stack is whose shows by its facing and its ring, which with the turn queue's cards, the hero's name plate
+and spell banners take the player's flag colour (`battle.side_color`: `GameData.PLAYER_COLORS`, neutrals grey).
 Battle heroes: `battle.gd` draws `heroes/battle_<class>.png` (Cleric, Death Knight) or the faction's figure
 (`battle_haven` a Knight, `battle_necropolis` a Necromancer). A right click on a stack opens `_show_stack_card` (the
 hover panel's live card in a dialog). Turn order: `BattleLogic._turn_before` everywhere; `_resort_order` after a
