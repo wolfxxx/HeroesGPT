@@ -227,7 +227,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `sh tools/check.sh` — re-import + compile every script (prints only errors).
 - `sh tools/run_tests.sh` — the full test pass of a round: check, `battle_test` (40 AI-vs-AI battles checking hex
   rules, plus `_siege_rules`: per fortification level the moat, which corner segments the catapult may hit, the solid
-  corners and no way out past a standing wall), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
+  corners and no way out past a standing wall; `_speed_spells`: Slow/Haste mid-round re-sort the stacks yet to act), `battle_visual_test` (fixed siege overlap, displayed-turn focus and corpse regressions),
   `battle_ai_test` (15 tactical checks), `adventure_ai_test` (94 spending/defense/coordination/transfer/garrison/RNG checks),
   `campaign_week_test` (63 integrated week/save checks), `campaign_flow_test` (29 real tactical-scene/return/save checks),
   `adventure_tournament --self` (two-player and four-player RNG controls),
@@ -358,7 +358,11 @@ Options: `--shots=N --interval=S`, `--click=x,y;x,y` (`r` prefix = right click),
 `--setup=<name>` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (with `--siege=1|2|3`),
 `town_levels` (adventure: the first town a Castle, the second a village), `necro_rich`,
 `necro_max`, `x`); adventure also `--seed --faction --reveal --cam=x,y --zoom`, battle `--broken=a,b` (breached walls),
-`--battered=a,b` (walls hit once).
+`--battered=a,b` (walls hit once), `--heroes=attacker,defender` (battle heroes by id).
+Battle heroes: `battle.gd` draws `heroes/battle_<class>.png` (Cleric, Death Knight) or the faction's figure
+(`battle_haven` a Knight, `battle_necropolis` a Necromancer). A right click on a stack opens `_show_stack_card` (the
+hover panel's live card in a dialog). Turn order: `BattleLogic._turn_before` everywhere; `_resort_order` after a
+Haste/Slow/Cure cast mid-round.
 Window must not be headless (rendering needed). Screens are saved at the window resolution (1600x900 by default).
 
 ## Art & audio pipeline (see ASSETS.md)

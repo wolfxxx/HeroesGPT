@@ -56,6 +56,7 @@ func _ready() -> void:
 		if L.is_over() >= 0:
 			ends += 1
 	fails += _siege_rules()
+	fails += _speed_spells()
 	print("BATTLE TEST: %d battles ended of 40, failures: %d" % [ends, fails])
 	get_tree().quit()
 
@@ -115,3 +116,26 @@ func _siege_rules() -> int:
 			print("FAIL siege level %d: %s" % [level, p])
 		fails += mini(problems.size(), 1)
 	return fails
+
+## Slow and Haste in the middle of a round move the stacks yet to act (as the classic: a slowed stack acts later this
+## round already); the stack acting now keeps its turn.
+func _speed_spells() -> int:
+	var L := BattleLogic.new()
+	var h := GameState.make_hero("vesna_nightshade", 0)
+	h["mana"] = 100
+	L.setup({"attacker_army": [{"id": "angel", "count": 1}], "attacker_hero": h, "seed": 3,
+		"defender_army": [{"id": "swordsman", "count": 5}, {"id": "griffin", "count": 5}, {"id": "pikeman", "count": 5}]})
+	var ids := func(): return L.order.filter(func(st): return not st.get("machine", false)).map(func(st): return st["id"])
+	var at := func(id: String) -> Vector2i: return L.stacks.filter(func(st): return st["id"] == id)[0]["hex"]
+	var problems := []
+	if ids.call() != ["angel", "griffin", "swordsman", "pikeman"]:
+		problems.append("start order %s" % [ids.call()])
+	L.cast(0, "slow", at.call("griffin"))  # (6 -> 5: level with the swordsmen, who stand in the first slot)
+	if ids.call() != ["angel", "swordsman", "griffin", "pikeman"]:
+		problems.append("after Slow %s" % [ids.call()])
+	L.cast(0, "haste", at.call("pikeman"))  # (4 -> 7: ahead of everyone yet to act, not of the acting angel)
+	if ids.call() != ["angel", "pikeman", "swordsman", "griffin"]:
+		problems.append("after Haste %s" % [ids.call()])
+	for p in problems:
+		print("FAIL speed spells: %s" % p)
+	return mini(problems.size(), 1)

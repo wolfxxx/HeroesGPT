@@ -649,14 +649,7 @@ func _new_round() -> void:
 	hero_cast = [false, false]
 	# (as in the classic: the ammo cart never acts, it only keeps the quivers full, so it takes no turn)
 	order = alive_stacks(-1, true).filter(func(s): return s["id"] != "ammo_cart")
-	order.sort_custom(func(a, b):
-		var sa := speed(a)
-		var sb := speed(b)
-		if sa != sb:
-			return sa > sb
-		if a["side"] != b["side"]:
-			return a["side"] < b["side"]
-		return a["slot"] < b["slot"])
+	order.sort_custom(_turn_before)
 	waited = []
 	for s in order:
 		s["defending"] = false
@@ -672,6 +665,25 @@ func _new_round() -> void:
 				fx.erase(k)
 		if has_ab(s, "regenerate"):
 			s["hp_top"] = max_hp(s)
+
+## Faster first; on a tie the attacker, then the lower army slot.
+func _turn_before(a: Dictionary, b: Dictionary) -> bool:
+	var sa := speed(a)
+	var sb := speed(b)
+	if sa != sb:
+		return sa > sb
+	if a["side"] != b["side"]:
+		return a["side"] < b["side"]
+	return a["slot"] < b["slot"]
+
+## A spell that changes speed in the middle of a round moves the stacks yet to act (as the classic: a slowed stack
+## acts later this round already); the stack acting now keeps its turn.
+func _resort_order() -> void:
+	if order.size() < 3:
+		return
+	var rest := order.slice(1)
+	rest.sort_custom(_turn_before)
+	order = [order[0]] + rest
 
 ## Returns the stack whose turn it is (advancing rounds as needed).
 func current() -> Variant:
@@ -694,7 +706,7 @@ func upcoming(n: int) -> Array:
 		out.append(s)
 	if out.size() < n:
 		var nxt := alive_stacks().filter(func(s): return s["id"] != "ammo_cart")
-		nxt.sort_custom(func(a, b): return speed(a) > speed(b) if speed(a) != speed(b) else a["side"] < b["side"])
+		nxt.sort_custom(_turn_before)
 		for s in nxt:
 			out.append(s)
 	return out.slice(0, n)
@@ -911,6 +923,8 @@ func cast(side: int, spell: String, hex: Vector2i) -> Array:
 				"resurrection":
 					var g := heal(s, 40 + 20 * spell_power(side), true)
 					out.append({"t": "heal", "s": s, "amount": g})
+	if spell in ["haste", "slow", "cure"]:
+		_resort_order()
 	# the log names the target and the damage, so every number on the field has its line
 	var line := "%s casts %s" % [h["name"], sp["name"]]
 	if targets.size() == 1:

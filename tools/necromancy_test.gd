@@ -78,6 +78,9 @@ func _counts_and_slots() -> void:
 	reward = Necromancy.calculate(hero, full, fallen)
 	_ok(reward["raised"] == 0 and reward["necromancy_reason"] == "no_room", "full army with no compatible stack cannot receive troops")
 	_ok(Necromancy.message(reward).contains("no room"), "full army gets an explanation")
+	_ok(Necromancy.message({"raised": 1, "raised_id": "skeleton"}) == "Necromancy raises 1 skeleton from the fallen.",
+		"one raised creature is named in the singular")
+	_ok(Necromancy.message({"raised": 3, "raised_id": "skeleton"}).contains("3 skeletons"), "several in the plural")
 	full[3] = null
 	_ok(Necromancy.calculate(hero, full, fallen)["raised"] == 30, "slot freed by casualties can receive reward")
 	# Amplifiers stack, only the winning player's buildings count, and artifact bonuses are additive.

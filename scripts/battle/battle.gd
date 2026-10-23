@@ -120,8 +120,9 @@ func _ready() -> void:
 	_next()
 
 func _demo_setup() -> Dictionary:
-	var a := GameState.make_hero("sir_aldric", 0)
-	var d := GameState.make_hero("lord_morthis", 1)
+	var ids := str(Shot.args.get("heroes", "sir_aldric,lord_morthis")).split(",")  # (--heroes=attacker,defender)
+	var a := GameState.make_hero(ids[0], 0)
+	var d := GameState.make_hero(ids[1], 1)
 	for h in [a, d]:
 		var c: Array = GameData.FACTIONS[h["faction"]]["upgrades" if Shot.setup == "upgraded" else "creatures"]
 		for i in 7:
@@ -269,7 +270,11 @@ func _build_scene() -> void:
 		if hh == null:
 			continue
 		var s := Sprite2D.new()
-		s.texture = Assets.tex("heroes/battle_%s.png" % hh["faction"], Vector2i(200, 200))
+		# (each class its own figure, as the classic; the faction's figure is its first class: Knight, Necromancer)
+		var fig := "heroes/battle_%s.png" % String(hh.get("class", "")).to_lower().replace(" ", "_")
+		if not Assets.has(fig):
+			fig = "heroes/battle_%s.png" % hh["faction"]
+		s.texture = Assets.tex(fig, Vector2i(200, 200))
 		var sc := 230.0 / s.texture.get_height()
 		s.scale = Vector2(sc, sc)
 		s.flip_h = side == 1
@@ -792,7 +797,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			else:
 				var s = L.stack_at(pos_to_hex(get_viewport().get_canvas_transform().affine_inverse() * e.position))
 				if s and not s.get("machine", false):
-					ArmyStrip.show_creature_info(self, s["id"], s["count"])
+					_show_stack_card(s)
 	elif e is InputEventKey and e.pressed and not e.echo and e.keycode == KEY_A:
 		_on_auto()  # (also while something is acting: it takes over from the next turn)
 	elif e is InputEventKey and e.pressed and not e.echo and e.keycode == KEY_G:  # the full hex grid, any time
@@ -949,6 +954,15 @@ func _stack_info(st: Dictionary) -> Control:
 	if _hover_action.get("target") == st:  # your unit's attack on it: damage and kills (as in the status line)
 		HoverInfo.line(v, _status.text, UI.GOLD, 18)
 	return v
+
+## A right click on a stack (as the classic): its window with the battle's own numbers, the spells on it and their
+## rounds left, and what changes them (the same card as the hover panel), held open until OK.
+func _show_stack_card(st: Dictionary) -> void:
+	var m := Modal.custom(self, "", 470)
+	m.body.add_child(_stack_info(st))
+	m.add_buttons([["OK", true]])
+	m.set_meta("default", true)
+	m.set_meta("cancel", true)
 
 func _hero_info(side: int) -> Control:
 	var hh: Dictionary = L.heroes[side]

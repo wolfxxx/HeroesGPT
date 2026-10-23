@@ -55,8 +55,9 @@ static func _fits(army: Array, id: String) -> bool:
 
 static func message(reward: Dictionary) -> String:
 	if reward["raised"] > 0:
+		var c: Dictionary = GameData.CREATURES[reward["raised_id"]]
 		return "Necromancy raises %d %s from the fallen." % [reward["raised"],
-			GameData.CREATURES[reward["raised_id"]]["plural"].to_lower()]
+			(c["plural"] if reward["raised"] != 1 else c["name"]).to_lower()]
 	match reward["necromancy_reason"]:
 		"no_room": return "Necromancy: no room in your army for the raised troops."
 		"no_casualties": return "Necromancy: no fallen enemies to raise."

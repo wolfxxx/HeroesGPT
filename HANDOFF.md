@@ -16,6 +16,18 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session59 small battle fixes (2026-10-23), committed with this HANDOFF update:** the user asked for playtest findings 4-7. (4) A right
+  click on a battle stack opens its live card (`battle.gd._show_stack_card`: the hover panel's content, with the
+  battle's numbers, the spells on it and their rounds left, and what changes them) instead of the book stats.
+  (5) Haste, Slow and Cure cast mid-round re-sort the stacks yet to act (`BattleLogic._resort_order`, one comparator
+  `_turn_before` for every turn order), as the classic; checked by `battle_test._speed_spells` (fails on the old
+  rules). (6) "raises 1 skeleton" in the singular (`Necromancy.message`, two new necromancy test checks).
+  (7) Each hero class has its own battle figure, as the classic: new `heroes/battle_cleric.png` and
+  `battle_death_knight.png` (the faction figures' horses repainted with a mace-wielding Cleric and a horned,
+  great-sword Death Knight, `tools/art/hero_class_paint.py`, imagegen/batch31); `battle.gd` takes
+  `heroes/battle_<class>.png`, else the faction's (Knight, Necromancer). Screenshots `shots/session57/card.png`,
+  `heroes_kd.png`, `heroes_cn.png` (new shot flag `--heroes=attacker,defender`). The adventure map still has one
+  hero figure per faction.
 - **Session58 guarded treasure fix (2026-10-23), committed with this HANDOFF update:** the user asked to fix playtest finding 1. A hero
   who walked onto an artifact (or any pickup) beside a monster fought the monster and then stood on the treasure
   without it. Now, as the classic, the treasure is taken after the guard is beaten: `move_hero` remembers the
@@ -618,7 +630,7 @@ Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space
 `--shot --scene --delay --shots --interval --click=x,y;x,y (prefix r for right click) --keys=A;S --hover=x,y`;
 scenes also read `--setup=` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (`--siege=1|2|3`,
 default 3), `town_levels`,
-`necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b`. The harness parks the
+`necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b --heroes=a,b` (battle heroes by id). The harness parks the
 mouse before each capture (except hover and right-click shots). The window must not be headless for shots.
 
 ## 6. The round workflow
@@ -756,11 +768,11 @@ Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has
    not be moved up into the garrison row; HoMM3 lets a hero stand in the garrison.
 3. **Hero list click opens the hero screen** at once (HoMM3: the first click selects and centres the hero, a click on
    the selected one opens the screen); switching heroes always needs a Close.
-4. Battle: the held right-click creature popup shows base Speed and no active spells, while the hover panel shows
-   "Speed 5 (4)" and "Slow (2 rounds left)".
-5. Battle: Slow cast in round 1 did not reorder the current round's turn queue (the next round's was right).
-6. Text: "Necromancy raises 1 skeletons" (plural with 1).
-7. Battle: the hero figure is per faction: the Death Knight Kragor rides with the Necromancer's staff.
+4. **FIXED (session59):** Battle: the held right-click creature popup showed base Speed and no active spells, while
+   the hover panel showed "Speed 5 (4)" and "Slow (2 rounds left)".
+5. **FIXED (session59):** Battle: Slow cast in round 1 did not reorder the current round's turn queue.
+6. **FIXED (session59):** Text: "Necromancy raises 1 skeletons" (plural with 1).
+7. **FIXED (session59):** Battle: the hero figure was per faction (the Death Knight rode with the Necromancer's staff).
 8. Battle (question, not a rule): stacks are coloured by side, attacker red, defender blue, not by owner, so when
    the Blue AI attacked, my troops were blue. Check against HoMM3/HD before changing.
 9. To verify against HoMM3: a retreating hero also lost the First Aid Tent (listed among the casualties).
