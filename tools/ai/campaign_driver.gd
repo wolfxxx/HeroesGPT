@@ -76,3 +76,4 @@ class SilentView extends MapView:
 class SilentHUD extends AdventureHUD:
 	func refresh() -> void: pass
 	func toast(_text: String, _duration := 3.0) -> void: pass
+	func set_turn_label(_t: String) -> void: pass

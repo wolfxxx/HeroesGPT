@@ -86,9 +86,11 @@ func start_battle(setup: Dictionary) -> void:
 	battle_result = {}
 	change_scene(SCENE_BATTLE, 0.5)
 
-func finish_battle(result: Dictionary) -> void:
+## A battle's end: back to the screen it came from, which applies the result (`apply`: false online on the machine
+## that does not, Net).
+func finish_battle(result: Dictionary, apply := true) -> void:
 	result["context"] = pending_battle.get("context", {})
-	battle_result = result
+	battle_result = result if apply else {}
 	pending_battle = {}
 	battle_finished.emit(result)
 	change_scene(return_scene, 0.5)

@@ -740,7 +740,16 @@ func apply_battle(result: Dictionary) -> Dictionary:
 		if not payer.is_empty():
 			var res: Dictionary = world["players"][payer["owner"]]["resources"]
 			res["gold"] = maxi(0, res["gold"] - int(result.get("surrender_gold", 0)))
-	for k in ["hero", "defender"]:  # (a Pyramid's curse lasts until the next battle)
+	var sides := ["hero", "defender"]
+	for i in 2:  # (a played battle: the heroes' spell points and war machines as it left them)
+		var hh: Dictionary = world["heroes"].get(ctx.get(sides[i], -1), {})
+		var sp: Array = result.get("spell_points", [])
+		var mc: Array = result.get("machines", [])
+		if not hh.is_empty() and sp.size() == 2 and int(sp[i]) >= 0:
+			hh["mana"] = int(sp[i])
+		if not hh.is_empty() and mc.size() == 2 and mc[i] is Array:
+			hh["machines"] = mc[i].duplicate()
+	for k in sides:  # (a Pyramid's curse lasts until the next battle)
 		var hh: Dictionary = world["heroes"].get(ctx.get(k, -1), {})
 		hh.erase("next_battle_luck")
 	match ctx.get("type", ""):

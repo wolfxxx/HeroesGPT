@@ -16,6 +16,22 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 battles on both screens (2026-10-24), committed with this HANDOFF update:** online battles are now fought by each person on
+  their own machine, ending the first two of the three agreed stopgaps. Two people: the battle runs on both screens
+  in lockstep (same seed; each machine sends only its own side's actions; `Net.battle_begin/battle_send/battle_next`).
+  The host's computer attacking a joined player: fought on that player's machine, result sent back
+  (`Net.fight_remote/battle_done`). Left as agreed: a level gained defending is chosen at the owner's next turn.
+  The battle screen now carries every choice as an action (`battle.gd _carry/_turn/_ai_turn/_remote_turn`), and
+  works on copies of the heroes: spell points and war machines come back in the result (`spell_points`,
+  `machines`, applied in `apply_battle`) instead of being written into the world mid-battle. Found, kept: the
+  computer's battle actions never roll good morale (a person's do); actions carry `"morale"` so both machines
+  match. New `tools/net_battle_test.tscn` (12 checks: every action crossed, same result on both) in the suite;
+  `net_test` now also has Teal attack Blue (fought on Blue's machine, 22 checks). Windowed check of the host's side
+  of a two-machine battle: the other machine's spells arrive and play (`shots/session67/nb_*.png`). Two windows from
+  the map (new harness setup `--setup=duel`: the second player's hero two steps from the first's): Red attacked
+  Blue's hero, both screens opened the same field ("Waiting for Sir Aldric..." on Blue's), one move by hand then
+  auto on both, the same result on both ("Victory!" for Red, "Defeat" for Blue, 308 experience), applied once, no
+  differences at the turn's end (`shots/session67/play*/d*_*.png`). Suite passes (26 groups).
 - **Session67 online play, first version (2026-10-24), committed with this HANDOFF update:** phase 2 begun (HANDOFF §8). New autoload `Net`
   (`scripts/core/net.gd`): one player hosts (main menu > Multiplayer > Host a Game, then the New Game screen where
   other human colours are "Online"), others join by address (Join). Every machine keeps the world; each accepted
@@ -1078,7 +1094,8 @@ Proposed path, discussed with the user (not yet approved as a plan):
    **Progress (2026-10-24):** phase 1 done. Faction data; every map and town action is a command (battles still
    drive `BattleLogic` from `battle.gd`); per-player screen state in `world["views"]`; the world's dice and the
    replay test (`scripts/core/dice.gd`, `tools/replay_test.tscn`). Phase 2 begun: `Net` (host and join by
-   address, commands passed between machines, digest checks); next, battles between people on both screens.
+   address, commands passed between machines, digest checks), battles fought by each person on their own machine.
+   Next: a test between two real computers; joining a saved online game, a lobby, per-player fog on the wire.
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
@@ -1351,8 +1368,8 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 ## 9. Where the recent systems live
 
 - **Online (session67):** `scripts/core/net.gd` (autoload `Net`), `Commands.run` (passes commands on, turn rule),
-  `adventure.gd` "Online (Net)" section, `main_menu._multiplayer` / `_join`, `tools/net_test.tscn`,
-  `tools/net_diff.tscn`. ARCHITECTURE.md "Online".
+  `adventure.gd` "Online (Net)" section and `_start_battle`, `battle.gd` `_carry` / `_turn`, `main_menu._multiplayer`
+  / `_join`, `tools/net_test.tscn`, `tools/net_battle_test.tscn`, `tools/net_diff.tscn`. ARCHITECTURE.md "Online".
 - **Dice and replay (session67):** `scripts/core/dice.gd` (`Dice.roll/chance/index/pick`, `gen`/`keep`, `derived`,
   `look`), `world["rng"]`, `world["battles"]`, `AdvRules.battle_seed`, `Commands.log`/`log_world`,
   `tools/replay_test.tscn`. ARCHITECTURE.md "Dice and the replay test" says which generator each roll uses.
@@ -1433,7 +1450,10 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 - Online (session67): anything the screen writes into the world outside a command makes the machines differ (the
   first two-window run found `asleep`). Make it a command, or, if it is truly one machine's own, add its key to
   `Net.PRIVATE`. Two windows on one computer: start each with its own `--remote=<dir>`; they share `user://`. The
-  test's host must yield a frame between computer turns or the network is never read. `git checkout --
+  test's host must yield a frame between computer turns or the network is never read. A two-machine battle stays in
+  step only if both machines make the same `BattleLogic` calls in the same order: nothing on screen (previews,
+  hover) may roll the battle's dice, and a choice must go through `battle.gd _carry`. A test node that must outlive
+  a scene change (into a battle and back) goes on the root (`net_test.gd` Client, `net_battle_test.gd` Driver). `git checkout --
   project.godot` (and `run_tests.sh`'s exit trap) also undoes an intended, uncommitted change to it, such as a new
   autoload: re-apply it before testing or committing.
 - Randomness (session67): a rule that changes the game rolls with `Dice` on the world and only inside a command; a

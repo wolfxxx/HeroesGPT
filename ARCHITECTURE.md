@@ -289,17 +289,32 @@ marks the map to redraw next frame (`_net_dirty`, `_net_redraw`); a remote `end_
 decides what comes next (`_on_remote_command`); `_await_others` shows "<name> is moving..." (or "Waiting for <name> to
 join...") with input blocked; the computer players run only on the host (`_run_ai_turns`, `end_turn`, `_post_ready`
 check `Net.mine`); the host's world arriving restarts the screen (`_on_world_received`); a lost connection returns to
-the menu. Battles: this machine fights for its own player; the other side, if another machine's player, is led by
-the computer (`attacker_ai` / `defender_ai`); a battle without this machine's player (the computer attacking
-another machine's player) is resolved at once (`quick_resolve`) on the host. Levels gained by another machine's
-hero wait for its own turn (`_handle_level_ups` skips them; `_start_human_turn` takes pending ones). Sleep is the
+the menu. Battles (`adventure._start_battle`): each person fights their own side on their own machine. Two
+people: the battle runs on both screens at once (`Net.battle_begin` sends the setup, seed included, with
+`remote_sides` and `net_result` as the other machine sees them); each machine sends only its own side's actions
+(`Net.battle_send` / `battle_next`, routed through the host between two joined machines) and carries out both
+alike. The computer against another machine's player: the host sends the setup (`Net.fight_remote`), that machine
+fights it (the computer's side chosen there) and sends the result back (`Net.battle_done`); the host applies it as
+`battle_result`. `net_result`: "apply" (the machine whose turn it is applies the result), "none" (the other one),
+"send" (back to the host). A machine that leaves mid-battle: its side is fought by the computer (`{"k": "left"}`),
+or the host resolves a battle it was fighting for the host (`quick_resolve`). Levels gained by another machine's
+hero wait for its own turn (`_handle_level_ups` skips them; `_start_human_turn` takes pending ones).
+Battle screen (`battle.gd`): every choice is an action (dictionary): `cast`, `move`, `melee` and `shoot` (target by
+stack uid), `wait`, `defend`, `retreat`, `surrender`; `_carry(a, local)` carries one out (and sends it, online),
+`_turn` picks who chooses (`_remote_turn`, the person, `_ai_turn`); `"morale"` on an action: the good-morale roll
+follows, as after a person's action (the computer's actions never had it: an older gap, kept). The battle works on
+copies of the heroes; its result carries `spell_points` and `machines`, applied by `AdvRules.apply_battle` (before,
+the battle changed the world's heroes directly). `setup["auto"]` starts in auto combat (tests). Harness: `--setup=duel` (with `--remote`) puts the second player's
+first hero two steps from the first player's, for a battle between two machines from the map. Sleep is the
 `sleep` command. Menu: Multiplayer (`main_menu._multiplayer`): Host a Game (`Net.host`, then the New Game screen with
 other human colours shown "Online", `_online`) or Join (`_join`: waits for the world, then the map). The game menu's
 Load Game is off online; the main menu leaves any online game.
-Not yet: battles between people on both screens, joining a saved online game, a lobby, fog filtered per player (each
+Not yet: joining a saved online game, a lobby, fog filtered per player (each
 machine holds the whole world), turn timers, reconnecting a dropped player to their seat by name.
 Checked by `tools/net_test.tscn` (two processes: a joined player walks, computer players move on the host, a spoiled
-world is caught by the digest and put right, the worlds match at the end).
+world is caught by the digest and put right, a computer player's attack is fought on the joined machine, the worlds
+match at the end) and `tools/net_battle_test.tscn` (one battle on two machines, each side in auto combat on its
+own machine: every action crosses and both reach the same result).
 
 ## Factions as data
 Everything that makes a faction is one record in `GameData.FACTIONS` (its header lists the fields): creatures and
@@ -517,7 +532,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   real town, nothing drawn from the shared random stream (prints a year's sample); a declassified line for every
   artifact and mine, redacted until met, revealed once in the first message.
 - `tools/net_test.tscn` — in the full suite: starts a second Godot process that joins the first over the network
-  (port 24791) as Blue for four days with two computer players (see "Online"). `tools/net_diff.tscn` lists what
+  (port 24791) as Blue for four days with two computer players, one of whose heroes attacks Blue's (see "Online").
+- `tools/net_battle_test.tscn` — in the full suite: one battle fought by two processes (port 24792). `tools/net_diff.tscn` lists what
   differs between the two worlds Net saved when a machine went out of step.
 - `tools/replay_test.tscn` — in the full suite: two computer-played seeded maps recorded as commands, replayed on the
   starting world and compared, and each played twice (see "Dice and the replay test").

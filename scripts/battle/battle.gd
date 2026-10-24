@@ -72,6 +72,8 @@ var _status: Label
 var _btns := {}
 var _busy := false
 var _auto := false
+var _remote := [false, false]  # online: a side another machine's player fights (its actions arrive through Net)
+var _online := false           # online: this battle is fought on two machines at once
 var _spell := ""
 var _reach := {}
 var _hover := Vector2i(-1, -1)
@@ -98,6 +100,16 @@ func _ready() -> void:
 	setup_d = GameState.pending_battle
 	if setup_d.is_empty():
 		setup_d = _demo_setup()
+	# (the battle works on copies of the heroes: what it changes, spell points and war machines, goes back to the world
+	# in its result, through the battle_result command)
+	for k in ["attacker_hero", "defender_hero"]:
+		if setup_d.get(k) is Dictionary:
+			setup_d[k] = setup_d[k].duplicate(true)
+	_remote = setup_d.get("remote_sides", [false, false]).duplicate()
+	_online = _remote.has(true)
+	_auto = setup_d.get("auto", false)  # (a battle begun in auto combat: tools/net_battle_test.tscn)
+	if _online:
+		Net.lost.connect(_on_net_lost)
 	L = BattleLogic.new()
 	L.setup(setup_d)
 	if Shot.args.has("effects"):  # (shots of the count boxes: --effects=bless;curse;bless+slow on the attacker's stacks)
@@ -699,7 +711,7 @@ func _refresh_buttons(human_turn: bool) -> void:
 # Turn flow
 # ---------------------------------------------------------------------------------------------
 func _human_controls(side: int) -> bool:
-	return not L.ai_side[side] and not _auto
+	return not L.ai_side[side] and not _remote[side] and not _auto
 
 func _next() -> void:
 	if _ended:
@@ -747,7 +759,13 @@ func _next() -> void:
 		await get_tree().create_timer(0.7).timeout
 		_next()
 		return
-	if _human_controls(s["side"]):
+	_turn(s)
+
+## Whose choice the stack's turn is: the person at this screen, another machine's player (online), or the computer.
+func _turn(s: Dictionary) -> void:
+	if _remote[s["side"]]:
+		_remote_turn(s)
+	elif _human_controls(s["side"]):
 		_busy = false
 		_reach = L.reachable(s)
 		_grid.reach = _reach
@@ -755,33 +773,105 @@ func _next() -> void:
 		_refresh_buttons(true)
 		_update_hover()
 	else:
-		_busy = true
-		_reach = {}
-		_grid.reach = {}
-		_grid.queue_redraw()
-		_refresh_buttons(false)
-		await get_tree().create_timer(0.35).timeout
-		if not L.hero_cast[s["side"]]:
-			var sp := BattleAI.decide_spell(L, s["side"])
-			if not sp.is_empty():
-				await _play(L.cast(s["side"], sp["spell"], sp["hex"]))
-				if L.is_over() >= 0 or not s["alive"]:
-					_next()
-					return
-		var act := BattleAI.decide(L, s)
-		var ev := []
-		match act["type"]:
-			"shoot": ev = L.do_shoot(s, act["target"])
-			"melee": ev = L.do_melee(s, act["target"], act["from"])
-			"move": ev = L.do_move(s, act["hex"])
-			"wait":  # (the computer waits, as a player may: it acts again at the end of the round)
-				if L.do_wait(s):
-					_set_log("%s %s." % [L._name(s), "waits" if s["count"] == 1 else "wait"])
-				else:
-					ev = L.do_defend(s)
-			_: ev = L.do_defend(s)
+		_ai_turn(s)
+
+func _quiet() -> void:
+	_busy = true
+	_reach = {}
+	_grid.reach = {}
+	_grid.queue_redraw()
+	_refresh_buttons(false)
+
+func _ai_turn(s: Dictionary) -> void:
+	_quiet()
+	await get_tree().create_timer(0.35).timeout
+	if _ended:
+		return
+	if not L.hero_cast[s["side"]]:
+		var sp := BattleAI.decide_spell(L, s["side"])
+		if not sp.is_empty():
+			_carry({"k": "cast", "side": s["side"], "spell": sp["spell"], "hex": sp["hex"]}, true)
+			return
+	var act := BattleAI.decide(L, s)
+	match act["type"]:
+		"shoot": _carry({"k": "shoot", "target": act["target"]["uid"]}, true)
+		"melee": _carry({"k": "melee", "target": act["target"]["uid"], "from": act["from"]}, true)
+		"move": _carry({"k": "move", "hex": act["hex"]}, true)
+		"wait": _carry({"k": "wait"}, true)  # (the computer waits, as a player may: it acts again at the end of the round)
+		_: _carry({"k": "defend"}, true)
+
+## Online: the stack belongs to another machine's player; its action arrives (Net.battle_next).
+func _remote_turn(s: Dictionary) -> void:
+	_quiet()
+	_set_status("Waiting for %s..." % L.side_name(s["side"]))
+	var a: Dictionary = await Net.battle_next()
+	if _ended or not is_inside_tree():
+		return
+	_set_status("")
+	if a.get("k", "") == "left":  # (that player left the game: the computer fights on for them)
+		_remote[s["side"]] = false
+		L.ai_side[s["side"]] = true
+		_ai_turn(s)
+		return
+	_carry(a, false)
+
+## One action of the stack whose turn it is, as data: a hero's spell, a move, an attack, wait, defend, retreat or
+## surrender. Online it is sent to the other machine, which carries it out the same way (the battle's dice are
+## seeded alike, so both fields stay the same). "morale": the good-morale roll follows, as after a person's action.
+func _carry(a: Dictionary, local: bool) -> void:
+	if local and _online:
+		Net.battle_send(a, L.players[_remote.find(true)])
+	var cur = L.current()
+	match a["k"]:
+		"cast":
+			_quiet()
+			_grid.hover = Vector2i(-1, -1)
+			_set_status("")
+			await _play(L.cast(int(a["side"]), a["spell"], a["hex"]))
+			if _ended:
+				return
+			if L.is_over() >= 0 or cur == null or not cur["alive"]:
+				_next()
+			else:
+				_turn(cur)  # (the same stack still acts)
+			return
+		"retreat", "surrender":
+			_retreated = int(a["side"])
+			if a["k"] == "surrender":
+				_surrendered = true
+				_surrender_gold = int(a["gold"])
+			_end_battle(1 - _retreated)
+			return
+	var ev := []
+	match a["k"]:
+		"move": ev = L.do_move(cur, a["hex"])
+		"melee": ev = L.do_melee(cur, _stack(a["target"]), a["from"])
+		"shoot": ev = L.do_shoot(cur, _stack(a["target"]))
+		"wait":
+			if L.do_wait(cur):
+				_set_log("%s %s." % [L._name(cur), "waits" if cur["count"] == 1 else "wait"])
+			else:
+				ev = L.do_defend(cur)
+		_: ev = L.do_defend(cur)
+	if a.get("morale", false):
+		_act(ev)
+	else:
 		await _play(ev)
 		_next()
+
+func _stack(uid: int) -> Dictionary:
+	for st in L.stacks:
+		if st["uid"] == uid:
+			return st
+	return {}
+
+func _on_net_lost(reason: String) -> void:
+	if not is_inside_tree():
+		return
+	_ended = true
+	await Modal.message(self, "Disconnected", reason).closed
+	GameState.pending_battle = {}
+	GameState.change_scene(GameState.SCENE_MENU)
 
 func _act(ev: Array) -> void:
 	_busy = true
@@ -1105,42 +1195,29 @@ func _click() -> void:
 		return
 	match _hover_action["type"]:
 		"move":
-			_act(L.do_move(cur, _hover_action["hex"]))
+			_carry({"k": "move", "hex": _hover_action["hex"], "morale": true}, true)
 		"melee":
-			_act(L.do_melee(cur, _hover_action["target"], _hover_action["from"]))
+			_carry({"k": "melee", "target": _hover_action["target"]["uid"], "from": _hover_action["from"], "morale": true}, true)
 		"shoot":
-			_act(L.do_shoot(cur, _hover_action["target"]))
+			_carry({"k": "shoot", "target": _hover_action["target"]["uid"], "morale": true}, true)
 		"cast":
 			var sp := _spell
 			_spell = ""
 			_btns["Spells"].disabled = true
-			_busy = true
-			_grid.hover = Vector2i(-1, -1)
-			_grid.queue_redraw()
-			_set_status("")
-			await _play(L.cast(cur["side"], sp, _hover_action["hex"]))
-			_busy = false
-			if L.is_over() >= 0 or not cur["alive"]:
-				_next()
-			else:
-				_reach = L.reachable(cur)
-				_grid.reach = _reach
-				_refresh_buttons(true)
-				_update_hover()
+			_carry({"k": "cast", "side": cur["side"], "spell": sp, "hex": _hover_action["hex"]}, true)
 
 func _on_wait() -> void:
 	var cur = L.current()
 	if _busy or cur == null or not _human_controls(cur["side"]):
 		return
-	if L.do_wait(cur):
-		_set_log("%s %s." % [L._name(cur), "waits" if cur["count"] == 1 else "wait"])
-		_act([])
+	if not cur["waited"] and L.order.has(cur):  # (as BattleLogic.do_wait: once a turn, before acting)
+		_carry({"k": "wait", "morale": true}, true)
 
 func _on_defend() -> void:
 	var cur = L.current()
 	if _busy or cur == null or not _human_controls(cur["side"]):
 		return
-	_act(L.do_defend(cur))
+	_carry({"k": "defend", "morale": true}, true)
 
 func _on_auto() -> void:
 	_auto = not _auto
@@ -1154,8 +1231,7 @@ func _on_retreat() -> void:
 	if _busy or cur == null or not _human_controls(cur["side"]) or L.heroes[cur["side"]] == null:
 		return
 	if await Modal.confirm(self, "Retreat", "Retreat from battle? Your army will be lost, but your hero will survive to be hired again.").closed:
-		_retreated = cur["side"]
-		_end_battle(1 - cur["side"])
+		_carry({"k": "retreat", "side": cur["side"]}, true)
 
 ## What surrendering costs a side: the price of every creature still standing in its army (as the classic game).
 func _surrender_cost(side: int) -> int:
@@ -1185,10 +1261,7 @@ func _on_surrender() -> void:
 		return
 	if await Modal.confirm(self, "Surrender", "%s will let you leave with your hero and army for %d gold.\nYour treasury holds %d. Accept?" % [foe, cost, have],
 			"Pay %d" % cost, "Fight on").closed:
-		_retreated = side
-		_surrendered = true
-		_surrender_gold = cost
-		_end_battle(1 - side)
+		_carry({"k": "surrender", "side": side, "gold": cost}, true)
 
 ## Combat options (as the classic dialog): the hex grid, and how fast the battle plays.
 func _on_options() -> void:
@@ -1241,15 +1314,7 @@ func _on_spells() -> void:
 	if r == null or r == "":
 		return
 	if GameData.SPELLS[r]["target"] == "all_living":
-		_busy = true
-		await _play(L.cast(side, r, Vector2i(7, 5)))
-		_busy = false
-		if L.is_over() >= 0 or not cur["alive"]:
-			_next()
-		else:
-			_reach = L.reachable(cur)
-			_grid.reach = _reach
-			_refresh_buttons(true)
+		_carry({"k": "cast", "side": side, "spell": r, "hex": Vector2i(7, 5)}, true)
 		return
 	_spell = r
 	_update_hover()
@@ -2145,8 +2210,9 @@ func _end_battle(winner: int) -> void:
 	var xp := L.killed_hp(loser)
 	var wh = L.heroes[winner]
 	var necro := Necromancy.calculate(wh, L.army_out(winner), L.necromancy_casualties(loser), L.players[winner])
-	var human_side := 0 if not L.ai_side[0] else (1 if not L.ai_side[1] else -1)
-	if not L.ai_side[0] and not L.ai_side[1]:
+	var here := [not L.ai_side[0] and not _remote[0], not L.ai_side[1] and not _remote[1]]  # (people at this screen)
+	var human_side := 0 if here[0] else (1 if here[1] else -1)
+	if here[0] and here[1]:
 		human_side = winner  # (hot-seat, two people: the result as the winner sees it)
 	var human_won := human_side == winner
 	Audio.music("victory" if human_won or human_side < 0 else "defeat")
@@ -2196,22 +2262,28 @@ func _end_battle(winner: int) -> void:
 	m.set_meta("default", true)
 	await m.closed
 
-	for side in 2:
-		if L.heroes[side] != null:
-			L.heroes[side]["machines"] = L.machines_left(side)
 	var result := {
 		"winner": "attacker" if winner == 0 else "defender",
 		"attacker_army": L.army_out(0) if _retreated != 0 or _surrendered else [null, null, null, null, null, null, null],
 		"defender_army": L.army_out(1) if _retreated != 1 or _surrendered else [null, null, null, null, null, null, null],
 		"xp": xp, "retreated": _retreated >= 0, "fled": _retreated,
 		"surrendered": _surrendered, "surrender_gold": _surrender_gold,
+		# (the heroes' spell points and war machines as the battle left them: AdvRules.apply_battle)
+		"spell_points": [L.heroes[0]["mana"] if L.heroes[0] != null else -1, L.heroes[1]["mana"] if L.heroes[1] != null else -1],
+		"machines": [L.machines_left(0) if L.heroes[0] != null else null, L.machines_left(1) if L.heroes[1] != null else null],
 	}
 	result.merge(necro)
 	if GameState.pending_battle.is_empty():
 		GameState.pending_battle = setup_d
 		if GameState.return_scene == GameState.SCENE_ADVENTURE and GameState.world.is_empty():
 			GameState.return_scene = GameState.SCENE_MENU
-	GameState.finish_battle(result)
+	# (online: the machine whose turn it is applies the result; a battle the host's computer player started against
+	# this machine's player is sent back to the host to apply)
+	var how: String = setup_d.get("net_result", "apply")
+	if how == "send":
+		result["context"] = setup_d.get("context", {})
+		Net.battle_done(result)
+	GameState.finish_battle(result, how == "apply")
 
 # ---------------------------------------------------------------------------------------------
 # Drawing helpers

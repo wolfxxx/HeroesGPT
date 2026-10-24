@@ -71,6 +71,9 @@ func leave() -> void:
 	syncing = false
 	seat = -1
 	peers = {}
+	_inbox = []
+	_battle_peer = -1
+	_fight_peer = -1
 	_waiting = []
 
 func _note(text: String) -> void:
@@ -132,6 +135,13 @@ func _seat_peer(id: int) -> void:
 
 func _on_peer_disconnected(id: int) -> void:
 	_waiting.erase(id)
+	if id == _fight_peer:  # (it left mid-battle: the host settles the battle itself)
+		_fight_peer = -1
+		battle_result_arrived.emit({})
+	if id == _battle_peer:  # (its side of a battle on both screens: the computer fights on for it)
+		_battle_peer = -1
+		_inbox.append({"k": "left"})
+		battle_action_arrived.emit()
 	if peers.erase(id):
 		roster_changed.emit()
 
@@ -274,3 +284,94 @@ static func _canon(v):
 	if v is Array:
 		return v.map(func(x): return _canon(x))
 	return v
+
+# ---------------------------------------------------------------------------------------------
+# Battles fought on two machines
+# ---------------------------------------------------------------------------------------------
+## A battle between two machines' players is played on both screens at once: the machine that starts it sends the
+## setup (seed included), each sends its own side's actions (battle.gd `_carry`), and both carry them out alike. A
+## battle the host's computer player starts against another machine's player is fought on that machine, which
+## sends the result back (fight_remote / battle_done).
+signal battle_action_arrived
+signal battle_result_arrived(result: Dictionary)
+
+var _inbox: Array = []        ## actions from the other machine's player in the battle, in order
+var _battle_peer := -1        ## host: the joined machine in the current battle (its leaving hands its side over)
+var _fight_peer := -1         ## host: the machine fighting a battle the computer started (fight_remote)
+var battle_sent := 0          ## battle actions sent from this machine, and received (a diagnostic)
+var battle_got := 0
+
+## The peer that plays a player (1, the host, for its own player and the computer players).
+func machine_of(pi: int) -> int:
+	for id in peers:
+		if peers[id] == pi:
+			return id
+	return 1
+
+func _route(to_pi: int, method: StringName, b: PackedByteArray) -> void:
+	var id := machine_of(to_pi) if is_host else -1
+	if is_host and id == 1:
+		call(method, b)
+	elif is_host:
+		rpc_id(id, method, b)
+	else:
+		_relay.rpc_id(1, to_pi, method, b)
+
+## The host passes a battle message between two joined machines (or takes one meant for its own player).
+@rpc("any_peer", "call_remote", "reliable")
+func _relay(to_pi: int, method: StringName, b: PackedByteArray) -> void:
+	if not is_host or not method in [&"_battle_begin", &"_battle_action"]:
+		return
+	if machine_of(to_pi) == 1:
+		_battle_peer = multiplayer.get_remote_sender_id()
+		call(method, b)
+	else:
+		rpc_id(machine_of(to_pi), method, b)
+
+## Starts a battle that `other`'s player also fights: their screen opens it with this setup (as they see it).
+func battle_begin(setup: Dictionary, other: int) -> void:
+	_inbox.clear()
+	if is_host:
+		_battle_peer = machine_of(other)
+	_route(other, &"_battle_begin", var_to_bytes(setup))
+
+@rpc("any_peer", "call_remote", "reliable")
+func _battle_begin(b: PackedByteArray) -> void:
+	_inbox.clear()
+	GameState.return_scene = GameState.SCENE_ADVENTURE
+	GameState.start_battle(bytes_to_var(b))
+
+## One action of this machine's side, to the machine of the other side's player.
+func battle_send(a: Dictionary, other: int) -> void:
+	battle_sent += 1
+	_route(other, &"_battle_action", var_to_bytes(a))
+
+@rpc("any_peer", "call_remote", "reliable")
+func _battle_action(b: PackedByteArray) -> void:
+	_inbox.append(bytes_to_var(b))
+	battle_got += 1
+	battle_action_arrived.emit()
+
+## The other side's next action ({"k": "left"} if its machine left the game).
+func battle_next() -> Dictionary:
+	while _inbox.is_empty():
+		await battle_action_arrived
+	return _inbox.pop_front()
+
+## Host: the computer player attacks another machine's player; that machine fights it (with this setup) and sends
+## the result. Empty if it left the game first.
+func fight_remote(setup: Dictionary, pi: int) -> Dictionary:
+	_fight_peer = machine_of(pi)
+	_route(pi, &"_battle_begin", var_to_bytes(setup))
+	var r: Dictionary = await battle_result_arrived
+	_fight_peer = -1
+	return r
+
+## A joined machine: the result of a battle the host's computer player started against this machine's player.
+func battle_done(result: Dictionary) -> void:
+	_battle_done.rpc_id(1, var_to_bytes(result))
+
+@rpc("any_peer", "call_remote", "reliable")
+func _battle_done(b: PackedByteArray) -> void:
+	if is_host and multiplayer.get_remote_sender_id() == _fight_peer:
+		battle_result_arrived.emit(bytes_to_var(b))

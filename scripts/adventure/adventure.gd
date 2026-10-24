@@ -39,6 +39,17 @@ func _ready() -> void:
 			s["seed"] = int(Shot.args.get("seed", "12345"))
 			s["faction"] = Shot.args.get("faction", s.get("faction", "haven"))
 		GameState.world = WorldGen.generate(s)
+		if Shot.setup == "duel":  # (online check: the second player's hero two steps from the first player's)
+			var w := GameState.world
+			var h0: Dictionary = w["heroes"][w["players"][0]["heroes"][0]]
+			var h1: Dictionary = w["heroes"][w["players"][1]["heroes"][0]]
+			var r := AdvRules.new(w)
+			for d in [Vector2i(2, 2), Vector2i(-2, 2), Vector2i(2, 0), Vector2i(0, 2), Vector2i(3, 1), Vector2i(1, 3)]:
+				var q: Vector2i = h0["pos"] + d
+				if r.inside(q) and r.walkable_ground(q) and r.at(q).is_empty():
+					h1["pos"] = q
+					print("DUEL red %s blue %s" % [h0["pos"], q])
+					break
 		if Shot.setup == "artifacts":  # (judge shot: one artifact of each tier laid out beside the first hero)
 			_shot_artifacts(GameState.world)
 		if Shot.setup == "town_levels":  # (shot: the first town a Castle, the second a village without a Fort)
@@ -982,14 +993,40 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 	return ""
 
 func _start_battle(setup: Dictionary, involves_human: bool) -> String:
+	var fought := {}  # (online: a battle another machine fought and sent back)
 	if Net.active:
-		# (online: this machine fights for its own player; a side another machine plays is led by the computer until
-		# battles between people run on both screens; a battle without this machine's player is resolved at once)
-		var me_a: bool = setup.get("attacker_player", -1) == Net.seat and not world["players"][Net.seat]["is_ai"]
-		var me_d: bool = setup.get("defender_player", -1) == Net.seat and not world["players"][Net.seat]["is_ai"]
-		setup["attacker_ai"] = not me_a
-		setup["defender_ai"] = not me_d
-		involves_human = me_a or me_d
+		# (online: each person fights their own side on their own machine. Two people: the battle on both screens,
+		# each sending its side's actions (Net.battle_begin). The computer against another machine's player: fought
+		# on that machine, the host waiting for its result (Net.fight_remote). No person: resolved at once.)
+		var pl: Array = world["players"]
+		var ap: int = setup.get("attacker_player", -1)
+		var dp: int = setup.get("defender_player", -1)
+		var person_a: bool = ap >= 0 and not pl[ap]["is_ai"]
+		var person_d: bool = dp >= 0 and not pl[dp]["is_ai"]
+		var me_a := person_a and ap == Net.seat
+		var me_d := person_d and dp == Net.seat
+		setup["attacker_ai"] = not person_a
+		setup["defender_ai"] = not person_d
+		if not setup.has("seed"):
+			setup["seed"] = rules.battle_seed()
+		var other := (dp if person_d and not me_d else -1) if me_a else (ap if person_a and not me_a else -1)
+		if (me_a or me_d) and other >= 0:
+			var theirs := setup.duplicate()
+			theirs["remote_sides"] = [me_a, me_d]
+			theirs["net_result"] = "apply" if other == world["current_player"] else "none"
+			setup["remote_sides"] = [not me_a, not me_d]
+			setup["net_result"] = "apply" if Net.seat == world["current_player"] else "none"
+			Net.battle_begin(theirs, other)
+			involves_human = true
+		elif not me_a and not me_d and (person_a or person_d) and Net.is_host:
+			var far := dp if person_d else ap
+			hud.set_turn_label("%s is fighting..." % pl[far]["name"])
+			var theirs := setup.duplicate()
+			theirs["net_result"] = "send"
+			fought = await Net.fight_remote(theirs, far)
+			involves_human = false
+		else:
+			involves_human = me_a or me_d
 	if involves_human:
 		var dp: int = setup.get("defender_player", -1)
 		if (world["players"][world["current_player"]]["is_ai"] and GameState.hotseat() and dp >= 0
@@ -1007,7 +1044,7 @@ func _start_battle(setup: Dictionary, involves_human: bool) -> String:
 		GameState.start_battle(setup)
 		busy = true
 		return "battle"
-	var result := rules.quick_resolve(setup)
+	var result: Dictionary = fought if not fought.is_empty() else rules.quick_resolve(setup)
 	if Engine.time_scale > 1.0:  # soak-test diagnostics (tools/sim_test.gd)
 		print("SIMBATTLE day %d %s P%d str %d vs %d -> %s" % [world["day"], setup["context"]["type"], setup["attacker_player"],
 			GameState.army_strength(setup["attacker_army"]), GameState.army_strength(setup["defender_army"]), result["winner"]])
