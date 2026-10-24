@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 good morale fixed (2026-10-24), committed with this HANDOFF update:** the user agreed to fix it ("yes"). In played battles the
+  computer's stacks never won good morale, and a person's roll went to the wrong stack: `_act` read
+  `L.current()` after the action had already ended the stack's turn, so the roll fell on the next stack (often the
+  enemy's) and could even start the next round early. Now, as the classic (Heroes 3 wiki, Combat and Morale): after
+  a move or an attack the stack that has just acted may act again at once, for every side, never after defending
+  or waiting, once a round; rolled straight after the action, before any animation (`battle.gd _carry`), so both
+  machines of an online battle roll at the same point. Played battles against the computer get a little harder
+  (its stacks now get extra turns too). New `tools/battle_morale_test.tscn` (5 checks; attacker 5, defender 4 extra
+  actions over 8 rounds) in the suite.
 - **Session67 battles on both screens (2026-10-24), committed with this HANDOFF update:** online battles are now fought by each person on
   their own machine, ending the first two of the three agreed stopgaps. Two people: the battle runs on both screens
   in lockstep (same seed; each machine sends only its own side's actions; `Net.battle_begin/battle_send/battle_next`).
@@ -23,9 +32,8 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   (`Net.fight_remote/battle_done`). Left as agreed: a level gained defending is chosen at the owner's next turn.
   The battle screen now carries every choice as an action (`battle.gd _carry/_turn/_ai_turn/_remote_turn`), and
   works on copies of the heroes: spell points and war machines come back in the result (`spell_points`,
-  `machines`, applied in `apply_battle`) instead of being written into the world mid-battle. Found, kept: the
-  computer's battle actions never roll good morale (a person's do); actions carry `"morale"` so both machines
-  match. New `tools/net_battle_test.tscn` (12 checks: every action crossed, same result on both) in the suite;
+  `machines`, applied in `apply_battle`) instead of being written into the world mid-battle. Found: the
+  computer's battle actions never rolled good morale (fixed in the next entry). New `tools/net_battle_test.tscn` (12 checks: every action crossed, same result on both) in the suite;
   `net_test` now also has Teal attack Blue (fought on Blue's machine, 22 checks). Windowed check of the host's side
   of a two-machine battle: the other machine's spells arrive and play (`shots/session67/nb_*.png`). Two windows from
   the map (new harness setup `--setup=duel`: the second player's hero two steps from the first's): Red attacked

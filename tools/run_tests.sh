@@ -2,6 +2,7 @@
 # Full test pass for a round (about 4 minutes). Expected results:
 #   CHECK DONE, failures: 0
 #   BATTLE TEST: 40 battles ended of 40, failures: 0
+#   BATTLE MORALE TEST: N checks, failures: 0  (good morale for the stack that has just acted, on every side)
 #   BATTLE VISUAL TEST: N checks, failures: 0
 #   BATTLE AI TEST: N checks, failures: 0
 #   ADVENTURE AI TEST: N checks, failures: 0
@@ -43,6 +44,7 @@ echo "--net"; timeout 300 $G --headless --path . res://tools/net_test.tscn 2>&1 
 echo "--net-battle"; timeout 300 $G --headless --path . res://tools/net_battle_test.tscn 2>&1 | grep -E "NET BATTLE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--replay"; timeout 300 $G --headless --path . res://tools/replay_test.tscn 2>&1 | grep -E "REPLAY TEST|SCRIPT ERROR|FAIL|differs|refused" | tail -8
 echo "--battle"; timeout 300 $G --headless --path . res://tools/battle_test.tscn 2>&1 | grep -E "BATTLE TEST|SCRIPT ERROR" | tail -4
+echo "--battle-morale"; timeout 200 $G --headless --path . res://tools/battle_morale_test.tscn 2>&1 | grep -E "BATTLE MORALE TEST|SCRIPT ERROR|FAIL" | tail -6
 echo "--battle-visual"; timeout 60 $G --headless --path . res://tools/battle_visual_test.tscn 2>&1 | grep -E "BATTLE VISUAL TEST|SCRIPT ERROR|FAIL" | tail -6
 echo "--battle-ai"; timeout 60 $G --headless --path . res://tools/battle_ai_test.tscn 2>&1 | grep -E "BATTLE AI TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--adventure-ai"; timeout 60 $G --headless --path . res://tools/adventure_ai_test.tscn 2>&1 | grep -E "ADVENTURE AI TEST|SCRIPT ERROR|FAIL" | tail -8

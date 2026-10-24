@@ -301,8 +301,10 @@ or the host resolves a battle it was fighting for the host (`quick_resolve`). Le
 hero wait for its own turn (`_handle_level_ups` skips them; `_start_human_turn` takes pending ones).
 Battle screen (`battle.gd`): every choice is an action (dictionary): `cast`, `move`, `melee` and `shoot` (target by
 stack uid), `wait`, `defend`, `retreat`, `surrender`; `_carry(a, local)` carries one out (and sends it, online),
-`_turn` picks who chooses (`_remote_turn`, the person, `_ai_turn`); `"morale"` on an action: the good-morale roll
-follows, as after a person's action (the computer's actions never had it: an older gap, kept). The battle works on
+`_turn` picks who chooses (`_remote_turn`, the person, `_ai_turn`). Good morale (session67, as the classic): after
+a `move`, `melee` or `shoot`, for whoever controls the stack, `_carry` rolls `BattleLogic.roll_good_morale` for the
+stack that has just acted, at once, before anything is animated (never after defend or wait; once a round). Test:
+`tools/battle_morale_test.tscn`. The battle works on
 copies of the heroes; its result carries `spell_points` and `machines`, applied by `AdvRules.apply_battle` (before,
 the battle changed the world's heroes directly). `setup["auto"]` starts in auto combat (tests). Harness: `--setup=duel` (with `--remote`) puts the second player's
 first hero two steps from the first player's, for a battle between two machines from the map. Sleep is the
@@ -533,6 +535,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   artifact and mine, redacted until met, revealed once in the first message.
 - `tools/net_test.tscn` — in the full suite: starts a second Godot process that joins the first over the network
   (port 24791) as Blue for four days with two computer players, one of whose heroes attacks Blue's (see "Online").
+- `tools/battle_morale_test.tscn` — in the full suite: two computer-led armies with Leadership 3 on the real
+  battle screen; both sides win good morale, each time the stack that has just acted, never twice a round.
 - `tools/net_battle_test.tscn` — in the full suite: one battle fought by two processes (port 24792). `tools/net_diff.tscn` lists what
   differs between the two worlds Net saved when a machine went out of step.
 - `tools/replay_test.tscn` — in the full suite: two computer-played seeded maps recorded as commands, replayed on the

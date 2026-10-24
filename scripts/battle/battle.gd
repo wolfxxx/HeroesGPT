@@ -817,7 +817,7 @@ func _remote_turn(s: Dictionary) -> void:
 
 ## One action of the stack whose turn it is, as data: a hero's spell, a move, an attack, wait, defend, retreat or
 ## surrender. Online it is sent to the other machine, which carries it out the same way (the battle's dice are
-## seeded alike, so both fields stay the same). "morale": the good-morale roll follows, as after a person's action.
+## seeded alike, so both fields stay the same).
 func _carry(a: Dictionary, local: bool) -> void:
 	if local and _online:
 		Net.battle_send(a, L.players[_remote.find(true)])
@@ -842,6 +842,7 @@ func _carry(a: Dictionary, local: bool) -> void:
 				_surrender_gold = int(a["gold"])
 			_end_battle(1 - _retreated)
 			return
+	var actor = cur
 	var ev := []
 	match a["k"]:
 		"move": ev = L.do_move(cur, a["hex"])
@@ -853,11 +854,11 @@ func _carry(a: Dictionary, local: bool) -> void:
 			else:
 				ev = L.do_defend(cur)
 		_: ev = L.do_defend(cur)
-	if a.get("morale", false):
-		_act(ev)
-	else:
-		await _play(ev)
-		_next()
+	# Good morale (as the classic): a stack that has just moved or attacked may act again at once, never after
+	# defending or waiting, and once a round. Rolled for that stack, for every side, before anything is shown, so
+	# every machine rolls at the same point (the turn order is not touched in between).
+	var again: bool = a["k"] in ["move", "melee", "shoot"] and actor != null and L.roll_good_morale(actor)
+	_act(ev, actor if again else null)
 
 func _stack(uid: int) -> Dictionary:
 	for st in L.stacks:
@@ -873,7 +874,8 @@ func _on_net_lost(reason: String) -> void:
 	GameState.pending_battle = {}
 	GameState.change_scene(GameState.SCENE_MENU)
 
-func _act(ev: Array) -> void:
+## Plays an action's events; `again`: the stack that won good morale (announced, then it acts again).
+func _act(ev: Array, again = null) -> void:
 	_busy = true
 	_reach = {}
 	_grid.reach = {}
@@ -882,10 +884,9 @@ func _act(ev: Array) -> void:
 	_set_status("")
 	_refresh_buttons(false)
 	_reset_info()
-	var who = L.current()
 	await _play(ev)
-	if who != null and L.roll_good_morale(who):  # good morale: the same stack acts again
-		_float_text(Vector2(0, -_top(who) - 10), "Morale!", Color(1, 0.85, 0.4), 30, "", 0.0, _unit(who))
+	if again != null:  # good morale: the same stack acts again
+		_float_text(Vector2(0, -_top(again) - 10), "Morale!", Color(1, 0.85, 0.4), 30, "", 0.0, _unit(again))
 		_set_log(L.log_lines[-1])
 		_log_seen = L.log_lines.size()
 		await get_tree().create_timer(0.5).timeout
@@ -1195,11 +1196,11 @@ func _click() -> void:
 		return
 	match _hover_action["type"]:
 		"move":
-			_carry({"k": "move", "hex": _hover_action["hex"], "morale": true}, true)
+			_carry({"k": "move", "hex": _hover_action["hex"]}, true)
 		"melee":
-			_carry({"k": "melee", "target": _hover_action["target"]["uid"], "from": _hover_action["from"], "morale": true}, true)
+			_carry({"k": "melee", "target": _hover_action["target"]["uid"], "from": _hover_action["from"]}, true)
 		"shoot":
-			_carry({"k": "shoot", "target": _hover_action["target"]["uid"], "morale": true}, true)
+			_carry({"k": "shoot", "target": _hover_action["target"]["uid"]}, true)
 		"cast":
 			var sp := _spell
 			_spell = ""
@@ -1211,13 +1212,13 @@ func _on_wait() -> void:
 	if _busy or cur == null or not _human_controls(cur["side"]):
 		return
 	if not cur["waited"] and L.order.has(cur):  # (as BattleLogic.do_wait: once a turn, before acting)
-		_carry({"k": "wait", "morale": true}, true)
+		_carry({"k": "wait"}, true)
 
 func _on_defend() -> void:
 	var cur = L.current()
 	if _busy or cur == null or not _human_controls(cur["side"]):
 		return
-	_carry({"k": "defend", "morale": true}, true)
+	_carry({"k": "defend"}, true)
 
 func _on_auto() -> void:
 	_auto = not _auto
