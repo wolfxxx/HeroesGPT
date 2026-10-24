@@ -211,14 +211,17 @@ online host can apply a remote player's commands and a game can be replayed. Bui
 (into the town's army or its garrison), `recruit_site` (a map dwelling), `hire` (a Tavern hero to the gate; the
 caller picks the hero), `trade` (the market rate is `TownLogic.market_rate`), `stack_move` (the army bar: move, merge,
 split, swap; `swap` forces a swap of two stacks of one creature), `move_troops` (n creatures join another army, as
-`add_to_army`), `upgrade_stack`. Armies are named `{"hero": uid}` or `{"town": uid}` (its garrison) and must stand
+`add_to_army`), `upgrade_stack`, `step` (one step of a hero to a free neighbour, paying `step_cost` as the planner,
+revealing around it; `adventure.move_hero` walks a route as `step` commands and handles what the hero meets) and
+`end_turn` (the next living player; `AdvRules.new_day` when the round ends; `adventure._advance_player`). Armies are named `{"hero": uid}` or `{"town": uid}` (its garrison) and must stand
 together (`Commands.together`: the same army, a hero and the town it stands in, or two heroes side by side); a hero's
 army is never emptied. The town screen, the map dwelling dialog (`AdventureHUD.recruit_dialog` takes a `buy(n) -> bool`
 callback), every editable `ArmyStrip` (bound with an army `ref`; it makes its own `AdvRules` from `GameState.world` when
 the owner passes none) and the computer (`AdvAI._recruit`, `hire_hero`, `recruit_from_dwelling`, and `_mv` / `_swap`
 in `_transfer`, `_collect_garrison`, `_merge_stacks`, the rear guard and `_upgrade_all`: commands on real armies,
-direct changes on preview copies) all use them. Still direct (docs/FOUNDATIONS_AUDIT.md): hero movement, the turn,
-building, garrison moves, artifacts, chests and visits.
+direct changes on preview copies) all use them, and every hero's walk and turn end go through `step` / `end_turn`.
+Still direct (docs/FOUNDATIONS_AUDIT.md): what a hero meets (visits, battles and their results, capturing towns, the
+hero meeting dialog), building, garrison moves, artifacts, level-up choices.
 
 To show such a change leaves the computer's play unchanged, compare tournaments **without `--self`** (with `--self`
 every seat plays the frozen baseline policy, never `AdvAI`): `tools/adventure_tournament.tscn -- --pairs=2 --players=4
@@ -442,8 +445,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   real town, nothing drawn from the shared random stream (prints a year's sample); a declassified line for every
   artifact and mine, redacted until met, revealed once in the first message.
 - `tools/commands_test.tscn` — in the full suite: recruiting in a town and at a map dwelling, hiring, trading, stack
-  moves, merges, splits, swaps, troop moves and upgrades, each applied and refused when the rules say no (armies not
-  together, another player's, a hero's last stack), every command sent through JSON first.
+  moves, merges, splits, swaps, troop moves and upgrades, hero steps and the turn, each applied and refused when the
+  rules say no (armies not together, another player's, a hero's last stack, two tiles at once, onto a monster, past
+  the movement left, out of turn), every command sent through JSON first.
 - `tools/faction_data_test.tscn` — in the full suite: every faction record complete and consistent with its classes,
   heroes and specials; the computer's build orders and the building effects as before the data move (session67).
 - `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the

@@ -837,7 +837,6 @@ func _execute_move() -> void:
 ## Returns "battle" if a scene change to battle happened, else "".
 func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
 	var path: Array = plan["path"]
-	var costs: Array = plan["costs"]
 	var reach: int = plan["reach"]
 	var player := rules.player_of(hero)
 	var human: bool = not player["is_ai"]
@@ -849,9 +848,11 @@ func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
 			# The pseudo-step onto an enemy/ally.
 			hero.erase("dest")
 			return await _interact_with(hero, occ, human)
-		hero["movement"] = maxi(0, hero["movement"] - (costs[i] - costs[i - 1]))
 		var prev: Vector2i = hero["pos"]
-		_move_hero_tile(hero, p)
+		# (the rules move the hero, pay the step and reveal around it; the screen shows the walk)
+		if not rules.do({"t": "step", "p": hero["owner"], "hero": hero["uid"], "to": [p.x, p.y]})["ok"]:
+			hero.erase("dest")
+			break
 		if p.x != prev.x:
 			hero["face_left"] = p.x < prev.x
 		var from_visible := _visible_to_human(prev)
@@ -879,7 +880,6 @@ func move_hero(hero: Dictionary, plan: Dictionary, animate: bool) -> String:
 			var n := view.hero_node(hero["uid"])
 			if n:
 				n.position = view.hero_foot(p)
-		rules.reveal(player, p, rules.hero_scout_radius(hero))
 		if human:
 			_refresh_fog()
 		var gs := rules.guards(p)
@@ -1106,17 +1106,11 @@ func end_turn() -> void:
 	_run_ai_turns()
 
 func _advance_player() -> void:
-	var n: int = world["players"].size()
-	var cur: int = world["current_player"]
-	for k in n:
-		cur = (cur + 1) % n
-		if cur == 0:
-			var info := rules.new_day()
-			info["seen_by"] = []
-			world["pending_week"] = info
-		if world["players"][cur]["alive"]:
-			break
-	world["current_player"] = cur
+	var res := rules.do({"t": "end_turn", "p": world["current_player"]})
+	if not res["day"].is_empty():  # (a new day: the screen announces it to each human player in turn)
+		var info: Dictionary = res["day"]
+		info["seen_by"] = []
+		world["pending_week"] = info
 
 func _run_ai_turns() -> void:
 	busy = true

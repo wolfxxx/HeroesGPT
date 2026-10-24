@@ -84,6 +84,50 @@ func _ready() -> void:
 	_ok(not _do(rules, {"t": "trade", "p": 0, "give": "wood", "get": "wood", "n": 1})["ok"], "not a resource for itself")
 	_ok(not rules.do({"t": "no_such_command", "p": 0})["ok"] and not rules.do({"t": "trade", "p": 9})["ok"], "unknown commands and players refused")
 	_stacks(w, rules, town, h)
+	_steps(w, rules, h)
+	print("COMMANDS TEST: %d checks, failures: %d" % [checks, failures])
+	get_tree().quit()
+
+## A hero's step: to a neighbouring free tile, paying the planner's cost and seeing around it; never two tiles at
+## once, onto a monster, past the movement left or for another player. The turn passes to the next living player, and a
+## new day begins when the round ends.
+func _steps(w: Dictionary, rules: AdvRules, h: Dictionary) -> void:
+	rules.rebuild()
+	var start: Vector2i = h["pos"]
+	var to := Vector2i(-1, -1)
+	for d in AdvRules.DIRS:
+		var q: Vector2i = start + d
+		if rules.walkable_ground(q) and rules.at(q).is_empty():
+			to = q
+			break
+	h["movement"] = 1500
+	var cost := rules.step_cost(start, to)
+	_ok(_do(rules, {"t": "step", "p": 0, "hero": h["uid"], "to": [to.x, to.y]})["ok"] and h["pos"] == to and h["movement"] == 1500 - cost,
+		"a step to a free neighbour pays its cost")
+	_ok(rules.hero_at(to) == h and rules.hero_at(start).is_empty(), "and the map knows where the hero stands")
+	var far: Vector2i = to + Vector2i(2, 0)
+	_ok(not _do(rules, {"t": "step", "p": 0, "hero": h["uid"], "to": [far.x, far.y]})["ok"], "not two tiles at once")
+	_ok(not _do(rules, {"t": "step", "p": 1, "hero": h["uid"], "to": [start.x, start.y]})["ok"], "not another player's hero")
+	h["movement"] = 10
+	_ok(not _do(rules, {"t": "step", "p": 0, "hero": h["uid"], "to": [start.x, start.y]})["ok"] and h["pos"] == to, "not past the movement left")
+	h["movement"] = 1500
+	var m := {}
+	for o in w["objects"].values():
+		if o["type"] == "monster":
+			m = o
+			break
+	h["pos"] = m["pos"] + Vector2i(1, 0)
+	rules.rebuild()
+	_ok(not _do(rules, {"t": "step", "p": 0, "hero": h["uid"], "to": [m["pos"].x, m["pos"].y]})["ok"], "not onto a monster (that is a fight)")
+	# the turn
+	w["current_player"] = 0
+	var day: int = w["day"]
+	_ok(not _do(rules, {"t": "end_turn", "p": 1})["ok"], "only the player whose turn it is ends it")
+	var r := _do(rules, {"t": "end_turn", "p": 0})
+	_ok(r["ok"] and int(r["next"]) == 1 and w["current_player"] == 1 and w["day"] == day and r["day"].is_empty(), "the next player's turn, the same day")
+	for i in range(1, w["players"].size()):
+		r = _do(rules, {"t": "end_turn", "p": w["current_player"]})
+	_ok(w["current_player"] == 0 and w["day"] == day + 1 and r["day"].has("new_week"), "after the last player, a new day")
 
 ## Stack moves between armies that stand together: the army bar's move, merge, split and swap, the computer's troop
 ## moves, a hero's last stack kept, and stack upgrades in a town.
@@ -128,5 +172,3 @@ func _stacks(w: Dictionary, rules: AdvRules, town: Dictionary, h: Dictionary) ->
 	_ok(mv.call({"t": "upgrade_stack", "town": town["uid"], "army": hr, "si": 0}) and h["army"][0]["id"] == GameData.upgrade_of_base(GameData.base_of(base)),
 		"a stack upgrades in the town")
 	_ok(not mv.call({"t": "upgrade_stack", "town": town["uid"], "army": hr, "si": 0}), "but not twice")
-	print("COMMANDS TEST: %d checks, failures: %d" % [checks, failures])
-	get_tree().quit()

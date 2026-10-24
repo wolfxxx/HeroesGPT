@@ -40,10 +40,11 @@ what makes a replay possible.
 | Battle turn driver: machines act, fear, bad and good morale, next stack | `battle.gd` 733–797 | — | `BattleLogic.next_turn()` returning events |
 
 **Progress (session67):** `AdvRules.do(cmd)` / `scripts/adventure/commands.gd` with `recruit_town`, `recruit_site`,
-`hire`, `trade`, then `stack_move`, `move_troops` and `upgrade_stack`; the town screen, the map dwelling dialog, the
-army bars and the computer's transfers use them. Each step left the computer's play unchanged: seeded tournaments with
+`hire`, `trade`, then `stack_move`, `move_troops` and `upgrade_stack`, then `step` and `end_turn`; the town screen, the
+map dwelling dialog, the army bars, the computer's transfers, every hero's walk and every turn end use them. Each step left the computer's play unchanged: seeded tournaments with
 `AdvAI` in a seat (no `--self`, which plays only the frozen baseline) identical before and after, the faction data step
-re-checked the same way. Next: hero movement and the turn, then building, garrison moves and artifacts.
+re-checked the same way. Next: what a hero meets (visits, battles and their results, town captures, meetings), then
+building, garrison moves, artifacts and level-up choices.
 
 A side benefit: the computer player stops re-implementing recruiting, hiring and troop moves, so it can't drift from
 the rules a person plays by.

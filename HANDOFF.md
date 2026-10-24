@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 command layer, movement and the turn (2026-10-24), committed with this HANDOFF update:** `step` (one step to a free
+  neighbour, paying `AdvRules.step_cost` exactly as the planner charges, refreshing the tile cache, revealing
+  around the hero) and `end_turn` (the next living player, `new_day` at the end of the round). `adventure.move_hero`
+  walks a route as steps (animation, camera and what the hero meets stay in the screen); `_advance_player` sends
+  `end_turn` (the screen still keeps `pending_week`). Tournaments with the current AI identical before and after;
+  a tally showed 6151 accepted steps and no refusals in one game, and the soak test 23 turn ends. In the real UI
+  (remote harness) a walk to an ore pile paid the planner's 357 and took the ore; E ended the turn into day 2.
+  Commands test 40 checks. Next: visits, battles and captures as commands.
 - **Session67 command layer, stack moves (2026-10-24), committed with this HANDOFF update:** `stack_move` (the army bar: move, merge,
   split, swap, with `swap` to force it), `move_troops`, `upgrade_stack`; armies named `{"hero"}`/`{"town"}` and
   required to stand together (`Commands.together`). Every editable `ArmyStrip` (town screen, hero meeting, hero

@@ -20,7 +20,13 @@ class_name Commands
 ##   move_troops   {p, from, si, to, n}                 n creatures of a stack join the other army (its stack of that
 ##                                                      creature, else its first free slot)
 ##   upgrade_stack {p, town: uid, army, si}             in a town with the upgraded dwelling, at the upgrade price
-## (Hero movement, the turn, building and garrison moves follow, docs/FOUNDATIONS_AUDIT.md.)
+##   step          {p, hero: uid, to: [x, y]}           one step to a neighbouring free tile, paying its cost
+##                                                      (AdvRules.step_cost, as the route planner) and seeing around it;
+##                                                      the screen walks a route one step at a time and handles what the
+##                                                      hero meets (-> "cost")
+##   end_turn      {p}                                  the next living player's turn; a new day when the round ends
+##                                                      (-> "next", "day": AdvRules.new_day's report or {})
+## (Visits, battles, building and garrison moves follow, docs/FOUNDATIONS_AUDIT.md.)
 
 const HIRE_COST := 2500
 
@@ -45,7 +51,57 @@ static func run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _move_troops(rules, player, cmd)
 		"upgrade_stack":
 			return _upgrade_stack(rules, player, cmd)
+		"step":
+			return _step(rules, player, cmd)
+		"end_turn":
+			return _end_turn(rules, player)
 	return _no("Unknown command.")
+
+## A tile from a command: [x, y] (as JSON carries it) or a Vector2i.
+static func tile(v) -> Vector2i:
+	if v is Vector2i:
+		return v
+	if v is Array and v.size() == 2:
+		return Vector2i(int(v[0]), int(v[1]))
+	return Vector2i(-99, -99)
+
+static func _step(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero: Dictionary = rules.world["heroes"].get(int(cmd.get("hero", -1)), {})
+	if hero.is_empty() or hero["owner"] != player["index"] or hero.get("in_town", false):
+		return _no("Not your hero.")
+	var to := tile(cmd.get("to"))
+	var from: Vector2i = hero["pos"]
+	var d := to - from
+	if maxi(absi(d.x), absi(d.y)) != 1 or not rules.walkable_ground(to):
+		return _no("Cannot step there.")
+	var o: Dictionary = rules.at(to)
+	if o.get("kind", "") == "hero" or (o.get("kind", "") == "object" and rules.world["objects"][o["uid"]]["type"] == "monster"):
+		return _no("Something stands there.")
+	var cost := rules.step_cost(from, to)
+	if hero["movement"] < cost:
+		return _no("Not enough movement.")
+	hero["movement"] -= cost
+	hero["pos"] = to
+	rules.refresh_tile(from)
+	rules.refresh_tile(to)
+	rules.reveal(player, to, rules.hero_scout_radius(hero))
+	return {"ok": true, "reason": "", "cost": cost}
+
+static func _end_turn(rules: AdvRules, player: Dictionary) -> Dictionary:
+	var w: Dictionary = rules.world
+	if int(w["current_player"]) != player["index"]:
+		return _no("Not your turn.")
+	var n: int = w["players"].size()
+	var cur: int = w["current_player"]
+	var day := {}
+	for k in n:
+		cur = (cur + 1) % n
+		if cur == 0:
+			day = rules.new_day()
+		if w["players"][cur]["alive"]:
+			break
+	w["current_player"] = cur
+	return {"ok": true, "reason": "", "next": cur, "day": day}
 
 ## The army an army reference names, if the player owns it ([] otherwise).
 static func army_of(rules: AdvRules, player: Dictionary, ref) -> Array:
