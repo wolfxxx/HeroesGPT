@@ -16,13 +16,20 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 dismissed heroes (2026-10-24), committed with this HANDOFF update:** a hero dismissed from the hero screen no longer comes
+  back from the Tavern fresh. `AdvRules.dismiss_hero` (both dismiss buttons) keeps them in `tavern_keep` with
+  everything but the army: level, experience, skills, spells, artifacts and war machines (rehired: a starting army).
+  Source: the Heroes 3 wiki's Grail page ("when he is dismissed, it is possible to find him in a tavern with a
+  Grail in his backpack") and a Heroes Community thread ("The Hero keeps all Artifacts, but loses the entire
+  army"). The heroes of a player knocked out of the game still leave fresh. 4 new checks in
+  `tools/retreat_test.tscn` (21).
 - **Session67 slain heroes (2026-10-24), committed with this HANDOFF update:** the user agreed to follow HoMM3: a hero slain in battle
   no longer comes back from the Tavern fresh at level 1. `AdvRules._slay_hero` keeps them in `tavern_keep` (like
   one who fled) with their level, experience, primary and secondary skills, spells and spell book; their artifacts
   go to the winning hero (`_loot`) or are lost to monsters and garrisons, and their army and war machines are lost
   (rehired: a starting army and `GameState.starting_machines`, as a fresh hero). The Tavern already shows a kept
   hero's level. No wiki page states the rule outright; it matches community knowledge (Celestial Heavens "Hero
-  buy-back"). Dismissed heroes and those of an eliminated player still leave fresh. 8 new checks in
+  buy-back"). Those of an eliminated player still leave fresh (dismissed ones: next entry). 8 new checks in
   `tools/retreat_test.tscn` (17).
 - **Session67 neutral rings (2026-10-24), committed with this HANDOFF update:** neutral stacks' grey rings were lost on grass (a mid grey
   as bright as the grass). `battle.side_color` now gives neutrals a light silver grey (0.92, 0.91, 0.86), also on

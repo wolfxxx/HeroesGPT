@@ -424,7 +424,7 @@ func _open_hero_screen(h: Dictionary) -> void:
 		if owner_player["heroes"].size() <= 1 and owner_player["towns"].is_empty():
 			await Modal.message(self, "Dismiss", "You cannot dismiss your last hero.").closed
 		elif await Modal.confirm(self, "Dismiss Hero", "Dismiss %s? The hero and the army will leave you." % h["name"]).closed:
-			_rules._kill_hero(h)
+			_rules.dismiss_hero(h)
 			if h == hero:
 				GameState.pending_town.erase("hero_uid")
 				hero = {}
@@ -854,7 +854,7 @@ func _open_tavern() -> void:
 		var ic := UI.icon(Assets.hero_portrait(hid), Vector2(340, 170))
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(ic)
-		var kh: Dictionary = world.get("tavern_keep", {}).get(hid, {})  # (one who fled or fell: as they left)
+		var kh: Dictionary = world.get("tavern_keep", {}).get(hid, {})  # (one who fled, fell or was dismissed: as they left)
 		var lvl: String = ("Level %d %s" % [kh["level"], d["class"]]) if not kh.is_empty() else d["class"]
 		var src: Dictionary = kh if not kh.is_empty() else d
 		for t in [d["name"], "%s — %s" % [lvl, GameData.FACTIONS[d["faction"]]["name"]], "Specialty: %s" % d["specialty"],

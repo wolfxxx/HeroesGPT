@@ -831,7 +831,7 @@ func open_hero_screen(h: Dictionary) -> void:
 		if me["heroes"].size() <= 1 and me["towns"].is_empty():
 			await Modal.message(adv, "Dismiss", "You cannot dismiss your last hero.").closed
 		elif await Modal.confirm(adv, "Dismiss Hero", "Dismiss %s? The hero and the army will leave you." % h["name"]).closed:
-			adv.rules._kill_hero(h)
+			adv.rules.dismiss_hero(h)
 			adv.refresh_after_change()
 			adv.select_hero(adv._first_hero_with_mp())
 	refresh()

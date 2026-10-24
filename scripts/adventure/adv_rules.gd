@@ -760,9 +760,17 @@ func _slay_hero(hero: Dictionary) -> void:
 	hero["machines"] = GameState.starting_machines(hero["class"])
 	_kill_hero(hero, true)
 
-## A hero leaves the map: dismissed or out of the game, or (`kept`) fled, surrendered or slain (_slay_hero), when
-## they wait in the taverns as they left, with their skills and artifacts (and, surrendered, their army) to be hired
-## again.
+## A hero dismissed by their player waits in the taverns, as the classic game: with their level, skills, spells,
+## artifacts and war machines (the Heroes 3 wiki: one dismissed with the Grail turns up in a tavern still carrying it),
+## without the army (hired again: a starting army, as a fresh hero).
+func dismiss_hero(hero: Dictionary) -> void:
+	for i in 7:
+		hero["army"][i] = null
+	_kill_hero(hero, true)
+
+## A hero leaves the map: out of the game, or (`kept`) fled, surrendered, slain (_slay_hero) or dismissed
+## (dismiss_hero), when they wait in the taverns as they left, with their skills (and what else each keeps) to be
+## hired again.
 func _kill_hero(hero: Dictionary, kept := false) -> void:
 	if not world["heroes"].has(hero["uid"]):
 		return

@@ -124,8 +124,8 @@ func make_hero(hero_id: String, owner: int) -> Dictionary:
 func starting_machines(hero_class: String) -> Array:
 	return ["ballista"] if hero_class in ["Knight", "Death Knight"] else ["first_aid_tent"]
 
-## A hero hired from a tavern: one who fled, surrendered or fell in battle comes back as they left (see
-## AdvRules._kill_hero and _slay_hero), any other fresh.
+## A hero hired from a tavern: one who fled, surrendered, fell in battle or was dismissed comes back as they left
+## (see AdvRules._kill_hero, _slay_hero and dismiss_hero), any other fresh.
 func tavern_hero(hero_id: String, owner: int) -> Dictionary:
 	var keep: Dictionary = world.get("tavern_keep", {})
 	if not keep.has(hero_id):

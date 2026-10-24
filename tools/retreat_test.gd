@@ -2,7 +2,7 @@ extends Node
 ## A hero who retreats from a battle loses the army but keeps the war machines still standing, as the classic game
 ## (they are equipment, kept like the artifacts): the result window does not list them among the losses, and the hero
 ## hired again from the Tavern comes back with them. One slain comes back at the same level, with the skills and
-## spells, without the artifacts, army or machines.
+## spells, without the artifacts, army or machines; one dismissed with everything but the army.
 ##   Godot_console.exe --headless --path . res://tools/retreat_test.tscn  -> "RETREAT TEST: N checks, failures: 0"
 ## In a window, `-- --capture=shots/dir` also saves the result window.
 
@@ -78,6 +78,26 @@ class Watcher extends Node:
 		_ok(again["artifacts"].is_empty() and again["backpack"].is_empty(), "without the artifacts")
 		_ok(again["machines"] == GameState.starting_machines(again["class"]), "with only the starting war machine")
 		_ok(not GameState.army_is_empty(again["army"]), "and a starting army")
+
+		# dismissed, as the classic: everything kept but the army (the wiki: one dismissed with the Grail turns up in a
+		# tavern still carrying it)
+		again["artifacts"] = ["oaken_buckler"]
+		again["machines"] = GameData.WAR_MACHINES.duplicate()
+		again["army"] = [{"id": "angel", "count": 9}, null, null, null, null, null, null]
+		w["heroes"][again["uid"]] = again
+		me["heroes"].append(again["uid"])
+		rules.dismiss_hero(again)
+		_ok(not w["heroes"].has(again["uid"]) and not me["heroes"].has(again["uid"]) and h["id"] in w["tavern"],
+			"the dismissed hero waits in the Tavern")
+		var third := GameState.tavern_hero(h["id"], 0)
+		_ok(third["level"] == 5 and third["skills"].get("archery", 0) == 2 and "haste" in third["spells"],
+			"hired again at the same level, with the skills and spells")
+		_ok("oaken_buckler" in third["artifacts"] and third["machines"].size() == GameData.WAR_MACHINES.size(),
+			"with the artifacts and war machines")
+		var angels := false
+		for st in third["army"]:
+			angels = angels or (st != null and st["id"] == "angel")
+		_ok(not angels and not GameState.army_is_empty(third["army"]), "the army left; a starting army instead")
 		print("RETREAT TEST: %d checks, failures: %d" % [checks, failures])
 		get_tree().quit()
 
