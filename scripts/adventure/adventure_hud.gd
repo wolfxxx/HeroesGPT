@@ -845,7 +845,7 @@ func open_exchange(a: Dictionary, b: Dictionary) -> void:
 		hb.add_theme_constant_override("separation", 14)
 		hb.add_child(UI.icon(Assets.hero_portrait(h["id"]), Vector2(92, 92)))
 		var strip := ArmyStrip.new()
-		strip.bind(h["army"], g, true)
+		strip.bind(h["army"], g, true, {"hero": h["uid"]}, adv.rules)
 		hb.add_child(strip)
 		m.body.add_child(UI.label(h["name"], 24, UI.GOLD))
 		m.body.add_child(hb)

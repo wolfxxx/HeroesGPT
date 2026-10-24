@@ -83,5 +83,50 @@ func _ready() -> void:
 	_ok(not _do(rules, {"t": "trade", "p": 0, "give": "wood", "get": "gold", "n": 50})["ok"], "not more than you have")
 	_ok(not _do(rules, {"t": "trade", "p": 0, "give": "wood", "get": "wood", "n": 1})["ok"], "not a resource for itself")
 	_ok(not rules.do({"t": "no_such_command", "p": 0})["ok"] and not rules.do({"t": "trade", "p": 9})["ok"], "unknown commands and players refused")
+	_stacks(w, rules, town, h)
+
+## Stack moves between armies that stand together: the army bar's move, merge, split and swap, the computer's troop
+## moves, a hero's last stack kept, and stack upgrades in a town.
+func _stacks(w: Dictionary, rules: AdvRules, town: Dictionary, h: Dictionary) -> void:
+	var hr := {"hero": h["uid"]}
+	var tr := {"town": town["uid"]}
+	h["pos"] = town["pos"]
+	h["army"] = [{"id": "pikeman", "count": 10}, {"id": "archer", "count": 6}, null, null, null, null, null]
+	town["garrison"] = [{"id": "pikeman", "count": 4}, null, {"id": "griffin", "count": 2}, null, null, null, null]
+	var mv := func(cmd: Dictionary) -> bool:
+		cmd["p"] = 0
+		return _do(rules, cmd)["ok"]
+	_ok(mv.call({"t": "stack_move", "from": hr, "si": 0, "to": tr, "ti": 0}) and town["garrison"][0]["count"] == 14 and h["army"][0] == null,
+		"onto the same creature: the stacks merge")
+	_ok(mv.call({"t": "stack_move", "from": tr, "si": 2, "to": hr, "ti": 0}) and h["army"][0]["id"] == "griffin" and town["garrison"][2] == null,
+		"into an empty slot: the stack moves")
+	_ok(mv.call({"t": "stack_move", "from": hr, "si": 1, "to": tr, "ti": 3, "split": true}) and h["army"][1]["count"] == 3 and town["garrison"][3]["count"] == 3,
+		"shift: half of it splits off")
+	_ok(mv.call({"t": "stack_move", "from": hr, "si": 0, "to": tr, "ti": 0}) and h["army"][0]["id"] == "pikeman" and town["garrison"][0]["id"] == "griffin",
+		"onto another creature: the stacks swap")
+	_ok(mv.call({"t": "stack_move", "from": hr, "si": 1, "to": tr, "ti": 3, "swap": true}) and h["army"][1]["count"] == 3 and town["garrison"][3]["count"] == 3,
+		"`swap` swaps two stacks of the same creature")
+	_ok(mv.call({"t": "move_troops", "from": tr, "si": 0, "to": hr, "n": 1}) and town["garrison"][0]["count"] == 1 and h["army"][2]["id"] == "griffin",
+		"move_troops: one Griffin joins the hero's first free slot")
+	_ok(mv.call({"t": "move_troops", "from": tr, "si": 0, "to": hr, "n": 1}) and town["garrison"][0] == null and h["army"][2]["count"] == 2,
+		"and the last one merges into that stack, emptying the garrison slot")
+	h["army"] = [{"id": "pikeman", "count": 5}, null, null, null, null, null, null]
+	_ok(not mv.call({"t": "stack_move", "from": hr, "si": 0, "to": tr, "ti": 5}), "a hero's last stack cannot be moved away")
+	_ok(not mv.call({"t": "move_troops", "from": hr, "si": 0, "to": tr, "n": 5}), "nor all of it as troops")
+	_ok(mv.call({"t": "move_troops", "from": hr, "si": 0, "to": tr, "n": 4}) and h["army"][0]["count"] == 1, "all but one may go")
+	h["pos"] = town["pos"] + Vector2i(3, 0)
+	_ok(not mv.call({"t": "stack_move", "from": tr, "si": 1, "to": hr, "ti": 1}), "not between a town and a hero who is not in it")
+	var foe: Dictionary = w["heroes"][w["players"][1]["heroes"][0]]
+	_ok(not mv.call({"t": "move_troops", "from": {"hero": foe["uid"]}, "si": 0, "to": hr, "n": 1}), "not from another player's army")
+	# upgrades: a base stack in a town with the upgraded dwelling, paid for
+	h["pos"] = town["pos"]
+	if not TownLogic.has_building(town, "dwelling_1u"):
+		town["buildings"].append("dwelling_1u")
+	w["players"][0]["resources"]["gold"] = 20000
+	var base := TownLogic.dwelling_creature(town, 1)
+	h["army"][0] = {"id": GameData.base_of(base), "count": 3}
+	_ok(mv.call({"t": "upgrade_stack", "town": town["uid"], "army": hr, "si": 0}) and h["army"][0]["id"] == GameData.upgrade_of_base(GameData.base_of(base)),
+		"a stack upgrades in the town")
+	_ok(not mv.call({"t": "upgrade_stack", "town": town["uid"], "army": hr, "si": 0}), "but not twice")
 	print("COMMANDS TEST: %d checks, failures: %d" % [checks, failures])
 	get_tree().quit()

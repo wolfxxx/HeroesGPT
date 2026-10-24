@@ -237,7 +237,8 @@ func refresh() -> void:
 	var g := ArmyStrip.new()
 	g.upgrade_town = town
 	g.upgrade_player = player
-	g.bind(gh["army"] if not gh.is_empty() else town["garrison"], _group, not gh.is_empty())
+	g.bind(gh["army"] if not gh.is_empty() else town["garrison"], _group, not gh.is_empty(),
+		{"hero": gh["uid"]} if not gh.is_empty() else {"town": town["uid"]}, _rules)
 	g.changed.connect(_on_army_changed)
 	row1.add_child(g)
 	_armies.add_child(row1)
@@ -259,7 +260,7 @@ func refresh() -> void:
 		var hs := ArmyStrip.new()
 		hs.upgrade_town = town
 		hs.upgrade_player = player
-		hs.bind(hero["army"], _group, true)
+		hs.bind(hero["army"], _group, true, {"hero": hero["uid"]}, _rules)
 		hs.changed.connect(_on_army_changed)
 		row2.add_child(hs)
 	_armies.add_child(row2)

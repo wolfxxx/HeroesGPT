@@ -202,16 +202,18 @@ func hire_hero(player: Dictionary, town: Dictionary) -> Dictionary:
 	return hero
 
 func _reinforce(hero: Dictionary, town: Dictionary, _player: Dictionary) -> void:
+	var refs := {"p": hero["owner"], "dst": {"hero": hero["uid"]}, "src": {"town": town["uid"]}}
 	# Upgrading a base stack can merge it with an upgraded stack already carried, freeing an army slot.
-	for stack in hero["army"]:
-		if stack:
-			TownLogic.upgrade_stack(town, _player, stack)
-	_merge_stacks(hero["army"])
-	_collect_garrison(hero["army"], town)
-	for stack in hero["army"]:
-		if stack:
-			TownLogic.upgrade_stack(town, _player, stack)
-	_merge_stacks(hero["army"])
+	_upgrade_all(hero, town)
+	_merge_stacks(hero["army"], refs)
+	_collect_garrison(hero["army"], town, refs)
+	_upgrade_all(hero, town)
+	_merge_stacks(hero["army"], refs)
+
+func _upgrade_all(hero: Dictionary, town: Dictionary) -> void:
+	for i in hero["army"].size():
+		if hero["army"][i]:
+			rules.do({"t": "upgrade_stack", "p": hero["owner"], "town": town["uid"], "army": {"hero": hero["uid"]}, "si": i})
 
 ## Garrison strength that holds the gate against the strongest army able to reach it next turn, when the garrison
 ## can hold it at all (a garrison too weak to hold is better carried by the hero).
@@ -222,7 +224,7 @@ func _garrison_keep(town: Dictionary) -> float:
 	return need
 
 ## A hero takes the town's garrison into its army, leaving what the gate needs (the most valuable troops go first).
-func _collect_garrison(army: Array, town: Dictionary) -> int:
+func _collect_garrison(army: Array, town: Dictionary, refs := {}) -> int:
 	var keep := _garrison_keep(town)
 	var spare := float(GameState.army_strength(town["garrison"])) - keep
 	var order := []
@@ -234,11 +236,9 @@ func _collect_garrison(army: Array, town: Dictionary) -> int:
 		var s: Dictionary = town["garrison"][i]
 		var unit: int = GameData.CREATURES[s["id"]]["ai_value"]
 		var n: int = s["count"] if keep <= 0.0 else mini(s["count"], int(spare / unit))
-		if n <= 0 or not GameState.add_to_army(army, s["id"], n): continue
-		s["count"] -= n
+		if n <= 0 or not _mv(army, town["garrison"], i, n, refs): continue
 		spare -= n * unit
 		value += n * unit
-		if s["count"] == 0: town["garrison"][i] = null
 	# a full army leaves its weakest stacks in the garrison for stronger ones there (whole stacks change places, as in
 	# the classic town screen), while the garrison still holds the gate
 	for k in 49:
@@ -247,12 +247,29 @@ func _collect_garrison(army: Array, town: Dictionary) -> int:
 		if g < 0 or a < 0: break
 		var gain := _stack_value(town["garrison"][g]) - _stack_value(army[a])
 		if gain <= 0 or (keep > 0.0 and gain > spare): break
-		var t = army[a]
-		army[a] = town["garrison"][g]
-		town["garrison"][g] = t
+		_swap(army, a, town["garrison"], g, refs)
 		spare -= gain
 		value += gain
 	return value
+
+## A troop change, made through the rules (commands) on real armies, or directly on copies (a preview): `refs` names
+## the two real armies ({"p", "dst", "src"}: army references) or is empty for copies. The change is the same either way.
+func _mv(dst: Array, src: Array, si: int, n: int, refs: Dictionary) -> bool:
+	if refs.is_empty():
+		if not GameState.add_to_army(dst, src[si]["id"], n): return false
+		src[si]["count"] -= n
+		if src[si]["count"] == 0: src[si] = null
+		return true
+	return rules.do({"t": "move_troops", "p": refs["p"], "from": refs["src"], "si": si, "to": refs["dst"], "n": n})["ok"]
+
+## Whole stacks change places: dst[di] and src[si].
+func _swap(dst: Array, di: int, src: Array, si: int, refs: Dictionary) -> void:
+	if refs.is_empty():
+		var t = dst[di]
+		dst[di] = src[si]
+		src[si] = t
+		return
+	rules.do({"t": "stack_move", "p": refs["p"], "from": refs["src"], "si": si, "to": refs["dst"], "ti": di, "swap": true})
 
 func _stack_value(s) -> int:
 	return int(s["count"]) * int(GameData.CREATURES[s["id"]]["ai_value"]) if s else 0
@@ -271,20 +288,23 @@ func _weakest_stack(army: Array) -> int:
 		if weak < 0 or _stack_value(army[i]) < _stack_value(army[weak]): weak = i
 	return weak
 
-func _merge_stacks(army: Array) -> void:
+func _merge_stacks(army: Array, refs := {}) -> void:
 	var first := {}
 	for i in army.size():
 		if army[i] == null: continue
 		var id: String = army[i]["id"]
 		if first.has(id):
-			army[first[id]]["count"] += army[i]["count"]
-			army[i] = null
+			if refs.is_empty():
+				army[first[id]]["count"] += army[i]["count"]
+				army[i] = null
+			else:
+				rules.do({"t": "stack_move", "p": refs["p"], "from": refs["dst"], "si": i, "to": refs["dst"], "ti": first[id]})
 		else:
 			first[id] = i
 
 ## Consolidate at an ordinary adjacent friendly meeting, retaining one creature with the courier.
 ## Preview on copies first: seven-slot limits must never cause lost troops or pointless trips.
-func _transfer(receiver: Array, donor: Array, keep_one: bool) -> int:
+func _transfer(receiver: Array, donor: Array, keep_one: bool, refs := {}) -> int:
 	var reserve := -1
 	if keep_one:
 		for i in donor.size():
@@ -295,10 +315,9 @@ func _transfer(receiver: Array, donor: Array, keep_one: bool) -> int:
 		var s = donor[i]
 		if s == null: continue
 		var count: int = s["count"] - (1 if i == reserve else 0)
-		if count > 0 and GameState.add_to_army(receiver, s["id"], count):
-			value += count * GameData.CREATURES[s["id"]]["ai_value"]
-			s["count"] -= count
-			if s["count"] == 0: donor[i] = null
+		var unit: int = GameData.CREATURES[s["id"]]["ai_value"]
+		if count > 0 and _mv(receiver, donor, i, count, refs):
+			value += count * unit
 	# a full receiver gives its weakest stacks for the donor's stronger ones (whole stacks change places, as in the
 	# classic exchange window); the donor is never left empty
 	for k in 49:
@@ -307,9 +326,7 @@ func _transfer(receiver: Array, donor: Array, keep_one: bool) -> int:
 		if d < 0 or r < 0: break
 		var gain := _stack_value(donor[d]) - _stack_value(receiver[r])
 		if gain <= 0: break
-		var t = receiver[r]
-		receiver[r] = donor[d]
-		donor[d] = t
+		_swap(receiver, r, donor, d, refs)
 		value += gain
 	return value
 
@@ -336,7 +353,8 @@ func exchange_troops(a: Dictionary, b: Dictionary) -> int:
 	if leader != a["uid"] and leader != b["uid"]: return 0
 	var receiver := a if leader == a["uid"] else b
 	var donor := b if receiver == a else a
-	var moved := _transfer(receiver["army"], donor["army"], true)
+	var moved := _transfer(receiver["army"], donor["army"], true,
+		{"p": receiver["owner"], "dst": {"hero": receiver["uid"]}, "src": {"hero": donor["uid"]}})
 	donor.erase("ai_goal")
 	return moved
 
@@ -513,11 +531,10 @@ func _leave_rear_guard(hero: Dictionary, choice: Dictionary) -> void:
 		var s: Dictionary = hero["army"][i]
 		var unit: int = GameData.CREATURES[s["id"]]["ai_value"]
 		var n: int = mini(mini(s["count"], ceili(need / unit)), left - 1)
-		if n <= 0 or not GameState.add_to_army(town["garrison"], s["id"], n): continue
-		s["count"] -= n
+		if n <= 0 or not _mv(town["garrison"], hero["army"], i, n,
+				{"p": hero["owner"], "dst": {"town": town["uid"]}, "src": {"hero": hero["uid"]}}): continue
 		left -= n
 		need -= n * unit
-		if s["count"] == 0: hero["army"][i] = null
 
 ## A blocked leader can ask an idle ally to make a legal one-step move off its route.
 ## The relaxed path is diagnostic only: run_turn moves the blocker, then replans normally.

@@ -4,6 +4,8 @@ class_name ArmyStrip
 ## Strips sharing the same `group` Dictionary can exchange stacks:
 ##   click a stack to select, click another slot to move / merge / swap; shift+click an empty slot to split.
 ##   right click shows creature info.
+## An editable strip names its army (`ref`: {"hero": uid} or {"town": uid}, its garrison) and changes it only by
+## commands (Commands: stack_move, upgrade_stack), as every player action does.
 
 signal changed
 
@@ -14,12 +16,16 @@ var slot_size := Vector2(92, 92)
 var editable := true
 var upgrade_town = null    # in a town: right click offers to upgrade a stack there (TownLogic.upgrade_stack)
 var upgrade_player = null
+var ref: Dictionary = {}   # the army this strip shows, for commands
+var rules: AdvRules = null # (made from GameState.world when first needed, if the owner gives none)
 var _slots: Array = []
 
-func bind(a: Array, g: Dictionary = {}, keep := false) -> ArmyStrip:
+func bind(a: Array, g: Dictionary = {}, keep := false, army_ref: Dictionary = {}, r: AdvRules = null) -> ArmyStrip:
 	army = a
 	group = g
 	keep_one = keep
+	ref = army_ref
+	rules = r
 	if not group.has("strips"):
 		group["strips"] = []
 	group["strips"].append(self)
@@ -75,38 +81,31 @@ func _click(i: int, shift: bool) -> void:
 	if src == self and si == i:
 		refresh_group()
 		return
-	var a = src.army[si]
-	var b = army[i]
-	if a == null:
+	if src.army[si] == null:
 		refresh_group()
 		return
-	if b == null:
-		if shift and a["count"] > 1:
-			var half: int = a["count"] / 2
-			a["count"] -= half
-			army[i] = {"id": a["id"], "count": half}
-		else:
-			if src != self and src.keep_one and src._stacks() <= 1:
-				Audio.sfx("error")
-				refresh_group()
-				return
-			army[i] = a
-			src.army[si] = null
-	elif b["id"] == a["id"]:
-		if src != self and src.keep_one and src._stacks() <= 1:
-			Audio.sfx("error")
-			refresh_group()
-			return
-		b["count"] += a["count"]
-		src.army[si] = null
-	else:
-		army[i] = a
-		src.army[si] = b
+	var res := _do({"t": "stack_move", "p": _owner(src.ref), "from": src.ref, "si": si, "to": ref, "ti": i, "split": shift})
+	if not res["ok"]:
+		Audio.sfx("error")
+		refresh_group()
+		return
 	Audio.sfx("click", -6)
 	refresh_group()
 	for s in group.get("strips", []):
 		if is_instance_valid(s):
 			s.changed.emit()
+
+func _do(cmd: Dictionary) -> Dictionary:
+	if rules == null:
+		rules = AdvRules.new(GameState.world)
+	return rules.do(cmd)
+
+## The player who owns the army a reference names.
+func _owner(r: Dictionary) -> int:
+	var w: Dictionary = GameState.world
+	if r.has("hero"):
+		return int(w["heroes"].get(int(r["hero"]), {}).get("owner", -1))
+	return int(w["towns"].get(int(r.get("town", -1)), {}).get("owner", -1))
 
 func _info(i: int) -> void:
 	var st = army[i]
@@ -116,7 +115,8 @@ func _info(i: int) -> void:
 	if up == "":
 		show_creature_info(self, st["id"], st["count"])
 		return
-	if await upgrade_dialog(self, st, up, upgrade_player) and TownLogic.upgrade_stack(upgrade_town, upgrade_player, st):
+	if await upgrade_dialog(self, st, up, upgrade_player) and _do({"t": "upgrade_stack", "p": _owner(ref),
+			"town": upgrade_town["uid"], "army": ref, "si": i})["ok"]:
 		Audio.sfx("build", -4)
 		refresh_group()
 		for s in group.get("strips", []):

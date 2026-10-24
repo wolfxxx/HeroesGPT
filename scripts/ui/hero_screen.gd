@@ -159,7 +159,7 @@ static func _fill(m: Modal, owner: Node, h: Dictionary) -> void:
 	# the army
 	left.add_child(UI.label("Army", 24, UI.GOLD, true))
 	var strip := ArmyStrip.new()
-	strip.bind(h["army"], {}, true)
+	strip.bind(h["army"], {}, true, {"hero": h["uid"]})
 	strip.tooltip_text = "Click a stack, then another slot, to move or swap it. Shift+click to split. Right click: details."
 	left.add_child(strip)
 

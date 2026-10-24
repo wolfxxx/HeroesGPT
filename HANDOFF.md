@@ -16,12 +16,22 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 command layer, stack moves (2026-10-24), committed with this HANDOFF update:** `stack_move` (the army bar: move, merge,
+  split, swap, with `swap` to force it), `move_troops`, `upgrade_stack`; armies named `{"hero"}`/`{"town"}` and
+  required to stand together (`Commands.together`). Every editable `ArmyStrip` (town screen, hero meeting, hero
+  screen) sends them; the computer's real transfers go through `AdvAI._mv` / `_swap` (copies used for previews
+  still change directly). **Method corrected:** `adventure_tournament --self` plays only the frozen baseline, so
+  the earlier "identical" checks never ran `AdvAI`; re-run without `--self` (the current AI in a seat) on worktrees
+  of 758a1f7/26f40f3 (faction data) and 1b010d6/165052c (first commands step): identical, and this step identical
+  too. A tally showed the commands ran (61 town recruits, 49 troop moves, 13 hires in one game). Commands test 31
+  checks; the town screen's bars checked driving the real screen. ARCHITECTURE.md gives the right comparison.
 - **Session67 command layer, first step (2026-10-24), committed with this HANDOFF update:** step 2 of `docs/FOUNDATIONS_AUDIT.md` begun.
   New `scripts/adventure/commands.gd` (`Commands.run`, through `AdvRules.do(cmd)`): actions as plain dictionaries,
   checked, applied, reported. `recruit_town`, `recruit_site`, `hire`, `trade` (the market rate moved to
   `TownLogic.market_rate`); the town screen, the dwelling dialog (`recruit_dialog` takes a `buy(n)` callback) and
   the computer use them. Seeded tournaments (4 players size 48, 2 players size 36) identical before and after.
   New `tools/commands_test.tscn` (17 checks, every command sent through JSON). Next: stack moves, then movement.
+  (Its tournament check used `--self`, which plays only the frozen baseline; re-checked in the next entry without it.)
 - **Session67 Order of the Dragon art (2026-10-24), committed with this HANDOFF update:** a pilot of five approved by the user ("roll
   out"), then the rest: the Order's 30 town-screen layers (with the backdrop), 27 building cards and 3 map towns
   repainted with crimson-and-black heraldry and the Order's golden dragon coiled in a circle (on banners, shields,
