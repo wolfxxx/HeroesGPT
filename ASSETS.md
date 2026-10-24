@@ -178,7 +178,7 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   `music/town_necropolis.mp3`, `music/battle.mp3`, `music/victory.mp3` (short sting), `music/defeat.mp3` (short sting).
 - SFX (`.mp3`) in `sfx/`: click, build, recruit, gold_pickup, resource_pickup, chest_open, footstep_horse,
   new_day, new_week, level_up, spell_cast, magic_arrow, lightning, fireball, bless, curse, heal, meteor,
-  arrow_shot, arrow_hit, sword_hit, blunt_hit, claw_hit, magic_hit, death_human, death_undead, death_beast,
+  arrow_shot (a longbow volley, archers and arrow towers), arrow_hit, sword_hit, blunt_hit, claw_hit, magic_hit, death_human, death_undead, death_beast,
   wings, battle_start, victory_cheer, defeat, move_step, retaliate, miss, flag_capture, mine_capture, error,
   catapult_launch, catapult_hit (a boulder on the wall), catapult_miss (a splash short of it), ballista_shot (a deep
   thunk; best of three takes by low-to-high frequency energy, measured with an `AudioEffectSpectrumAnalyzer`). All by

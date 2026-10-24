@@ -33,7 +33,7 @@ SFX = {
     "curse": ("dark curse spell, eerie low whisper and ominous drone", 1.6),
     "heal": ("gentle healing magic, warm sparkling chimes rising", 1.5),
     "meteor": ("meteors crashing down, multiple heavy fiery impacts and rumbling", 2.5),
-    "arrow_shot": ("loud close bow string twang as an archer looses an arrow, sharp whoosh", 0.7),
+    "arrow_shot": ("medieval longbow volley: several archers loosing arrows at once, a full woody thrum of heavy bow strings and the rushing whoosh of arrows flying away, realistic, no rubber band, no high plucked twang", 1.0),
     "arrow_hit": ("arrow hitting armor and flesh, thunk", 0.5),
     "sword_hit": ("sword slash hitting steel armor, metallic clang", 0.7),
     "blunt_hit": ("loud punchy impact of a heavy wooden club striking an armoured soldier, a booming thud and clank, close and powerful", 1.0),

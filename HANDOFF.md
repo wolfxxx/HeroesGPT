@@ -16,6 +16,11 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 archer sound (2026-10-23), committed with this HANDOFF update:** the user disliked the archers' shot. New `arrow_shot`
+  (ElevenLabs: a longbow volley, a full woody thrum and the rush of arrows, no plucked twang), the fullest of four
+  takes measured in a window (peak -2.2 dB, low/mid energy 2.68/0.79 with a moderate whoosh 0.31; the old one
+  peaked at -8.3 dB with little body, 1.04/0.75/0.05). Used by archer stacks and arrow towers; the ballista has its
+  own. Previous versions and the other takes are in ignored `shots/session67/sfx_old/`.
 - **Session67 ballista sound (2026-10-23), committed with this HANDOFF update:** the user liked the new catapult sounds but found the
   ballista "like someone shooting a little elastic": it used the archers' bow-string `arrow_shot`. New
   `ballista_shot` (ElevenLabs: a heavy siege-crossbow thunk with creaking timber, no high twang), the deepest of
