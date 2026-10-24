@@ -7,7 +7,7 @@ const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 var _menu_box: VBoxContainer
 var _setup_panel: PanelContainer
 var _settings := {}
-var _hero_row: HBoxContainer
+var _hero_row: GridContainer
 var _hero_desc: Label
 var _faction_buttons := {}
 var _option_buttons := {}
@@ -270,8 +270,10 @@ func _build_setup() -> void:
 
 	_hero_head = UI.label("Choose your hero", 24, UI.GOLD)
 	v.add_child(_hero_head)
-	_hero_row = HBoxContainer.new()
-	_hero_row.add_theme_constant_override("separation", 16)
+	_hero_row = GridContainer.new()  # (six heroes a faction: two rows of three)
+	_hero_row.columns = 3
+	_hero_row.add_theme_constant_override("h_separation", 16)
+	_hero_row.add_theme_constant_override("v_separation", 8)
 	v.add_child(_hero_row)
 	_hero_desc = UI.label("", 20)
 	_hero_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -815,10 +817,10 @@ func _select_faction(f: String) -> void:
 			continue
 		var b := Button.new()
 		b.toggle_mode = true
-		b.custom_minimum_size = Vector2(238, 104)
+		b.custom_minimum_size = Vector2(250, 72)
 		# (every card two lines, the name and the class: a long name a size smaller rather than broken in two)
 		var nm: String = h["name"]
-		_card(b, Assets.hero_portrait(hid), 58, nm, h["class"], 21 if nm.length() <= 11 else 19, 19, false)  # (plain mixed case: small caps at this size were dim)
+		_card(b, Assets.hero_portrait(hid), 50, nm, h["class"], 21 if nm.length() <= 11 else 19, 18, false)  # (plain mixed case: small caps at this size were dim)
 		b.set_meta("hero", hid)
 		if hid in taken:  # (led by another player at this screen)
 			b.disabled = true

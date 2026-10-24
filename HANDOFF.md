@@ -16,6 +16,13 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 heroes from legend (2026-10-24), committed with this HANDOFF update:** four heroes added (`GameData.HEROES`, portraits by
+  the new `tools/art/legend_portraits.py`): Jacques de Molay (Temple Knight, Armorer), Hugues de Payens (Temple
+  Knight, Logistics: he guarded the pilgrim roads), the Count of Saint-Germain ("Saint-Germain", Lodge
+  Necromancer, Wisdom, Haste and Weakness) and Edward Kelley (Lodge Necromancer, Luck, Curse and Magic Arrow). The
+  existing eight stay. The New Game screen lays a faction's six heroes in two rows of three (`_hero_row` is a
+  GridContainer; cards 250x72). Specialties remain text; the starting skill gives the effect. Screenshots
+  `shots/session67/setting/newgame_haven.png`, `newgame_necropolis.png`.
 - **Session67 setting approved, first renames built (2026-10-24), committed with this HANDOFF update:** the user approved
   `docs/SETTING.md` (all six answers yes; factions renamed). CLAUDE.md and §3's HoMM3 rule now say the setting is
   our own secret history. Built: the factions are **Temple** (`haven`) and **Lodge** (`necropolis`) with new

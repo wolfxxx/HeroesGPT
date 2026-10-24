@@ -44,7 +44,10 @@ painted width to the idle machine's footprint and keeps its colours (dimmed, not
 Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrelated hand-tuned entries in `sizes.json`.
 
 ## Heroes
-- `heroes/portraits/<hero_id>.png` — 256x256 painted portrait (ids in `GameData.HEROES`).
+- `heroes/portraits/<hero_id>.png` — 256x256 painted portrait (ids in `GameData.HEROES`). The heroes from legend
+  (`jacques_de_molay`, `hugues_de_payens`, `saint_germain`, `edward_kelley`) are painted by
+  `tools/art/legend_portraits.py` (`paint`, `ingest`; imagegen/batch35) with a same-faction portrait as the style
+  reference.
 - `heroes/map_<faction>.png` — mounted hero on horse, 3/4 top-down view for the adventure map, transparent, 160x160, facing right.
   The faction's figure stands for its first class on the map (Haven a Knight, Necropolis a dark lance knight: the
   Death Knight). `heroes/map_<class>.png` and `map_<class>_run<0-3>.png` (`cleric`, `necromancer`) — the other

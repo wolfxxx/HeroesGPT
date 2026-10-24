@@ -421,7 +421,8 @@ Window must not be headless (rendering needed). Screens are saved at the window 
   `retop`, `ingest`;
   imagegen/batch28); the earlier single painting's `siege_wall_paint.py` is superseded. Town map pictures per level:
   `tools/art/town_levels_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch29). Map objects repainted as other
-  objects (the stone circle, the observatory): `tools/art/map_object_paint.py` (imagegen/batch34).
+  objects (the stone circle, the observatory): `tools/art/map_object_paint.py` (imagegen/batch34). Portraits of the
+  heroes from legend: `tools/art/legend_portraits.py` (imagegen/batch35).
 - The setting (`docs/SETTING.md`) renames only what the player sees: ids stay as they were (`haven` is the Temple,
   `necropolis` the Lodge, `pikeman` the Sergeant, `monk` the Chaplain Brother, `brotherhood` the Chapter House,
   `shrine` the Stone Circle, `learning_stone` the Monolith, `watchtower` the Observatory, artifacts by their old ids),

@@ -175,6 +175,11 @@ const HEROES := {
 		"attack": 3, "defense": 1, "power": 1, "knowledge": 1, "specialty": "Archery", "skills": {"archery": 1}},
 	"brother_tomas": {"name": "Brother Tomas", "faction": "haven", "class": "Cleric",
 		"attack": 0, "defense": 1, "power": 2, "knowledge": 3, "specialty": "Knowledge", "skills": {"wisdom": 1}, "spells": ["magic_arrow", "shield"]},
+	# heroes from legend (docs/SETTING.md): the last Grand Master of the Temple and its founder
+	"jacques_de_molay": {"name": "Jacques de Molay", "faction": "haven", "class": "Knight",
+		"attack": 1, "defense": 3, "power": 1, "knowledge": 1, "specialty": "Armorer", "skills": {"armorer": 1}},
+	"hugues_de_payens": {"name": "Hugues de Payens", "faction": "haven", "class": "Knight",
+		"attack": 2, "defense": 2, "power": 1, "knowledge": 1, "specialty": "Logistics", "skills": {"logistics": 1}},
 	"lord_morthis": {"name": "Lord Morthis", "faction": "necropolis", "class": "Death Knight",
 		"attack": 2, "defense": 2, "power": 1, "knowledge": 1, "specialty": "Necromancy", "skills": {"necromancy": 1}},
 	"vesna_nightshade": {"name": "Vesna Nightshade", "faction": "necropolis", "class": "Necromancer",
@@ -183,6 +188,11 @@ const HEROES := {
 		"attack": 3, "defense": 2, "power": 0, "knowledge": 1, "specialty": "Offense", "skills": {"necromancy": 1, "offense": 1}},
 	"ilsa_grimveil": {"name": "Ilsa Grimveil", "faction": "necropolis", "class": "Necromancer",
 		"attack": 0, "defense": 1, "power": 2, "knowledge": 3, "specialty": "Sorcery", "skills": {"necromancy": 1}, "spells": ["magic_arrow", "weakness"]},
+	# heroes from legend: the count who never aged, and John Dee's scryer
+	"saint_germain": {"name": "Saint-Germain", "faction": "necropolis", "class": "Necromancer",
+		"attack": 1, "defense": 1, "power": 2, "knowledge": 2, "specialty": "Wisdom", "skills": {"necromancy": 1, "wisdom": 1}, "spells": ["haste", "weakness"]},
+	"edward_kelley": {"name": "Edward Kelley", "faction": "necropolis", "class": "Necromancer",
+		"attack": 0, "defense": 1, "power": 3, "knowledge": 2, "specialty": "Luck", "skills": {"necromancy": 1, "luck": 1}, "spells": ["curse", "magic_arrow"]},
 }
 
 const SKILLS := {
