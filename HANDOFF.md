@@ -16,6 +16,27 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 setting approved, first renames built (2026-10-24), committed with this HANDOFF update:** the user approved
+  `docs/SETTING.md` (all six answers yes; factions renamed). CLAUDE.md and §3's HoMM3 rule now say the setting is
+  our own secret history. Built: the factions are **Temple** (`haven`) and **Lodge** (`necropolis`) with new
+  descriptions; the scenario texts tell the premise (the crown forged from a fallen star); Pikeman → Sergeant,
+  Monk → Chaplain Brother, Brotherhood of the Sword → Chapter House; fifteen artifacts renamed as relics, eleven
+  repainted (`artifact_icons.RETHEMED`; map sprites recut); the Shrine is the Stone Circle and the Watchtower the
+  Observatory, both repainted by the new `tools/art/map_object_paint.py`; the Learning Stone is the Monolith (its
+  picture fitted). Ids unchanged (saves, asset paths, tests). Adjustments to the proposal, noted in SETTING.md:
+  the Archer keeps its name (turcopoles rode), the Grail Hallows are the Cross, the Grail and the Mantle of the
+  Temple (the set's slots), the Helm of Wisdom became the Helm of Solomon (the Emerald Tablet is not a helm), the
+  stone circle carries spirals instead of runes. Screenshots in ignored `shots/session67/setting/`,
+  `relics_compare.png`; old art in `shots/session67/art_old/`. Still to do: legendary heroes, town names, art.
+- **Session67 setting proposal (2026-10-24), committed with this HANDOFF update:** the user wants the setting to lean on conspiracy
+  lore. `docs/SETTING.md`: the premise (every secret history is true; the Shattered Crown was forged from the
+  crystal heart of Alalu's ship and every order hunts its shards), the tone (pulp wonder on a medieval-mythic
+  surface; only long-dead real people, as their legends), the lines (in: myth, legend and history over a century
+  old; occult Nazis as villains only, the user's choice, as a fictional Iron Order with no real symbols, never
+  playable; out: live modern conspiracy theories such as vaccines, and "secret cabal of a people" theories),
+  Haven as the Templars, Necropolis as the Lodge, Eridu as the Anunnaki, HoMM3's other towns as secret histories,
+  relic renames for artifacts, rethemed map objects, cheap first steps and 6 questions (one is changing the
+  CLAUDE.md HoMM3 rule to "HoMM3's mechanics, our setting"). Awaiting the user's answers; nothing built.
 - **Session67 Eridu proposal (2026-10-24), committed with this HANDOFF update:** the user's idea of an alien faction (a crash-landed
   ship as the castle, strange creatures, magic that is science), a deliberate deviation from HoMM3 they raised
   themselves, themed on the Sumerian / Nibiru ancient-astronaut lore they chose (their notes:
@@ -754,6 +775,10 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 1. **Stay true to HoMM3.** Prefer the classic mechanics and look. When an idea deviates from HoMM3, say so clearly
    and ask before doing it. (The user rejected a "free unit order" option for that reason. The user did approve
    one non-HoMM3 aid: in battle, a figure standing in front of the stack in play fades so that stack can be seen.)
+   **The setting is our own** (approved 2026-10-24): HoMM3's mechanics, with a secret history of conspiracies as
+   the setting (`docs/SETTING.md`). Its names, lore and themed art are not deviations; keep to its lines (no live
+   modern conspiracy theories such as vaccines; occult Nazis only as the fictional, never-playable Iron Order,
+   without real symbols).
 2. **One session, no teams of parallel agents** (they used up the user's quota). One background judge agent per
    round is fine.
 3. **Commit or push only when asked.** Commit messages are one descriptive paragraph (see `git log`) and end with
@@ -862,7 +887,8 @@ Proposed path, discussed with the user (not yet approved as a plan):
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
-   idea, an alien faction themed on Sumerian myth, is in `docs/ERIDU_PROPOSAL.md` (awaiting answers).
+   idea, an alien faction themed on Sumerian myth, is in `docs/ERIDU_PROPOSAL.md`; the whole setting (a secret
+   history of conspiracies) in `docs/SETTING.md` (both awaiting answers).
 4. **Hardening:** relay or dedicated server, lobby, fog filtered per player, version checks, turn timers.
 Decisions open with the user: which HoMM3 factions and in what order, how players will connect, and whether to keep
 HoMM3's one-after-another turns.

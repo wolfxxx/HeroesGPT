@@ -64,7 +64,7 @@ func _run() -> void:
 			var before: int = hero["army"][0]["count"]
 			await driver.move_hero(hero, driver.rules.plan(hero, guard["pos"]), false)
 			_ok(not state["objects"].has(guard["uid"]), "walking into guard resolves battle")
-			_ok(hero["army"][0]["count"] == before + 5, "Expert Necromancy raises one per defeated four-Pikeman stack (%d -> %d)" % [before, hero["army"][0]["count"]])
+			_ok(hero["army"][0]["count"] == before + 5, "Expert Necromancy raises one per defeated four-Sergeant stack (%d -> %d)" % [before, hero["army"][0]["count"]])
 		elif day == 4:
 			var snapshot := var_to_bytes(state)
 			_ok(GameState.save_game(path), "save midweek to isolated file")

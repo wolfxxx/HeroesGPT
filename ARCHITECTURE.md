@@ -420,7 +420,12 @@ Window must not be headless (rendering needed). Screens are saved at the window 
 - Siege backdrops per fortification level: `tools/art/siege_levels_paint.py` (`collage`, `paint`, `breach`, `damage`,
   `retop`, `ingest`;
   imagegen/batch28); the earlier single painting's `siege_wall_paint.py` is superseded. Town map pictures per level:
-  `tools/art/town_levels_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch29).
+  `tools/art/town_levels_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch29). Map objects repainted as other
+  objects (the stone circle, the observatory): `tools/art/map_object_paint.py` (imagegen/batch34).
+- The setting (`docs/SETTING.md`) renames only what the player sees: ids stay as they were (`haven` is the Temple,
+  `necropolis` the Lodge, `pikeman` the Sergeant, `monk` the Chaplain Brother, `brotherhood` the Chapter House,
+  `shrine` the Stone Circle, `learning_stone` the Monolith, `watchtower` the Observatory, artifacts by their old ids),
+  so asset paths, saves and tests keep working.
 - Python post-processing: `tools/art/postfx.py` (ink outline, saturation), `sky.py` (painted skies),
   `portrait_bg.py`, `icons2d.py` (spell icons, icon frames), `town_crop.py` (town layers + layout json),
   `terrain.py` (terrain textures), `ui_art.py` (panels, buttons, logo).

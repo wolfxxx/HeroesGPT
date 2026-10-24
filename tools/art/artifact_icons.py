@@ -12,7 +12,7 @@ ARTS = {
     "sword_of_valor": "a noble longsword with a gilded cross-guard and a gleaming steel blade, held diagonally",
     "shield_of_dawn": "a kite shield of polished steel with a golden rising sun emblem and a gold rim",
     "helm_of_wisdom": "a knight's great helm of silver steel with an engraved gold brow band and a small blue gem",
-    "orb_of_power": "a glowing crystal orb crackling with violet arcane light, on a small ornate gold stand",
+    "orb_of_power": "a crystal skull carved from clear quartz, glowing from within with violet arcane light, on a small ornate gold stand",
     "boots_of_speed": "a pair of tall brown leather boots with small white feathered wings at the ankles",
     "ring_of_vitality": "a heavy gold ring set with a large glowing red ruby",
     "clover_of_fortune": "a four-leaf clover glowing with a soft golden-green light",
@@ -35,26 +35,28 @@ ARTS = {
     "orb_of_bedrock": "a heavy orb of polished granite veined with glowing amber, on a rough stone stand",
     "travellers_boots": "a pair of worn brown leather travelling boots with buckles and a little road dust",
     "wayfarers_cloak": "a hooded green travelling cloak with a bronze leaf brooch",
-    "seers_spyglass": "an extended brass spyglass with engraved bands and a glinting lens",
+    "seers_spyglass": "a round black obsidian scrying mirror in a carved dark wooden frame, its polished surface glinting with a faint ghostly reflection",
     "signet_of_coin": "a heavy gold signet ring engraved with a coin and a crown",
-    "bottomless_purse": "a fat red velvet purse tied with gold cord, gold coins spilling from its mouth",
+    "bottomless_purse": "a small iron-bound treasure coffer with a red Templar cross pattee on its lid, overflowing with gold coins and jewels",
     "banner_of_the_muster": "a tall war banner of crimson and gold with an embroidered marching column of soldiers, on a gilded pole",
     "dragonbone_blade": "a long sword whose blade is carved from a single ivory dragon fang, with a dark red leather hilt",
     "dragonscale_shield": "a kite shield covered in overlapping dark red dragon scales with a gold rim",
     "dragonskull_helm": "a helmet shaped from a horned dragon skull, the eye sockets glowing faintly orange",
-    "bone_crown": "a crown of yellowed bones and small skulls with a dull green gem",
-    "gravecloak": "a tattered black cloak with a ghostly green glow at its frayed hem and a skull clasp",
-    "phylactery_of_ages": "a small ornate silver-and-black reliquary box with a glowing sickly green crystal inside",
-    "sun_pendant": "a gold pendant shaped like a radiant sun with a white gem at its centre",
-    "seraphs_feather": "a single long white angel feather glowing with a soft golden light",
-    "sunsteel_cuirass": "a gleaming golden-white steel breastplate with a radiant sun embossed on the chest",
+    "bone_crown": "a slender silver coronet of a count with pearl points and dark red garnets, glinting with a cold pale light",
+    "gravecloak": "an elegant long black velvet cloak lined with deep crimson silk, with a silver clasp shaped like a coiled serpent",
+    "phylactery_of_ages": "the Elixir of Life: a small ornate crystal vial with a silver stopper, filled with a glowing golden-red liquid",
+    "sun_pendant": "a gold pendant in the shape of the Templar cross: a red enamel cross pattee with flared arms, on a fine gold chain",
+    "seraphs_feather": "the Holy Grail: a simple ancient golden chalice glowing with a soft holy light, a faint radiance rising from it",
+    "sunsteel_cuirass": "a Templar knight's white surcoat with a large red cross pattee on the chest, over a steel mail hauberk, laid out flat",
     "dragonheart_arms": "a dragon-fang sword crossed over a red dragon-scale shield with a horned dragon-skull helm "
                         "above them, all wreathed in a fiery red-gold glow",
-    "mantle_of_the_lich_king": "a tattered black cloak with a crown of bones resting on it and a green-glowing reliquary, "
-                               "wreathed in ghostly green mist",
-    "seraphs_covenant": "a golden sun-embossed breastplate with a radiant sun pendant and white angel feathers, "
-                        "bathed in holy golden light",
+    "mantle_of_the_lich_king": "an elegant black velvet cloak lined with crimson silk, a silver count's coronet and a glowing crystal vial of golden-red elixir resting on it, wreathed in ghostly green mist",
+    "seraphs_covenant": "the Holy Grail, a glowing golden chalice, standing before a white Templar surcoat with a red cross pattee and a gold cross pendant, bathed in holy golden light",
 }
+# repainted as the relics of the secret-history setting (docs/SETTING.md, 2026-10-24): painted from the neutral
+# reference icon, not their old pictures, so the old item does not show through
+RETHEMED = ["orb_of_power", "seers_spyglass", "bottomless_purse", "bone_crown", "gravecloak", "phylactery_of_ages",
+            "sun_pendant", "seraphs_feather", "sunsteel_cuirass", "mantle_of_the_lich_king", "seraphs_covenant"]
 PROMPT = ("Paint a single inventory icon for a fantasy strategy game: {what}, centred and filling most of the square, "
           "seen slightly from above. Hand-painted digital fantasy illustration in the style of classic late-1990s "
           "turn-based fantasy strategy games: rich saturated colours, visible painterly brushwork, crisp highlights, "
@@ -76,7 +78,7 @@ def paint(ids):
         if os.path.exists(dst) and not ids:
             print("skip", a); continue
         src = f"assets/icons/artifact_{a}.png"
-        if not os.path.exists(src):
+        if not os.path.exists(src) or a in RETHEMED:
             src = "assets/icons/artifact_ring_of_vitality.png"  # (the style and background of the set)
         ref = f"{BATCH}/in/artifact_{a}.png"
         Image.open(src).convert("RGB").resize((512, 512), Image.LANCZOS).save(ref)

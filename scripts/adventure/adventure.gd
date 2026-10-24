@@ -612,7 +612,7 @@ func _tile_info(t: Vector2i, detailed := false):
 			return v
 		"shrine":
 			var sp: Dictionary = GameData.SPELLS[o["spell"]]
-			var v := HoverInfo.box("Shrine of Magic")
+			var v := HoverInfo.box("Stone Circle")
 			HoverInfo.line(v, "Teaches %s (level %d): %s" % [sp["name"], sp["level"], sp["desc"]])
 			if not hero.is_empty():
 				if o["spell"] in hero["spells"]:
@@ -623,7 +623,7 @@ func _tile_info(t: Vector2i, detailed := false):
 					_visit_line(v, false, "%s can learn it." % hero["name"])
 			return v
 		"learning_stone":
-			var v := HoverInfo.box("Learning Stone")
+			var v := HoverInfo.box("Monolith")
 			HoverInfo.line(v, "+1000 experience, once per hero.")
 			if not hero.is_empty():
 				var seen: bool = hero["uid"] in o.get("visited", [])
@@ -639,7 +639,7 @@ func _tile_info(t: Vector2i, detailed := false):
 				_visit_line(v, false, "Not visited this week.")
 			return v
 		"watchtower":
-			var v := HoverInfo.box("Watchtower")
+			var v := HoverInfo.box("Observatory")
 			HoverInfo.line(v, "Reveals the land around it.")
 			var seen: bool = me in o.get("visited_by", [])
 			_visit_line(v, seen, "Visited." if seen else "Not visited.")
@@ -678,14 +678,14 @@ func _describe_tile(t: Vector2i) -> String:
 			"dwelling":
 				return "%s dwelling (%d available)" % [GameData.CREATURES[o["creature"]]["name"], o["available"]]
 			"shrine":
-				return "Shrine of Magic (%s)" % GameData.SPELLS[o["spell"]]["name"]
+				return "Stone Circle (%s)" % GameData.SPELLS[o["spell"]]["name"]
 			"learning_stone":
 				var sel := selected_hero()
-				return "Learning Stone" + ("" if sel.is_empty() else (" (visited)" if sel["uid"] in o.get("visited", []) else " (not visited)"))
+				return "Monolith" + ("" if sel.is_empty() else (" (visited)" if sel["uid"] in o.get("visited", []) else " (not visited)"))
 			"windmill":
 				return "Windmill (%s)" % ("visited this week" if human_player()["index"] in o.get("visited_week", []) else "not visited this week")
 			"watchtower":
-				return "Watchtower (%s)" % ("visited" if human_player()["index"] in o.get("visited_by", []) else "not visited")
+				return "Observatory (%s)" % ("visited" if human_player()["index"] in o.get("visited_by", []) else "not visited")
 			_:
 				return o["type"].capitalize()
 	if rules.is_guarded(t):

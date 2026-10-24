@@ -2,7 +2,7 @@
 
 Sprites rendered by tools/art/blender use a fixed world scale and write their foot point to `<dir>/anchors.json`
 (map art: 64 px per Blender unit, drawn at 0.5 => 2 units per 64px tile; creatures: 150 px/unit). Code reads it
-with `Assets.anchor()`. Extra map decor ids: `map/mountain_snow_1..2.png`; `map/obelisk.png` is the Learning Stone.
+with `Assets.anchor()`. Extra map decor ids: `map/mountain_snow_1..2.png`; `map/obelisk.png` is the Monolith (id `learning_stone`).
 
 All paths relative to `res://assets/`. Code loads via `Assets.tex("<path>")` which falls back to a
 generated placeholder if the file is missing, so code and art can progress independently.
@@ -75,8 +75,12 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - `map/<mine_id>.png` — mines (ids in `GameData.MINES`), transparent, ~192x160.
 - `map/res_<resource>.png` — resource pile on the ground, transparent, ~96x80. `res_sulfur.png` was repainted
   (sheet `sulfur` of `button_icons_paint.py`, then `tools/art/map_pile.py`: smoke dropped, scaled to the old size, shadow).
-- `map/chest.png`, `map/campfire.png`, `map/artifact.png` (generic artifact pedestal/glow), `map/shrine.png` (magic shrine),
-  `map/windmill.png`, `map/obelisk.png`, `map/dwelling_neutral.png`, `map/watchtower.png`.
+- `map/chest.png`, `map/campfire.png`, `map/artifact.png` (generic artifact pedestal/glow), `map/shrine.png` (the
+  Stone Circle, id `shrine`), `map/windmill.png`, `map/obelisk.png`, `map/dwelling_neutral.png`, `map/watchtower.png`
+  (the Observatory, id `watchtower`). The stone circle and the observatory were repainted for the setting by
+  `tools/art/map_object_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch34; the old sprite is the reference for
+  view, size and light, kept as `imagegen/batch34/in/<name>_ref.png`; `GROW` enlarges a figure past a fit into the
+  old one's box). The old sprites are in ignored `shots/session67/art_old/`.
 - `map/war_machine_factory.png` — neutral workshop with ballista, medical supplies and ammo wagon. Built-in
   OpenAI imagegen, native 1536x1024 RGBA copied unmodified; exact prompt in `tools/art/war_machine_factory_prompt.md`.
   No Blender anchor: `MapView._object_node` scales it to 3.2 tiles wide and offsets the transparent bottom margin
@@ -149,7 +153,11 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   ids in `GameData.ARTIFACTS`), painted by `tools/art/artifact_icons.py paint [ids]` (imagegen/batch27) and framed by
   `... ingest`. On the map an artifact is drawn as its own icon over a glow of its tier's colour (`MapView._ArtifactGlow`);
   that picture is `map/art_<id>.png`, the item keyed out of its painting with a cast shadow by
-  `tools/art/artifact_map_sprites.py`; `map/artifact.png` (the old pedestal) is no longer used.
+  `tools/art/artifact_map_sprites.py`; `map/artifact.png` (the old pedestal) is no longer used. Eleven were repainted
+  as relics of the setting (`docs/SETTING.md`; `artifact_icons.RETHEMED`, painted from the neutral reference icon so
+  the old item does not show through): the Crystal Skull, Dr. Dee's Scrying Mirror, the Templar Treasure, the
+  Count's coronet, cloak and elixir and their set, the Templar cross, the Holy Grail, the Templar surcoat and their
+  set. Artifact ids are unchanged; only names and pictures changed.
 - `icons/skill_<skill_id>.png` — 128 px secondary skills (painted, sheet `skills`; Offense from `conditions`).
 - `icons/stat_attack.png stat_defense.png stat_power.png stat_knowledge.png stat_morale.png` — 128 px primary stats and
   morale (sheets `stats`, `knowledge`); `stat_health.png stat_damage.png stat_xp.png stat_speed.png` (sheet `misc_stats`).

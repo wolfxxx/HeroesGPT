@@ -407,10 +407,10 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 		"shrine":
 			var s: String = o["spell"]
 			var sp: Dictionary = GameData.SPELLS[s]
-			ev["title"] = "Shrine of Magic"
+			ev["title"] = "Stone Circle"
 			ev["icons"] = [[Assets.spell_icon(s), sp["name"]]]
 			if s in hero["spells"]:
-				ev["text"] = "The shrine teaches %s, which you already know." % sp["name"]
+				ev["text"] = "The stones hum with the secret of %s, which you already know." % sp["name"]
 			elif learn_spell(hero, s):
 				ev["text"] = "A voice whispers the secrets of %s into your mind." % sp["name"]
 				ev["sfx"] = "spell_cast"
@@ -436,19 +436,19 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 			if not hero["owner"] in vb:
 				vb.append(hero["owner"])
 				o["visited_by"] = vb
-			ev["title"] = "Watchtower"
-			ev["text"] = "From the top of the tower you survey the surrounding lands."
+			ev["title"] = "Observatory"
+			ev["text"] = "From the observatory you chart the lands around it."
 			ev["sfx"] = "flag_capture"
 			ev["fog"] = true
 		"learning_stone":
 			var v: Array = o.get("visited", [])
-			ev["title"] = "Learning Stone"
+			ev["title"] = "Monolith"
 			if hero["uid"] in v:
-				ev["text"] = "You have already studied the runes on this stone."
+				ev["text"] = "You have already studied the glyphs on this monolith."
 			else:
 				v.append(hero["uid"])
 				o["visited"] = v
-				ev["text"] = "You study the ancient runes. +1000 experience."
+				ev["text"] = "You study the glyphs on the black monolith. +1000 experience."
 				ev["xp"] = 1000
 				ev["sfx"] = "level_up"
 		"war_machine_factory":

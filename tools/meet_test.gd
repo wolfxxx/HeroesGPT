@@ -76,7 +76,7 @@ class Watcher extends Node:
 			await _press(_sock(rows[0], "dragonskull_helm"))
 			_ok("dragonheart_arms" in other["artifacts"] and not "dragonskull_helm" in me["artifacts"],
 				"the helm crosses over and completes the combination: %s" % [other["artifacts"]])
-			_ok(_has_text(get_tree().root.get_node("ModalLayer"), "Dragonheart Arms"), "the merge is announced")
+			_ok(_has_text(get_tree().root.get_node("ModalLayer"), "Arms of Saint George"), "the merge is announced")
 			_key(KEY_ENTER)  # (closes the announcement, back to the meeting)
 			await _frames(30)
 			rows = _rows(get_tree().root.get_node("ModalLayer"))

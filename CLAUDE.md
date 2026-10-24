@@ -4,7 +4,10 @@ Start by reading `HANDOFF.md` — status, the user's standing rules, the round w
 what's next. Then `ARCHITECTURE.md` (code map) and `ASSETS.md` (asset paths and art pipeline).
 
 The rules that matter most:
-- Stay true to Heroes of Might and Magic III's mechanics and look; flag any deviation and ask first.
+- Stay true to Heroes of Might and Magic III's mechanics and look; flag any deviation and ask first. The setting is
+  our own secret history of conspiracies (`docs/SETTING.md`, approved): its names, lore and themed art are not
+  deviations, but keep to its lines (no live modern conspiracy theories; occult Nazis only as the fictional,
+  never-playable Iron Order, without real symbols).
 - Work in one session; at most one background judge agent at a time (no teams of parallel agents).
 - Commit or push only when the user asks; end commit messages with your co-author line.
 - Run `git checkout -- project.godot` after running Godot with a window (the scripts in `tools/` do it).
