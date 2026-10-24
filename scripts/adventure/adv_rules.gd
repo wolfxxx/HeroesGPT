@@ -600,6 +600,10 @@ func garrison_hero(town: Dictionary) -> Dictionary:
 	return hh if hh.get("in_town", false) else {}
 
 ## The troops holding a town: its garrison hero's army, else its garrison.
+## Carries out a player's action (a plain dictionary; see Commands) and reports what happened.
+func do(cmd: Dictionary) -> Dictionary:
+	return Commands.run(self, cmd)
+
 func town_army(town: Dictionary) -> Array:
 	var gh := garrison_hero(town)
 	return gh["army"] if not gh.is_empty() else town["garrison"]

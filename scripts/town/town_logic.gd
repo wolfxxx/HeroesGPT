@@ -39,6 +39,12 @@ static func can_afford(player: Dictionary, cost: Dictionary, times := 1) -> bool
 			return false
 	return true
 
+## The Marketplace's worth of each resource in gold; a trade gives half the worth (HoMM3's rate with one market).
+const RES_VALUE := {"gold": 1, "wood": 250, "ore": 250, "mercury": 500, "sulfur": 500, "crystal": 500, "gems": 500}
+
+static func market_rate(give: String, get_r: String) -> float:
+	return float(RES_VALUE[give]) * 0.5 / float(RES_VALUE[get_r])
+
 static func pay(player: Dictionary, cost: Dictionary, times := 1) -> void:
 	for r in cost:
 		player["resources"][r] = player["resources"].get(r, 0) - cost[r] * times

@@ -180,7 +180,7 @@ func _recruit(town: Dictionary, player: Dictionary, save: int) -> void:
 		if price > 0:
 			n = mini(n, maxi(0, (player["resources"]["gold"] - save) / price))
 		if n > 0:
-			TownLogic.recruit(town, player, tier, n, town["garrison"])
+			rules.do({"t": "recruit_town", "p": player["index"], "town": town["uid"], "tier": tier, "n": n, "into": "garrison"})
 
 func hire_hero(player: Dictionary, town: Dictionary) -> Dictionary:
 	var cands := []
@@ -192,13 +192,11 @@ func hire_hero(player: Dictionary, town: Dictionary) -> Dictionary:
 	if cands.is_empty():
 		return {}
 	var hid: String = cands[randi() % cands.size()]
-	world["tavern"].erase(hid)
-	player["resources"]["gold"] -= 2500
-	var hero := GameState.tavern_hero(hid, player["index"])
-	hero["pos"] = town["pos"]
+	var res := rules.do({"t": "hire", "p": player["index"], "town": town["uid"], "hero_id": hid})
+	if not res["ok"]:
+		return {}
+	var hero: Dictionary = world["heroes"][res["hero"]]
 	hero["movement"] = 0 if player["is_ai"] == false else hero["movement"]
-	world["heroes"][hero["uid"]] = hero
-	player["heroes"].append(hero["uid"])
 	_reinforce(hero, town, player)
 	rules.rebuild()
 	return hero
@@ -344,11 +342,9 @@ func exchange_troops(a: Dictionary, b: Dictionary) -> int:
 
 func recruit_from_dwelling(hero: Dictionary, o: Dictionary) -> void:
 	var player := rules.player_of(hero)
-	var c: Dictionary = GameData.CREATURES[o["creature"]]
 	var n := dwelling_recruits(hero, o)
-	if n > 0 and GameState.add_to_army(hero["army"], o["creature"], n):
-		TownLogic.pay(player, c["cost"], n)
-		o["available"] -= n
+	if n > 0:
+		rules.do({"t": "recruit_site", "p": player["index"], "hero": hero["uid"], "object": o["uid"], "n": n})
 
 ## Use the same affordable, carryable count when planning a visit and when buying.
 func dwelling_recruits(hero: Dictionary, o: Dictionary) -> int:

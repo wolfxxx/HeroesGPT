@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 command layer, first step (2026-10-24), committed with this HANDOFF update:** step 2 of `docs/FOUNDATIONS_AUDIT.md` begun.
+  New `scripts/adventure/commands.gd` (`Commands.run`, through `AdvRules.do(cmd)`): actions as plain dictionaries,
+  checked, applied, reported. `recruit_town`, `recruit_site`, `hire`, `trade` (the market rate moved to
+  `TownLogic.market_rate`); the town screen, the dwelling dialog (`recruit_dialog` takes a `buy(n)` callback) and
+  the computer use them. Seeded tournaments (4 players size 48, 2 players size 36) identical before and after.
+  New `tools/commands_test.tscn` (17 checks, every command sent through JSON). Next: stack moves, then movement.
 - **Session67 Order of the Dragon art (2026-10-24), committed with this HANDOFF update:** a pilot of five approved by the user ("roll
   out"), then the rest: the Order's 30 town-screen layers (with the backdrop), 27 building cards and 3 map towns
   repainted with crimson-and-black heraldry and the Order's golden dragon coiled in a circle (on banners, shields,

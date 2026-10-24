@@ -2,7 +2,6 @@ extends Control
 ## Town screen: painted backdrop with composited buildings (hover/click), garrison + visiting hero
 ## armies, and dialogs for building, recruiting, tavern, marketplace, mage guild and blacksmith.
 
-const RES_VALUE := {"gold": 1, "wood": 250, "ore": 250, "mercury": 500, "sulfur": 500, "crystal": 500, "gems": 500}
 
 var world: Dictionary
 var town: Dictionary
@@ -779,7 +778,8 @@ func _flash_building(id: String) -> void:
 func _recruit_tier(tier: int) -> void:
 	var cid := TownLogic.dwelling_creature(town, tier)
 	# (into the garrison hero's army when one is inside, as the classic: the town's own garrison row is its army)
-	await AdventureHUD.recruit_dialog(self, cid, town["available"][tier - 1], player, _rules.town_army(town), func(n): town["available"][tier - 1] -= n)
+	await AdventureHUD.recruit_dialog(self, cid, town["available"][tier - 1], player, func(n): return _rules.do(
+		{"t": "recruit_town", "p": player["index"], "town": town["uid"], "tier": tier, "n": n, "into": "town"})["ok"])
 	refresh()
 
 func _open_recruit_all() -> void:
@@ -880,12 +880,12 @@ func _open_tavern() -> void:
 		Audio.sfx("error")
 		await Modal.message(self, "Tavern", "You cannot afford the 2500 gold.").closed
 		return
-	player["resources"]["gold"] -= 2500
-	world["tavern"].erase(r)
-	var nh := GameState.tavern_hero(r, town["owner"])
-	nh["pos"] = town["pos"]
-	world["heroes"][nh["uid"]] = nh
-	player["heroes"].append(nh["uid"])
+	var res := _rules.do({"t": "hire", "p": player["index"], "town": town["uid"], "hero_id": r})
+	if not res["ok"]:
+		Audio.sfx("error")
+		await Modal.message(self, "Tavern", res["reason"]).closed
+		return
+	var nh: Dictionary = world["heroes"][res["hero"]]
 	var learned := _learn_guild_spells(nh)  # (as any visit: up to level 2, more with Wisdom)
 	hero = nh
 	world["selected_hero"] = nh["uid"]
@@ -933,7 +933,7 @@ func _open_market() -> void:
 	var amount_l := UI.label("", 22, UI.GOLD)
 	m.body.add_child(amount_l)
 	var rate := func(give: String, get: String) -> float:
-		return float(RES_VALUE[give]) * 0.5 / float(RES_VALUE[get])
+		return TownLogic.market_rate(give, get)
 	var upd := func(_v = 0):
 		for side in rows:
 			for b in rows[side]:
@@ -967,10 +967,7 @@ func _open_market() -> void:
 	m.set_meta("cancel", "done")
 	var r = await m.closed
 	if r == "trade" and slider.value > 0 and state["give"] != state["get"]:
-		var n := int(slider.value)
-		var got := int(n * rate.call(state["give"], state["get"]))
-		player["resources"][state["give"]] -= n
-		player["resources"][state["get"]] += got
+		_rules.do({"t": "trade", "p": player["index"], "give": state["give"], "get": state["get"], "n": int(slider.value)})
 		Audio.sfx("gold_pickup")
 		refresh()
 		await _open_market()

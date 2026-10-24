@@ -203,6 +203,18 @@ mana, weekly first-level growth). Placement by tier: `WorldGen._place_artifacts`
 `MapView._ArtifactGlow` draws the twinkle as explicit convex triangles, skipping near-invisible subpixel phases.
 This avoids triangulation of a collapsing concave star. A windowed phase sweep is in `tools/artifact_glow_test.tscn`.
 
+## Commands
+Every player action is meant to become a command: a plain dictionary (ids, numbers, strings) handed to
+`AdvRules.do(cmd)`, which `Commands.run` (`scripts/adventure/commands.gd`) checks against the rules, applies and reports
+as `{"ok", "reason", ...}`. Screens choose and show, the computer chooses, and only commands change the world, so an
+online host can apply a remote player's commands and a game can be replayed. Built so far (session67): `recruit_town`
+(into the town's army or its garrison), `recruit_site` (a map dwelling), `hire` (a Tavern hero to the gate; the
+caller picks the hero), `trade` (the market rate is `TownLogic.market_rate`). The town screen, the map dwelling dialog
+(`AdventureHUD.recruit_dialog` now takes a `buy(n) -> bool` command callback) and the computer (`AdvAI._recruit`,
+`hire_hero`, `recruit_from_dwelling`) all use them; seeded tournaments are identical before and after. Still direct
+(docs/FOUNDATIONS_AUDIT.md): hero movement, stack moves and exchanges, the turn, building, garrison moves, artifacts.
+Checked by `tools/commands_test.tscn` (each command applied and refused, sent through JSON).
+
 ## Factions as data
 Everything that makes a faction is one record in `GameData.FACTIONS` (its header lists the fields): creatures and
 upgrades, native terrain, the Blacksmith's machine, its special buildings, extra building requirements, dwelling and
@@ -418,6 +430,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/lore_test.tscn` — in the full suite: omens and rumours by layer, fixed for a week, some true hints naming a
   real town, nothing drawn from the shared random stream (prints a year's sample); a declassified line for every
   artifact and mine, redacted until met, revealed once in the first message.
+- `tools/commands_test.tscn` — in the full suite: recruiting in a town and at a map dwelling, hiring, trading, each
+  applied and refused when the rules say no, every command sent through JSON first.
 - `tools/faction_data_test.tscn` — in the full suite: every faction record complete and consistent with its classes,
   heroes and specials; the computer's build orders and the building effects as before the data move (session67).
 - `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the

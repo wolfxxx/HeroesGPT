@@ -908,11 +908,13 @@ func _exchange_artifacts(row: HFlowContainer, h: Dictionary, other: Dictionary, 
 		row.add_child(so)
 
 func open_dwelling(hero: Dictionary, o: Dictionary) -> void:
-	await recruit_dialog(adv, o["creature"], o["available"], adv.human_player(), hero["army"], func(n): o["available"] -= n)
+	await recruit_dialog(adv, o["creature"], o["available"], adv.human_player(), func(n): return adv.rules.do(
+		{"t": "recruit_site", "p": hero["owner"], "hero": hero["uid"], "object": o["uid"], "n": n})["ok"])
 	refresh()
 
-## Shared recruit dialog (also used by the town screen). on_bought(n) is called after paying.
-static func recruit_dialog(owner_node: Node, cid: String, available: int, player: Dictionary, army: Array, on_bought: Callable) -> int:
+## Shared recruit dialog (also used by the town screen). buy(n) carries out the purchase (a command) and says whether
+## it went through.
+static func recruit_dialog(owner_node: Node, cid: String, available: int, player: Dictionary, buy: Callable) -> int:
 	var c: Dictionary = GameData.CREATURES[cid]
 	var m := Modal.custom(owner_node, "Recruit %s" % c["plural"], 900)
 	var h := HBoxContainer.new()
@@ -990,9 +992,7 @@ static func recruit_dialog(owner_node: Node, cid: String, available: int, player
 	var r = await m.closed
 	if r == "buy" and int(slider.value) > 0:
 		var n := int(slider.value)
-		if GameState.add_to_army(army, cid, n):
-			TownLogic.pay(player, c["cost"], n)
-			on_bought.call(n)
+		if buy.call(n):
 			Audio.sfx("recruit")
 			return n
 		else:

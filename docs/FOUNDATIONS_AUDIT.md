@@ -1,7 +1,7 @@
 # Foundations audit: what stands between the game and several factions played online
 
-Status: **audit** (2026-10-24, at `d17502e`). Step 1, faction data, is **done** (section 4, "Done"); steps 2-4 are
-not started. It sizes "Phase 1: Foundations" of the plan in
+Status: **audit** (2026-10-24, at `d17502e`). Step 1, faction data, is **done** (section 4, "Done"). Step 2, the
+command layer, is **under way** (section 1, "Progress"); steps 3-4 are not started. It sizes "Phase 1: Foundations" of the plan in
 HANDOFF §8: one action layer, repeatable randomness, a replay test, faction data. Line numbers are as of that commit.
 
 ## Summary
@@ -38,6 +38,11 @@ what makes a replay possible.
 | Level-up skill choice | `rules.roll_level_up` / `apply_level_up` are rules; the computer's pick is `adventure.gd` 1032 | — | the computer's pick into the AI |
 | Already rules (keep): build (`TownLogic.build`), war machines (`GameState.buy_war_machine`), garrison enter/leave/swap (`AdvRules`), Skeleton Transformer, artifacts (`GameState.swap_artifact`, `split_combination`), dismiss (`AdvRules.dismiss_hero`), chests (`rules.resolve_chest`), battle results (`rules.apply_battle`) | | | wrap as commands |
 | Battle turn driver: machines act, fear, bad and good morale, next stack | `battle.gd` 733–797 | — | `BattleLogic.next_turn()` returning events |
+
+**Progress (session67):** `AdvRules.do(cmd)` / `scripts/adventure/commands.gd` with `recruit_town`, `recruit_site`,
+`hire` and `trade`; the town screen, the map dwelling dialog and the computer use them (seeded 2- and 4-player
+tournaments identical before and after). Next: stack moves and exchanges (army strip and the AI's transfers), then hero
+movement and the turn.
 
 A side benefit: the computer player stops re-implementing recruiting, hiring and troop moves, so it can't drift from
 the rules a person plays by.

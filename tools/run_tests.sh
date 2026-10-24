@@ -35,6 +35,7 @@ sh tools/check.sh 2>&1 | grep -E "CHECK DONE|SCRIPT ERROR|Parse Error|ERROR" | h
 echo "--faction-data"; timeout 60 $G --headless --path . res://tools/faction_data_test.tscn 2>&1 | grep -E "FACTION DATA TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--lore"; timeout 60 $G --headless --path . res://tools/lore_test.tscn 2>&1 | grep -E "LORE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--pyramid"; timeout 150 $G --headless --path . res://tools/pyramid_test.tscn 2>&1 | grep -E "PYRAMID TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--commands"; timeout 60 $G --headless --path . res://tools/commands_test.tscn 2>&1 | grep -E "COMMANDS TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--battle"; timeout 300 $G --headless --path . res://tools/battle_test.tscn 2>&1 | grep -E "BATTLE TEST|SCRIPT ERROR" | tail -4
 echo "--battle-visual"; timeout 60 $G --headless --path . res://tools/battle_visual_test.tscn 2>&1 | grep -E "BATTLE VISUAL TEST|SCRIPT ERROR|FAIL" | tail -6
 echo "--battle-ai"; timeout 60 $G --headless --path . res://tools/battle_ai_test.tscn 2>&1 | grep -E "BATTLE AI TEST|SCRIPT ERROR|FAIL" | tail -8
