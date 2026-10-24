@@ -217,6 +217,15 @@ building. Ids keep their first names (`haven` is the Temple). Art is found by id
 consistent; the build orders and effects as before the move). A new faction is a record, its creatures, classes,
 heroes and buildings, and its art; see `docs/FOUNDATIONS_AUDIT.md` for what remains (actions in screens, randomness).
 
+## The setting's voice
+`scripts/core/lore.gd` (`Lore`, static) holds the setting's text by layer (historical, occult, ancient, cosmic; one
+layer a month, `Lore.depth(day)`): the weekly omens added to the new-week proclamation (`adventure.gd._turn_banner`,
+`Lore.omen(world, day)`) and the Tavern rumours (`town_screen._open_tavern`, `Lore.rumour(world)`). `AdvRules.new_day`
+stores the week's rumour in `world["rumour"]` (`{week, text}`) as the map stands at the week's start; `Lore.rumour`
+makes one on the first week or for an older save. Some rumours are true hints (a relic on the map, an unclaimed mine,
+placed by the nearest town). All draws use a generator seeded by `hash([world seed, week or layer, purpose])`, never
+the shared stream. Checked by `tools/lore_test.tscn` (which prints a year's sample). Design: `docs/SETTING.md`.
+
 ## War machine shops
 `GameData.WAR_MACHINES` lists the three purchasable types, with prices in `CREATURES`; each faction's
 `smith_machine` (in `GameData.FACTIONS`) keeps the town Blacksmith faction-specific. `GameState.war_machine_reason` / `buy_war_machine` share validation and payment
@@ -379,6 +388,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/lore_test.tscn` — in the full suite: omens and rumours by layer, fixed for a week, some true hints naming a
+  real town, nothing drawn from the shared random stream; prints a year's sample.
 - `tools/faction_data_test.tscn` — in the full suite: every faction record complete and consistent with its classes,
   heroes and specials; the computer's build orders and the building effects as before the data move (session67).
 - `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the

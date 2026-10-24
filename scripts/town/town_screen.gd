@@ -867,6 +867,7 @@ func _open_tavern() -> void:
 		var id: String = hid
 		b.pressed.connect(func(): m.close(id))
 		h.add_child(b)
+	m.add_text("Rumour: " + Lore.rumour(world), 20)  # (as the classic Tavern: this week's talk, the same in every tavern)
 	m.add_buttons([["Leave", ""]])
 	m.set_meta("cancel", "")
 	var r = await m.closed

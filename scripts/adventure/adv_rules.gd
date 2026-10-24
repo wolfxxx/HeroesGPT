@@ -911,4 +911,5 @@ func new_day() -> Dictionary:
 		var ids := GameData.CREATURES.keys().filter(func(c): return GameData.CREATURES[c]["tier"] > 0)
 		info["week_creature"] = ids[randi() % ids.size()]
 		world["week_creature"] = info["week_creature"]
+		world["rumour"] = Lore.make_rumour(world)  # (the Tavern's rumour for the week, as the map stands at its start)
 	return info

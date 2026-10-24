@@ -1153,7 +1153,8 @@ func _turn_banner() -> void:
 	if info.get("new_week", false):
 		Audio.sfx("new_week")
 		var cid: String = info.get("week_creature", "")
-		var text := "Astrologers proclaim the Week of the %s.\nAll dwellings increase their population." % (GameData.CREATURES[cid]["name"] if cid != "" else "Peasant")
+		var text := "Astrologers proclaim the Week of the %s.\nAll dwellings increase their population.\n\n%s" % [
+			GameData.CREATURES[cid]["name"] if cid != "" else "Peasant", Lore.omen(world, world["day"])]
 		await Modal.message(self, "A New Week", text, [[Assets.creature_portrait(cid), GameData.CREATURES[cid]["plural"]]] if cid != "" else []).closed
 	else:
 		hud.banner("Day %d" % world["day"])

@@ -20,6 +20,37 @@ an empire with them.
 This keeps the game's title and its first scenario ("two lords claim the broken crown of the old kingdom") and
 gives every faction a reason to fight.
 
+## The feel: stumbling into the depths
+
+The user's guiding aim (2026-10-24): the game should feel like **stumbling into the depths of conspiracy theories and
+old mysteries.** Every new piece is judged by one question: *does this make the player stumble deeper?*
+
+- **It starts ordinary.** A medieval war over a broken crown, as HoMM3 opens. Then cracks show: a stone circle that
+  hums, a rumour that sounds mad, a relic that shouldn't exist.
+- **Layer by layer.** The strangeness deepens as the game goes on, one layer a month: **historical** mysteries (the
+  Templars, the Grail, lost treasure), the **occult** (the deathless, alchemy, scrying), the **ancient** (Egypt,
+  Thoth, Atlantis), the **cosmic** (the fallen star, Nibiru, the watchers). The factions follow the same descent, from
+  the grounded Temple to the Anunnaki.
+- **Rumours that turn out true.** Some whispers are real hints about the map; the player learns that following them
+  pays.
+- **Digging, not reading.** Mysteries are found and pieced together through play (HoMM3's own obelisks and puzzle map,
+  reskinned as a conspiracy board and the hunt for a Shard of the Crown), not delivered as long texts.
+- **Short and strange.** One or two sentences, concrete and odd ("The black monoliths cast their shadows the wrong way
+  at noon."), never explaining too much.
+
+Built so far: the weekly omens and Tavern rumours (`scripts/core/lore.gd`, below). Planned: Egyptian relics and map
+objects, HoMM3's Pyramid with Mummies, "declassified" descriptions that clear as things are met, the obelisk puzzle
+map and the dig for a Shard of the Crown, the Illuminated as a faction, a story campaign in acts.
+
+### Omens and rumours (built)
+
+Each new week the astrologers' proclamation carries an **omen**, and every Tavern has the week's **rumour** (as
+HoMM3's taverns do). Both come from the month's layer; about two rumours in five, when the map allows, are true hints:
+where a relic lies ("They say the Cloak of Saint-Germain lies somewhere south of Rosslyn, if you can believe a
+drunk.") or a mine without a master. Each month's lines are dealt from a pool shuffled once per map, so none repeats
+within a month. They draw from a generator seeded by the map's seed and the week, never the shared random stream, so
+seeded games play as before. New lines go in `Lore.OMENS` and `Lore.RUMOURS` (one list per layer).
+
 ## Tone and register
 
 - **Pulp wonder, not "wake up".** The fun is in the secret history being true *in the game*: hidden orders, relics,

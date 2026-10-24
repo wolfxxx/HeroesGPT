@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 the feel, omens and rumours (2026-10-24), committed with this HANDOFF update:** the user wants the game to feel like stumbling
+  into the depths of conspiracy theories and old mysteries. SETTING.md has "The feel" as its guiding principle
+  (four layers, one a month: historical, occult, ancient, cosmic; rumours that turn out true; digging, not reading).
+  Built: new `scripts/core/lore.gd` with weekly omens (added to the astrologers' new-week proclamation) and Tavern
+  rumours (a line in the Tavern window, as HoMM3's), six omens and five rumours per layer, dealt without repeats
+  within a month; two in five rumours are true hints (a relic's or unclaimed mine's place by the nearest town).
+  Seeded per map and week with a private generator: seeded games are unchanged. `AdvRules.new_day` stores
+  `world["rumour"]`. New `tools/lore_test.tscn` (41 checks). Screenshots `shots/session67/setting/week_omen.png`,
+  `tavern_rumour.png`. Next on the list: Egyptian relics and map objects, the Pyramid, declassified descriptions.
 - **Session67 Order of the Dragon (2026-10-24), committed with this HANDOFF update:** the Lodge is renamed the **Order of the Dragon** (the
   user's choice): "Lodge" is the Freemasons' word, a living organisation, which the setting's lines keep out. The
   real knightly order of 1408 gave Vlad Dracul and Dracula their names, so its vampires and dragons are its own
