@@ -19,7 +19,7 @@ SFX = {
     "build": ("construction sounds, hammering on wood and stone, short fantasy game building completed fanfare", 2.5),
     "recruit": ("armored soldiers marching footsteps and a short brass fanfare, recruiting troops in a fantasy strategy game", 2.0),
     "gold_pickup": ("pile of gold coins being scooped up, jingling coins", 1.2),
-    "resource_pickup": ("picking up a heavy bundle of wood and stone, satisfying thud with a soft magical chime", 1.2),
+    "resource_pickup": ("loud close-up: a heavy bundle of logs and stones dropped onto a wooden cart, a solid satisfying wooden thud and stone clack, then a short bright magical chime", 1.2),
     "chest_open": ("old wooden treasure chest creaking open with a sparkling magical shimmer", 1.8),
     "footstep_horse": ("single horse hoof step on grass, short", 0.5),
     "new_day": ("a single rooster crow far away, morning ambience", 1.6),

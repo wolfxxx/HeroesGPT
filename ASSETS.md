@@ -185,6 +185,6 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   `tools/audio/gen_audio.py sfx <names>` (ElevenLabs; prompts in its `SFX` table). Generated loudness varies a lot:
   measure a new sound's peak in a window (`AudioServer.get_bus_peak_volume_left_db` while it plays) and regenerate
   it if it peaks far below the others (about -2 dB); session67 found blunt_hit at -33 dB, arrow_shot
-  at -21, mine_capture at -25 and death_undead at -15, and remade them.
+  at -21, mine_capture at -25, death_undead at -15 and resource_pickup at -17, and remade them.
 - Per-creature (optional): `sfx/<creature_id>_attack.mp3`, `sfx/<creature_id>_death.mp3`.
 - Voice (optional): `voice/<line_id>.mp3` narrator lines: intro, victory, defeat, new_week.
