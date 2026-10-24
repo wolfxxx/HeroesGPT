@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 foundations audit (2026-10-24), committed with this HANDOFF update:** `docs/FOUNDATIONS_AUDIT.md` sizes phase 1 of the
+  big-picture plan. Battles are already command-shaped (only the turn driver is in `battle.gd`); about a dozen map
+  and town actions are carried out in screens (hero movement in `adventure.gd`, recruiting, hiring, trading, stack
+  moves), and the AI has its own copies of several; interface state (selection, viewer, banners) lives in the
+  saved world; played battles are seeded from the clock, map rules use the global stream that battle animations
+  also draw from, saves keep no random state; faction tables are spread over five files and some rules name one
+  faction's buildings, classes or creatures. Proposed order: faction data, command layer, interface state,
+  randomness and a replay test. Nothing changed in code.
 - **Session67 Temple town names (2026-10-24), committed with this HANDOFF update:** `TownLogic.TOWN_NAMES["haven"]` is now Rosslyn,
   Gisors, Tomar, Acre and Temple Bruer (was Stormhold, Brightwater, Valoria, Kingsbridge, Aurelia; earlier entries
   name towns by the old names). Five names as before, so a seeded map gives the same town the name in the same
@@ -890,7 +898,8 @@ strategic AI are more substantial next steps than further small dialog polish.
 
 ### The user's big-picture goal (session67): several interesting factions, played online
 Proposed path, discussed with the user (not yet approved as a plan):
-1. **Foundations:** every player and computer action through one command layer in the rules (screens only send
+1. **Foundations** (audited in `docs/FOUNDATIONS_AUDIT.md`, with the order to do it in): every player and computer
+   action through one command layer in the rules (screens only send
    commands; today e.g. the town screen recruits and builds directly); all rule randomness through a seeded
    generator saved with the world (about a dozen global `randi`/`randf` calls remain in rules, hero creation and
    towns); a replay test (record a game's commands, replay from the seed, compare the world); faction data (about 60
