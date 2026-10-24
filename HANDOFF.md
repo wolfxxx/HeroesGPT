@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 quiet sounds (2026-10-24), committed with this HANDOFF update:** `mine_capture` and `death_undead` remade (ElevenLabs, prompts
+  asking for a loud close-up sound: pickaxe strikes then a shower of coins; cracking bones clattering into a pile). The
+  first of three takes each, measured in a window: mine_capture peak -1.6 dB, low/mid/high 0.34/0.43/1.05 (the old
+  one -24.6 dB, almost silent); death_undead -0.4 dB, 1.57/2.38/2.41 (old -14.6 dB). Old files and the other takes
+  in ignored `shots/session67/sfx_old/`. Still somewhat quiet: resource_pickup (-16 dB); footstep_horse is played
+  at -12 on purpose.
 - **Session67 archer sound (2026-10-23), committed with this HANDOFF update:** the user disliked the archers' shot. New `arrow_shot`
   (ElevenLabs: a longbow volley, a full woody thrum and the rush of arrows, no plucked twang), the fullest of four
   takes measured in a window (peak -2.2 dB, low/mid energy 2.68/0.79 with a moderate whoosh 0.31; the old one

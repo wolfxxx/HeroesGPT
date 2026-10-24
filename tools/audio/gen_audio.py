@@ -44,7 +44,7 @@ SFX = {
     "claw_hit": ("monster claw slash, ripping and tearing, beast attack", 0.7),
     "magic_hit": ("magic energy impact burst", 0.7),
     "death_human": ("soldier death groan and armor falling to the ground", 1.2),
-    "death_undead": ("skeleton collapsing into a pile of rattling bones, ghostly hiss", 1.4),
+    "death_undead": ("loud close-up skeleton warrior collapsing: a sharp crack of breaking bones and a heavy clattering pile of bones hitting the ground, a short ghostly hiss", 1.4),
     "death_beast": ("large beast dying roar fading out", 1.4),
     "wings": ("large wings flapping, creature taking flight", 1.2),
     "battle_start": ("war horns and drums, battle begins, army war cry", 2.5),
@@ -54,7 +54,7 @@ SFX = {
     "retaliate": ("quick sword counter attack swipe", 0.6),
     "miss": ("weapon whoosh missing the target", 0.5),
     "flag_capture": ("flag flapping in wind and a short trumpet call", 1.5),
-    "mine_capture": ("pickaxe hitting rock and coins clinking, mine captured", 1.6),
+    "mine_capture": ("loud close-up mine captured: three strong ringing pickaxe strikes on rock, then a bright shower of gold coins clinking into a pile, punchy", 1.6),
     "error": ("dull wooden knock, negative UI buzz, medieval game", 0.5),
 }
 
