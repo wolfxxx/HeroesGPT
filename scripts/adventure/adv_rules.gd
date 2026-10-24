@@ -442,13 +442,13 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 			ev["fog"] = true
 		"learning_stone":
 			var v: Array = o.get("visited", [])
-			ev["title"] = "Monolith"
+			ev["title"] = "Obelisk of Thoth"
 			if hero["uid"] in v:
-				ev["text"] = "You have already studied the glyphs on this monolith."
+				ev["text"] = "You have already studied the glyphs on this obelisk."
 			else:
 				v.append(hero["uid"])
 				o["visited"] = v
-				ev["text"] = "You study the glyphs on the black monolith. +1000 experience."
+				ev["text"] = "You study the glyphs Thoth cut into the black obelisk. +1000 experience."
 				ev["xp"] = 1000
 				ev["sfx"] = "level_up"
 		"war_machine_factory":

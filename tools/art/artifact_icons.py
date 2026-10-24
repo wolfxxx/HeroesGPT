@@ -14,11 +14,11 @@ ARTS = {
     "helm_of_wisdom": "a knight's great helm of silver steel with an engraved gold brow band and a small blue gem",
     "orb_of_power": "a crystal skull carved from clear quartz, glowing from within with violet arcane light, on a small ornate gold stand",
     "boots_of_speed": "a pair of tall brown leather boots with small white feathered wings at the ankles",
-    "ring_of_vitality": "a heavy gold ring set with a large glowing red ruby",
+    "ring_of_vitality": "an ancient Egyptian gold ring whose bezel is a small ankh, the looped cross of life, inlaid with red carnelian and glowing softly",
     "clover_of_fortune": "a four-leaf clover glowing with a soft golden-green light",
     "crown_of_command": "a jewelled royal gold crown with red and blue gems",
     "cape_of_courage": "a flowing deep red cape with a gold lion clasp and gold-trimmed hem",
-    "amulet_of_insight": "a gold amulet on a fine chain, set with a glowing blue sapphire eye",
+    "amulet_of_insight": "the Eye of Horus: an ancient Egyptian gold amulet in the shape of the wedjat eye, inlaid with lapis lazuli, on a fine gold chain",
     "breastplate_of_ironbark": "a breastplate of dark polished wood bound with iron bands and engraved leaves",
     # (the tiered set of 2026-10-20, docs/ARTIFACTS_PROPOSAL.md)
     "soldiers_shortsword": "a plain short soldier's sword with a simple iron cross-guard and a leather grip",
@@ -56,7 +56,8 @@ ARTS = {
 # repainted as the relics of the secret-history setting (docs/SETTING.md, 2026-10-24): painted from the neutral
 # reference icon, not their old pictures, so the old item does not show through
 RETHEMED = ["orb_of_power", "seers_spyglass", "bottomless_purse", "bone_crown", "gravecloak", "phylactery_of_ages",
-            "sun_pendant", "seraphs_feather", "sunsteel_cuirass", "mantle_of_the_lich_king", "seraphs_covenant"]
+            "sun_pendant", "seraphs_feather", "sunsteel_cuirass", "mantle_of_the_lich_king", "seraphs_covenant",
+            "amulet_of_insight", "ring_of_vitality"]
 PROMPT = ("Paint a single inventory icon for a fantasy strategy game: {what}, centred and filling most of the square, "
           "seen slightly from above. Hand-painted digital fantasy illustration in the style of classic late-1990s "
           "turn-based fantasy strategy games: rich saturated colours, visible painterly brushwork, crisp highlights, "

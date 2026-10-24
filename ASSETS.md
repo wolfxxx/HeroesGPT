@@ -2,7 +2,7 @@
 
 Sprites rendered by tools/art/blender use a fixed world scale and write their foot point to `<dir>/anchors.json`
 (map art: 64 px per Blender unit, drawn at 0.5 => 2 units per 64px tile; creatures: 150 px/unit). Code reads it
-with `Assets.anchor()`. Extra map decor ids: `map/mountain_snow_1..2.png`; `map/obelisk.png` is the Monolith (id `learning_stone`).
+with `Assets.anchor()`. Extra map decor ids: `map/mountain_snow_1..2.png`; `map/obelisk.png` is the Obelisk of Thoth (id `learning_stone`).
 
 All paths relative to `res://assets/`. Code loads via `Assets.tex("<path>")` which falls back to a
 generated placeholder if the file is missing, so code and art can progress independently.
@@ -160,7 +160,7 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   as relics of the setting (`docs/SETTING.md`; `artifact_icons.RETHEMED`, painted from the neutral reference icon so
   the old item does not show through): the Crystal Skull, Dr. Dee's Scrying Mirror, the Templar Treasure, the
   Count's coronet, cloak and elixir and their set, the Templar cross, the Holy Grail, the Templar surcoat and their
-  set. Artifact ids are unchanged; only names and pictures changed.
+  set; then the Eye of Horus and the Ankh of Life (`amulet_of_insight`, `ring_of_vitality`). Artifact ids are unchanged; only names and pictures changed.
 - `icons/skill_<skill_id>.png` — 128 px secondary skills (painted, sheet `skills`; Offense from `conditions`).
 - `icons/stat_attack.png stat_defense.png stat_power.png stat_knowledge.png stat_morale.png` — 128 px primary stats and
   morale (sheets `stats`, `knowledge`); `stat_health.png stat_damage.png stat_xp.png stat_speed.png` (sheet `misc_stats`).

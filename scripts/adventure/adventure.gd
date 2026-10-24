@@ -623,7 +623,7 @@ func _tile_info(t: Vector2i, detailed := false):
 					_visit_line(v, false, "%s can learn it." % hero["name"])
 			return v
 		"learning_stone":
-			var v := HoverInfo.box("Monolith")
+			var v := HoverInfo.box("Obelisk of Thoth")
 			HoverInfo.line(v, "+1000 experience, once per hero.")
 			if not hero.is_empty():
 				var seen: bool = hero["uid"] in o.get("visited", [])
@@ -681,7 +681,7 @@ func _describe_tile(t: Vector2i) -> String:
 				return "Stone Circle (%s)" % GameData.SPELLS[o["spell"]]["name"]
 			"learning_stone":
 				var sel := selected_hero()
-				return "Monolith" + ("" if sel.is_empty() else (" (visited)" if sel["uid"] in o.get("visited", []) else " (not visited)"))
+				return "Obelisk of Thoth" + ("" if sel.is_empty() else (" (visited)" if sel["uid"] in o.get("visited", []) else " (not visited)"))
 			"windmill":
 				return "Windmill (%s)" % ("visited this week" if human_player()["index"] in o.get("visited_week", []) else "not visited this week")
 			"watchtower":

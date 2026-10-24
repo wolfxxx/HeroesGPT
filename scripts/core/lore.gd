@@ -27,7 +27,7 @@ const OMENS := [
 	],
 	[  # ancient: Egypt, Thoth, lost lands
 		"Red sand fell with the rain in the north, smelling of incense.",
-		"The black monoliths cast their shadows the wrong way at noon.",
+		"The black obelisks cast their shadows the wrong way at noon.",
 		"Fishermen netted a tablet of green stone, written in a hand no scholar reads.",
 		"A tide went out and did not come back for a day, and there were streets beneath it.",
 		"Bees left every hive in the valley and built a comb in the shape of a pyramid.",
@@ -62,7 +62,7 @@ const RUMOURS := [
 		"Thoth wrote forty-two books. The scholars own forty-one.",
 		"Under every great circle of stones runs a road no map shows.",
 		"They found a city under the sea, with streets too wide for men.",
-		"The monoliths are not markers. They are counting something.",
+		"The obelisks are not markers. They are counting something.",
 		"The first kings did not build the pyramids. They found them.",
 	],
 	[

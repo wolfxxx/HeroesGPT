@@ -35,10 +35,11 @@ old mysteries.** Every new piece is judged by one question: *does this make the 
   pays.
 - **Digging, not reading.** Mysteries are found and pieced together through play (HoMM3's own obelisks and puzzle map,
   reskinned as a conspiracy board and the hunt for a Shard of the Crown), not delivered as long texts.
-- **Short and strange.** One or two sentences, concrete and odd ("The black monoliths cast their shadows the wrong way
+- **Short and strange.** One or two sentences, concrete and odd ("The black obelisks cast their shadows the wrong way
   at noon."), never explaining too much.
 
-Built so far: the weekly omens and Tavern rumours (`scripts/core/lore.gd`, below). Planned: Egyptian relics and map
+Built so far: the weekly omens and Tavern rumours (`scripts/core/lore.gd`, below); the first Egyptian pieces (the Eye
+of Horus, the Ankh of Life, the Obelisk of Thoth). Planned: more Egyptian relics and map
 objects, HoMM3's Pyramid with Mummies, "declassified" descriptions that clear as things are met, the obelisk puzzle
 map and the dig for a Shard of the Crown, the Illuminated as a faction, a story campaign in acts.
 
@@ -160,6 +161,8 @@ secret histories. Proposed renames for the headline artifacts:
 | Bottomless Purse | **The Templar Treasure** | the lost wealth of the Temple |
 | Helm of Wisdom | **Helm of Solomon** (it stays a helm; the Emerald Tablet joins the relics for later) | the wise king of the grimoires |
 | Boots of Speed | **Seven-League Boots** | folklore |
+| Amulet of Insight | **Eye of Horus** (repainted: the wedjat eye in gold and lapis) | the eye of the falcon god, ancestor of the all-seeing eye |
+| Ring of Vitality | **Ankh of Life** (repainted: a gold ring with a carnelian ankh) | the Egyptian sign of life; +1 health for every creature |
 
 New relics for later: the Emerald Tablet, the Spear of Destiny (what the Iron Order hunts), the Philosopher's Stone, the Voynich
 Manuscript, the Tablets of Destiny, the Head of Baphomet, the Shards of the Crown themselves (a set, the game's
@@ -170,7 +173,7 @@ centre).
 | Now | Retheme |
 |---|---|
 | Shrine (teaches a spell) | **Stone Circle** on a ley line (repainted: standing stones with spiral carvings, no runes) |
-| Learning stone (experience) | **Monolith** (the black obelisk already looked the part) |
+| Learning stone (experience) | **Obelisk of Thoth** (the black obelisk with glowing glyphs already looked the part; first named the Monolith) |
 | Watchtower (reveals the map) | **Observatory** (repainted: a domed stone tower with a telescope) |
 | Alchemist's Lab (mercury mine) | keep |
 | Chest, campfire, windmill, mines | keep |

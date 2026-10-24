@@ -16,6 +16,11 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Egyptian relics (2026-10-24), committed with this HANDOFF update:** the Amulet of Insight is the **Eye of Horus** and the Ring
+  of Vitality the **Ankh of Life**, both repainted (`artifact_icons.RETHEMED`, map sprites recut; old art in
+  `shots/session67/art_old/`); the Monolith (learning stone) is the **Obelisk of Thoth**, its texts too, and the
+  lore lines say obelisks. Effects unchanged. Checked in the hero screen
+  (`shots/session67/setting/hero_screen_egypt.png`).
 - **Session67 the feel, omens and rumours (2026-10-24), committed with this HANDOFF update:** the user wants the game to feel like stumbling
   into the depths of conspiracy theories and old mysteries. SETTING.md has "The feel" as its guiding principle
   (four layers, one a month: historical, occult, ancient, cosmic; rumours that turn out true; digging, not reading).
