@@ -290,6 +290,12 @@ func _the_rest() -> void:
 	var tv := _do(rules, {"t": "town_visit", "p": 0, "hero": h["uid"], "town": town["uid"]})
 	_ok(tv["ok"] and h["mana"] == GameState.max_mana(h) and tv["mana"] == h["mana"], "a visit restores spell points")
 	_ok(not _do(rules, {"t": "town_visit", "p": 0, "hero": h2["uid"], "town": town["uid"]})["ok"], "not for a hero outside the town")
+	# sleep, and a player acts only on their own turn
+	_ok(_do(rules, {"t": "sleep", "p": 0, "hero": h["uid"], "asleep": true})["ok"] and h.get("asleep", false), "a hero put to sleep")
+	_ok(_do(rules, {"t": "sleep", "p": 0, "hero": h["uid"], "asleep": false})["ok"] and not h.has("asleep"), "and woken")
+	w["current_player"] = 1
+	_ok(not _do(rules, {"t": "sleep", "p": 0, "hero": h["uid"], "asleep": true})["ok"], "not on another player's turn")
+	w["current_player"] = 0
 	# the world's dice: kept in the world; a derived generator leaves them alone
 	var st: int = w["rng"]
 	Dice.derived(w, "a test").randi()

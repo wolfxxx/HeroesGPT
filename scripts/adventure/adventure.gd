@@ -26,6 +26,7 @@ var _info_tile := Vector2i(-2, -2)
 var _mouse := Vector2(-1, -1)  # the cursor from mouse events (simulated input too, unlike the OS cursor); off the window: -1
 var _rclick_info := false      # the right button is held: its information panel stays up until release
 var _pending_click := Vector2i(-1, -1)  # clicked while the hero was still moving: planned when it stops
+var _net_dirty := false  # online: another machine's command changed the world; redrawn once in the next frame
 const DRAG_START := 10.0
 const EDGE := 14.0           # edge-scroll band (screen pixels), also just outside the window
 var _cam_target := Vector2.ZERO
@@ -63,6 +64,13 @@ func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color(0.02, 0.02, 0.03))
 	rules = AdvRules.new(world)
 	ai = AdvAI.new(rules)
+	if Net.active:  # (online: other machines' commands are applied through this screen's rules, then shown)
+		Net.rules = rules
+		Net.remote_command.connect(_on_remote_command)
+		Net.world_received.connect(_on_world_received)
+		Net.roster_changed.connect(_on_roster_changed)
+		Net.lost.connect(_on_net_lost)
+		Net.world_ready()
 
 	view = MapView.new()
 	add_child(view)
@@ -119,9 +127,11 @@ func _post_ready() -> void:
 		var sc: Dictionary = world["scenario"]
 		await Modal.message(self, sc["name"], "%s\n\nVictory: %s.\nDefeat: %s." % [sc["desc"],
 			GameData.victory_text(sc["victory"]), GameData.loss_text(sc["loss"], rules.townless_limit())]).closed
-	if world["players"][world["current_player"]]["is_ai"]:
+	if not Net.mine(world["current_player"]):
+		_await_others()  # (online: another machine's player, or the computer players on the host)
+	elif world["players"][world["current_player"]]["is_ai"]:
 		_run_ai_turns()
-	elif GameState.hotseat() and not GameState.was_handed(world["current_player"]):
+	elif (GameState.hotseat() or Net.active) and not GameState.was_handed(world["current_player"]):
 		await _start_human_turn()  # (hot-seat: the first turn, or a loaded game: name whose turn it is first)
 
 func _human() -> int:
@@ -221,6 +231,8 @@ func _clamp_cam(p: Vector2) -> Vector2:
 		clampf(p.y, -margin, maxf(-margin, size.y - view_sz.y + margin)))
 
 func _process(delta: float) -> void:
+	if _net_dirty:
+		_net_redraw()
 	var move := Vector2.ZERO
 	if not _modal_open():
 		if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A): move.x -= 1
@@ -789,7 +801,7 @@ func toggle_sleep() -> void:
 	var h := selected_hero()
 	if h.is_empty():
 		return
-	h["asleep"] = not h.get("asleep", false)
+	rules.do({"t": "sleep", "p": h["owner"], "hero": h["uid"], "asleep": not h.get("asleep", false)})
 	hud.toast("%s %s" % [h["name"], "sleeps" if h["asleep"] else "wakes"])
 	hud.refresh()
 
@@ -817,7 +829,8 @@ func _execute_move() -> void:
 		hud.toast("Not enough movement points left today")
 		return
 	busy = true
-	hero["asleep"] = false
+	if hero.get("asleep", false):  # (a sleeping hero sent on his way wakes)
+		rules.do({"t": "sleep", "p": hero["owner"], "hero": hero["uid"], "asleep": false})
 	view.clear_path()
 	await move_hero(hero, _plan, true)
 	busy = false
@@ -914,12 +927,6 @@ func _visit_after_guard(hero: Dictionary, human: bool) -> void:
 	await _interact_with(hero, {"kind": "object", "uid": uid}, human)
 	view.rebuild_objects()
 
-func _move_hero_tile(hero: Dictionary, p: Vector2i) -> void:
-	var old: Vector2i = hero["pos"]
-	hero["pos"] = p
-	rules.refresh_tile(old)
-	rules.refresh_tile(p)
-
 func _visible_to_human(p: Vector2i) -> bool:
 	return rules.is_explored(human_player(), p)
 
@@ -975,6 +982,14 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 	return ""
 
 func _start_battle(setup: Dictionary, involves_human: bool) -> String:
+	if Net.active:
+		# (online: this machine fights for its own player; a side another machine plays is led by the computer until
+		# battles between people run on both screens; a battle without this machine's player is resolved at once)
+		var me_a: bool = setup.get("attacker_player", -1) == Net.seat and not world["players"][Net.seat]["is_ai"]
+		var me_d: bool = setup.get("defender_player", -1) == Net.seat and not world["players"][Net.seat]["is_ai"]
+		setup["attacker_ai"] = not me_a
+		setup["defender_ai"] = not me_d
+		involves_human = me_a or me_d
 	if involves_human:
 		var dp: int = setup.get("defender_player", -1)
 		if (world["players"][world["current_player"]]["is_ai"] and GameState.hotseat() and dp >= 0
@@ -1054,6 +1069,8 @@ func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 	hud.refresh()
 
 func _handle_level_ups(hero: Dictionary) -> void:
+	if not Net.mine(hero["owner"]):
+		return  # (online: the hero's own player chooses, on their machine at their next turn)
 	var human: bool = not rules.player_of(hero)["is_ai"]
 	while int(hero.get("pending_levels", 0)) > 0:
 		var roll := rules.do({"t": "level_roll", "p": hero["owner"], "hero": hero["uid"]})
@@ -1110,7 +1127,10 @@ func end_turn() -> void:
 		if not ok:
 			return
 	_advance_player()
-	_run_ai_turns()
+	if not Net.mine(world["current_player"]):
+		_await_others()
+	else:
+		_run_ai_turns()
 
 func _advance_player() -> void:
 	var res := rules.do({"t": "end_turn", "p": world["current_player"]})
@@ -1136,6 +1156,9 @@ func _run_ai_turns() -> void:
 		await get_tree().process_frame
 		if not is_inside_tree():
 			return
+	if not Net.mine(world["current_player"]):
+		_await_others()  # (online: the next is another machine's player)
+		return
 	busy = false
 	hud.set_turn_label("")
 	await _start_human_turn()
@@ -1158,6 +1181,71 @@ func _start_human_turn() -> void:
 			[[_flag_icon(p), p["name"]]]).closed
 		cover.queue_free()
 	await _turn_banner()
+	for hid in human_player()["heroes"].duplicate():  # (online: levels gained defending on another's turn)
+		if world["heroes"].has(hid) and int(world["heroes"][hid].get("pending_levels", 0)) > 0:
+			await _handle_level_ups(world["heroes"][hid])
+
+# ---------------------------------------------------------------------------------------------
+# Online (Net)
+# ---------------------------------------------------------------------------------------------
+## Another machine's player (or, joined, the computer players on the host) is moving: the map is shown, its
+## commands arrive as they are made (_on_remote_command).
+func _await_others() -> void:
+	busy = true
+	var cur: Dictionary = world["players"][world["current_player"]]
+	if Net.is_host and not cur["is_ai"] and not Net.joined(cur["index"]):
+		hud.set_turn_label("Waiting for %s to join..." % cur["name"])
+	else:
+		hud.set_turn_label("%s is moving..." % cur["name"])
+	hud.refresh()
+
+func _on_remote_command(cmd: Dictionary, res: Dictionary) -> void:
+	if not is_inside_tree():
+		return
+	_net_dirty = true
+	if cmd.get("t", "") != "end_turn":
+		return
+	if not res["day"].is_empty():  # (as _advance_player on the machine that ended the turn)
+		for p in world["players"]:
+			if not p["is_ai"]:
+				GameState.view(p["index"])["news"] = res["day"].duplicate(true)
+	_net_redraw()
+	if await _check_game_over():
+		return
+	var cur: Dictionary = world["players"][world["current_player"]]
+	if not Net.mine(cur["index"]):
+		_await_others()
+	elif cur["is_ai"]:
+		_run_ai_turns()
+	else:
+		busy = false
+		hud.set_turn_label("")
+		await _start_human_turn()
+
+func _net_redraw() -> void:
+	_net_dirty = false
+	rules.removed.clear()
+	refresh_after_change()
+	_refresh_fog()
+
+func _on_world_received() -> void:
+	GameState.change_scene(GameState.SCENE_ADVENTURE, 0.2)  # (the host's world: the screen starts again on it)
+
+func _on_roster_changed() -> void:
+	if is_inside_tree():
+		hud.toast("A player has joined or left the game.")
+		if busy and not Net.mine(world["current_player"]):
+			_await_others()
+
+func _on_net_lost(reason: String) -> void:
+	if not is_inside_tree():
+		return
+	await Modal.message(self, "Disconnected", reason).closed
+	GameState.change_scene(GameState.SCENE_MENU)
+
+func _exit_tree() -> void:
+	if Net.rules == rules:
+		Net.rules = null
 
 ## Hot-seat: a dark screen over the map and its panels (dialogs still show above it).
 func _cover() -> CanvasLayer:

@@ -77,7 +77,10 @@ class Watcher extends Node:
 		adv._refresh_fog()
 
 	func _place(hero: Dictionary, pos: Vector2i) -> void:
-		adv._move_hero_tile(hero, pos)
+		var old: Vector2i = hero["pos"]  # (the test's own placing, not a move: no command)
+		hero["pos"] = pos
+		adv.rules.refresh_tile(old)
+		adv.rules.refresh_tile(pos)
 		hero["movement"] = 5000
 		adv.view.hero_node(hero["uid"]).position = adv.view.hero_foot(pos)
 

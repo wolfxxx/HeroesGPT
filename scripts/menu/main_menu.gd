@@ -32,6 +32,8 @@ var _bonus_head: Label
 var _preview_cache := {}    # "scenario/faction/extra humans' towns" -> [texture, text]
 var _logo: Control
 var _menu_band: Control
+var _online := false         # the New Game screen sets up a hosted game: other people's colours join over the network
+var _address := "127.0.0.1"  # the last host address typed (Join)
 
 # Torch flames in the painted backdrop (1920x1080 space): lamp posts, then wall and tower torches.
 const TORCHES := [[308, 606, 1.0], [613, 601, 1.0], [1302, 593, 1.0], [471, 473, 0.7], [480, 346, 0.7], [699, 471, 0.7],
@@ -41,6 +43,8 @@ const LOGO_MENU := Rect2(1318, 70, 604, 170)
 const LOGO_SETUP := Rect2(510, 12, 900, 240)
 
 func _ready() -> void:
+	if Net.active:  # (back at the menu: any online game is left)
+		Net.leave()
 	theme = UI.theme()
 	_settings = GameState.new_game_settings.duplicate()
 	_build_background()
@@ -192,7 +196,8 @@ func _build_menu() -> void:
 	_menu_box = VBoxContainer.new()
 	_menu_box.add_theme_constant_override("separation", 18)
 	panel.add_child(_menu_box)
-	var entries := [["New Game", _open_setup], ["Load Game", _load_game], ["Quick Battle", _quick_battle], ["Quit", func(): get_tree().quit()]]
+	var entries := [["New Game", _open_setup], ["Multiplayer", _multiplayer], ["Load Game", _load_game], ["Quick Battle", _quick_battle],
+		["Quit", func(): get_tree().quit()]]
 	for e in entries:
 		var b := UI.button(e[0], e[1], 34)
 		b.custom_minimum_size = Vector2(400, 78)
@@ -573,7 +578,8 @@ func _refresh_scenario() -> void:
 	var people := range(n + 1).filter(func(i): return _seat_human(i)).size()
 	if people > 1:  # (hot-seat)
 		var bots := n + 1 - people
-		_scen_info.text = "Map: %s (%d x %d)     Players: %d at this screen%s" % [size_name, ms, ms, people,
+		_scen_info.text = "Map: %s (%d x %d)     Players: %s%s" % [size_name, ms, ms,
+			("you and %d online" % (people - 1)) if _online else ("%d at this screen" % people),
 			"" if bots == 0 else ", %d computer" % bots]
 	else:
 		_scen_info.text = "Map: %s (%d x %d)     Players: you and %d %s" % [size_name, ms, ms, n, "rival" if n == 1 else "rivals"]
@@ -784,7 +790,8 @@ func _refresh_seats() -> void:
 		b.clip_text = true  # (four colours must fit the column)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var f := _choice("faction", i)
-		b.text = "%s\n%s" % ["You" if i == 0 and not _hotseat_setup() else "Human", GameData.FACTIONS[f]["short"] if GameData.FACTIONS.has(f) else ""] if _seat_human(i) else "Computer"
+		var who := "You" if i == 0 and (_online or not _hotseat_setup()) else ("Online" if _online else "Human")
+		b.text = "%s\n%s" % [who, GameData.FACTIONS[f]["short"] if GameData.FACTIONS.has(f) else ""] if _seat_human(i) else "Computer"
 		var si := i
 		b.pressed.connect(func():
 			Audio.sfx("click", -6)
@@ -797,6 +804,8 @@ func _refresh_seats() -> void:
 			_edit(si if _seat_human(si) else 0)
 			_refresh_options())
 		var tip := ("Red: you. Click to show your town, hero and bonus." if i == 0 else
+			("%s: a computer lord, or a person who joins this game over the network.\nClick to make it a person and show " +
+			"their town, hero and bonus on the left; click again for the computer.") % GameData.PLAYER_COLOR_NAMES[i] if _online else
 			("%s: a computer lord, or a person at this screen (hot-seat: players take turns, the map hidden between them).\n" +
 			"Click to make it a person and show their town, hero and bonus on the left; click again for the computer.") % GameData.PLAYER_COLOR_NAMES[i])
 		var wb: WeakRef = weakref(b)  # (the buttons are rebuilt on every click: one may be gone by then)
@@ -852,6 +861,10 @@ func _open_setup() -> void:
 	_menu_band.visible = false
 
 func _close_setup() -> void:
+	if _online:  # (a hosted game set up and abandoned: stop hosting)
+		_online = false
+		Net.leave()
+		_refresh_seats()
 	_setup_panel.visible = false
 	_menu_box.get_meta("panel").visible = true
 	_place_logo(LOGO_MENU)
@@ -881,6 +894,68 @@ func _start_game() -> void:
 	GameState.return_scene = GameState.SCENE_ADVENTURE
 	Audio.sfx("battle_start", -4)
 	GameState.change_scene(GameState.SCENE_ADVENTURE, 0.6)
+
+# ---------------------------------------------------------------------------------------------
+# Multiplayer (Net): host a game for people on other computers, or join one
+# ---------------------------------------------------------------------------------------------
+func _multiplayer() -> void:
+	var m := Modal.custom(self, "Multiplayer", 760)
+	m.add_text("Host a game for players on other computers, or join one by its host's address.\n" +
+		"The host's computer must accept connections on port %d." % Net.PORT, 20)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(UI.label("Host address", 20, UI.GOLD))
+	var addr := LineEdit.new()
+	addr.text = _address
+	addr.placeholder_text = "e.g. 192.168.1.20"
+	addr.custom_minimum_size = Vector2(380, 48)
+	addr.add_theme_font_size_override("font_size", 22)
+	row.add_child(addr)
+	m.body.add_child(row)
+	m.add_buttons([["Host a Game", "host"], ["Join", "join"], ["Back", ""]])
+	m.set_meta("cancel", "")
+	var r = await m.closed
+	_address = addr.text.strip_edges() if addr.text.strip_edges() != "" else "127.0.0.1"
+	if r == "host":
+		var err := Net.host()
+		if err != "":
+			await Modal.message(self, "Multiplayer", err).closed
+			return
+		_online = true
+		if _players_in_play() > 1 and not range(1, _players_in_play()).any(func(i): return _seat_human(i)):
+			_set_seat_value("seat_human", 1, true)  # (a hosted game has someone to join it: Blue, to begin with)
+			_fix_seats()
+		_open_setup()
+		_refresh_preview()
+		_refresh_seats()
+		_refresh_scenario()
+	elif r == "join":
+		await _join(_address)
+
+## Joins the game hosted at the address: the host sends its world and the colour this computer plays.
+func _join(address: String) -> void:
+	var err := Net.join(address)
+	if err != "":
+		await Modal.message(self, "Multiplayer", err).closed
+		return
+	var m := Modal.custom(self, "Joining", 640)
+	m.add_text("Joining the game at %s..." % address, 22)
+	m.add_buttons([["Cancel", "cancel"]])
+	m.set_meta("cancel", "cancel")
+	var got := func(): if is_instance_valid(m): m.close("joined")
+	var fail := func(reason: String): if is_instance_valid(m): m.close(reason)
+	Net.world_received.connect(got)
+	Net.lost.connect(fail)
+	var r = await m.closed
+	Net.world_received.disconnect(got)
+	Net.lost.disconnect(fail)
+	if r == "joined":
+		GameState.return_scene = GameState.SCENE_ADVENTURE
+		GameState.change_scene(GameState.SCENE_ADVENTURE, 0.6)
+	elif r == "cancel":
+		Net.leave()
+	else:
+		await Modal.message(self, "Multiplayer", str(r)).closed
 
 func _load_game() -> void:
 	if GameState.load_game():

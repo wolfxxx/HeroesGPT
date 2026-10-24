@@ -732,7 +732,7 @@ func open_system_menu() -> void:
 		var b := UI.button(e[0], func(): m.close(val), 24)
 		b.custom_minimum_size = Vector2(340, 56)
 		if val == "load":
-			b.disabled = not GameState.has_save()
+			b.disabled = not GameState.has_save() or Net.active  # (online: the host's game is the one played)
 		m.body.add_child(b)
 	m.set_meta("cancel", "close")
 	var r = await m.closed

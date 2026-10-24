@@ -12,6 +12,7 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
   `save_game`, `load_game`, `has_save` accept an optional path for isolated tests; without one they use
   `GameState.save_path` (default `user://savegame.dat`; remote playtests point it at `user://playtest_save.dat`).
 - `Shot` — screenshot harness for automated visual review (see below).
+- `Net` — online play (session67, see "Online"): host or join, commands passed between machines.
 
 ## Shared classes
 - `UI` (scripts/ui/ui.gd) — theme + widget factory. Set `theme = UI.theme()` on your root Control.
@@ -266,6 +267,40 @@ with every command recorded; the commands, through `var_to_bytes`, are applied t
 the worlds must match (set aside: the computer's notes `ai_day`/`ai_goal`/`yield`, hero `dest`/`face_left`); a
 second run of each seed must be identical. Anything that changes the game outside a command shows up there.
 
+## Online
+`scripts/core/net.gd` (autoload `Net`, session67, phase 2's first version). One player hosts (`Net.host()`, ENet on
+port `Net.PORT` 24680) and the others join by address (`Net.join(addr)`). Every machine keeps a copy of the world.
+A command accepted on this machine's world (`Commands.run`, unless `Net.applying`) goes to `Net.send`: a joining
+machine's to the host (`_submit`), which checks that it is for that machine's player, applies it to its own world
+and passes it to the others; the host's own (its player's and the computer players') to everyone (`_apply`). Each
+machine applies them in the same order, and the rules give the same world on each (Dice). The host's world is the
+true one: an `end_turn` carries `Net.digest` (the world with `Net.PRIVATE` keys set aside: views, the computer's
+notes, `dest`, `face_left`, `visit_after_guard`, `game_over`); a joining machine whose world differs, or had a command
+refused, asks for the host's world (`_resync`; meanwhile `Net.syncing` and `Commands.run` refuses its moves) and
+keeps its own view. On a difference both worlds are written to `user://net_out_of_step_<mine|host>.dat` and
+`tools/net_diff.tscn` lists what differs. A player acts only on their own turn (`Commands.run`, except
+`level_roll`/`level_up`/`battle_result`).
+Seats: `Net.seat` is this machine's player (`GameState.human_player_index` returns it; `GameState.hotseat()` is false
+online); the host gives each joining machine the next human colour that is not its own (`Net.peers`), and sends
+the world on joining (`_welcome`, zstd-compressed `var_to_bytes`), or once its map screen has made the world
+(`Net.world_ready`). `Net.mine(p)`: this machine's player, and on the host the computer players.
+Map screen (`adventure.gd`): `Net.rules` is its rules (remote commands keep its tile cache right); a remote command
+marks the map to redraw next frame (`_net_dirty`, `_net_redraw`); a remote `end_turn` gives the day's news and
+decides what comes next (`_on_remote_command`); `_await_others` shows "<name> is moving..." (or "Waiting for <name> to
+join...") with input blocked; the computer players run only on the host (`_run_ai_turns`, `end_turn`, `_post_ready`
+check `Net.mine`); the host's world arriving restarts the screen (`_on_world_received`); a lost connection returns to
+the menu. Battles: this machine fights for its own player; the other side, if another machine's player, is led by
+the computer (`attacker_ai` / `defender_ai`); a battle without this machine's player (the computer attacking
+another machine's player) is resolved at once (`quick_resolve`) on the host. Levels gained by another machine's
+hero wait for its own turn (`_handle_level_ups` skips them; `_start_human_turn` takes pending ones). Sleep is the
+`sleep` command. Menu: Multiplayer (`main_menu._multiplayer`): Host a Game (`Net.host`, then the New Game screen with
+other human colours shown "Online", `_online`) or Join (`_join`: waits for the world, then the map). The game menu's
+Load Game is off online; the main menu leaves any online game.
+Not yet: battles between people on both screens, joining a saved online game, a lobby, fog filtered per player (each
+machine holds the whole world), turn timers, reconnecting a dropped player to their seat by name.
+Checked by `tools/net_test.tscn` (two processes: a joined player walks, computer players move on the host, a spoiled
+world is caught by the digest and put right, the worlds match at the end).
+
 ## Factions as data
 Everything that makes a faction is one record in `GameData.FACTIONS` (its header lists the fields): creatures and
 upgrades, native terrain, the Blacksmith's machine, its special buildings, extra building requirements, dwelling and
@@ -481,6 +516,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/lore_test.tscn` — in the full suite: omens and rumours by layer, fixed for a week, some true hints naming a
   real town, nothing drawn from the shared random stream (prints a year's sample); a declassified line for every
   artifact and mine, redacted until met, revealed once in the first message.
+- `tools/net_test.tscn` — in the full suite: starts a second Godot process that joins the first over the network
+  (port 24791) as Blue for four days with two computer players (see "Online"). `tools/net_diff.tscn` lists what
+  differs between the two worlds Net saved when a machine went out of step.
 - `tools/replay_test.tscn` — in the full suite: two computer-played seeded maps recorded as commands, replayed on the
   starting world and compared, and each played twice (see "Dice and the replay test").
 - `tools/commands_test.tscn` — in the full suite: recruiting in a town and at a map dwelling, hiring, trading, stack

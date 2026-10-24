@@ -16,6 +16,23 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 online play, first version (2026-10-24), committed with this HANDOFF update:** phase 2 begun (HANDOFF §8). New autoload `Net`
+  (`scripts/core/net.gd`): one player hosts (main menu > Multiplayer > Host a Game, then the New Game screen where
+  other human colours are "Online"), others join by address (Join). Every machine keeps the world; each accepted
+  command is passed on (joining machine -> host, which checks and relays; host -> everyone) and applied in the
+  same order; the host's digest at each turn's end catches a world gone astray and sends the host's world. The
+  computer players move on the host; each screen shows its own player and waits ("Blue Player is moving...")
+  during the others' turns. A player acts only on their own turn (now a rule in `Commands.run`). New `sleep` command
+  (the screen set `asleep` directly: found by the first two-window run as a difference). `visit_after_guard` and
+  `game_over` are each machine's own (set aside in the digest). Dead `adventure._move_hero_tile` removed
+  (`adventure_camera_test` places its hero itself). `garrison_hero_test` now gives the computer its turn. Commands
+  test 83 checks (sleep, the turn rule); suite passes. New `tools/net_test.tscn` (two processes, 18 checks, in the
+  suite) and `tools/net_diff.tscn`. Checked with two windows on this computer through the remote harness: hosting,
+  joining (Blue sees its own map and briefing), a turn each way, a battle fought on the joining machine (victory and
+  Necromancy applied identically), no differences over three days (`shots/session67/play*/m_*.png`, `n_*.png`).
+  **Temporary deviations, accepted by the user ("Ok") until battles run on both screens:** in a battle between two people the side whose machine is not
+  fighting it is led by the computer; the computer attacking another machine's player is resolved at once; a
+  level gained defending on another's turn is chosen at the owner's next turn.
 - **Session67 dice and the replay test (2026-10-24), committed with this HANDOFF update:** step 4 of `docs/FOUNDATIONS_AUDIT.md`, the last of
   phase 1. New `scripts/core/dice.gd`: the rules roll on the world's own generator (`world["rng"]`, saved), and
   only inside commands (week creature, Windmill, level rolls, a hired hero's troops); choices outside commands
@@ -1060,7 +1077,8 @@ Proposed path, discussed with the user (not yet approved as a plan):
    "haven"/"necropolis" checks in 9 scripts move into each faction's definition).
    **Progress (2026-10-24):** phase 1 done. Faction data; every map and town action is a command (battles still
    drive `BattleLogic` from `battle.gd`); per-player screen state in `world["views"]`; the world's dice and the
-   replay test (`scripts/core/dice.gd`, `tools/replay_test.tscn`). Next: phase 2, the online first version.
+   replay test (`scripts/core/dice.gd`, `tools/replay_test.tscn`). Phase 2 begun: `Net` (host and join by
+   address, commands passed between machines, digest checks); next, battles between people on both screens.
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
@@ -1332,6 +1350,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Online (session67):** `scripts/core/net.gd` (autoload `Net`), `Commands.run` (passes commands on, turn rule),
+  `adventure.gd` "Online (Net)" section, `main_menu._multiplayer` / `_join`, `tools/net_test.tscn`,
+  `tools/net_diff.tscn`. ARCHITECTURE.md "Online".
 - **Dice and replay (session67):** `scripts/core/dice.gd` (`Dice.roll/chance/index/pick`, `gen`/`keep`, `derived`,
   `look`), `world["rng"]`, `world["battles"]`, `AdvRules.battle_seed`, `Commands.log`/`log_world`,
   `tools/replay_test.tscn`. ARCHITECTURE.md "Dice and the replay test" says which generator each roll uses.
@@ -1409,6 +1430,12 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- Online (session67): anything the screen writes into the world outside a command makes the machines differ (the
+  first two-window run found `asleep`). Make it a command, or, if it is truly one machine's own, add its key to
+  `Net.PRIVATE`. Two windows on one computer: start each with its own `--remote=<dir>`; they share `user://`. The
+  test's host must yield a frame between computer turns or the network is never read. `git checkout --
+  project.godot` (and `run_tests.sh`'s exit trap) also undoes an intended, uncommitted change to it, such as a new
+  autoload: re-apply it before testing or committing.
 - Randomness (session67): a rule that changes the game rolls with `Dice` on the world and only inside a command; a
   choice made outside a command uses `Dice.derived`; presentation uses `Dice.look()`. Never the global
   `randi()`/`randf()` in game code: `tools/replay_test.tscn` fails on anything that changes the world outside a

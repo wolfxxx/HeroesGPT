@@ -15,6 +15,7 @@ Assets="*res://scripts/core/assets.gd"
 Audio="*res://scripts/core/audio.gd"
 GameState="*res://scripts/core/game_state.gd"
 Shot="*res://scripts/core/shot.gd"
+Net="*res://scripts/core/net.gd"
 
 [display]
 

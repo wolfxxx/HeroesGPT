@@ -36,6 +36,7 @@ class_name Commands
 ##   battle_result {p, result}                          a fought or resolved battle's outcome applied (AdvRules.
 ##                                                      apply_battle; the player whose turn it is) -> "event"
 ##   build         {p, town, building}                  TownLogic.build (its requirements, cost and one a day)
+##   sleep         {p, hero, asleep: bool}              the hero sleeps (passed over by Next Hero) or wakes
 ##   town_visit    {p, hero, town}                      a hero in its own town learns the Mage Guild's spells and has
 ##                                                      its spell points restored -> "learned", "mana"
 ##   (build teaches a hero visiting the town a new Mage Guild's spells, hire the hired hero the town's: "learned")
@@ -62,9 +63,15 @@ static var log_world = null
 
 static func run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 	var rec = cmd.duplicate(true) if log_world != null and is_same(rules.world, log_world) else null
+	# (online: a command accepted on this machine's world is passed on to the others, Net; not one that came from them)
+	var net = cmd.duplicate(true) if Net.active and not Net.applying and is_same(rules.world, GameState.world) else null
+	if net != null and Net.syncing:
+		return _no("Waiting for the host's game.")
 	var res := _run(rules, cmd)
 	if rec != null and res["ok"]:
 		log.append(rec)
+	if net != null and res["ok"]:
+		Net.send(net)
 	return res
 
 static func _run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
@@ -73,6 +80,11 @@ static func _run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 	if pi < 0 or pi >= w["players"].size():
 		return _no("No such player.")
 	var player: Dictionary = w["players"][pi]
+	# (a player acts on their own turn; a level gained in defence is taken at once, as the classic; a world without
+	# turns, as a test's hand-built one, has no turn to keep)
+	if (w.has("current_player") and int(w["current_player"]) != pi
+			and not cmd.get("t", "") in ["level_roll", "level_up", "battle_result"]):
+		return _no("Not your turn.")
 	match cmd.get("t", ""):
 		"recruit_town":
 			return _recruit_town(rules, player, cmd)
@@ -104,6 +116,15 @@ static func _run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _build(rules, player, cmd)
 		"town_visit":
 			return _town_visit(rules, player, cmd)
+		"sleep":
+			var sh := _hero_of(rules, player, cmd)
+			if sh.is_empty():
+				return _no("Not your hero.")
+			if bool(cmd.get("asleep", true)):
+				sh["asleep"] = true
+			else:
+				sh.erase("asleep")
+			return {"ok": true, "reason": ""}
 		"enter_garrison", "leave_garrison", "swap_garrison":
 			return _garrison(rules, player, cmd)
 		"equip", "split_set", "join_set", "give_artifact":

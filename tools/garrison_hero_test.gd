@@ -144,6 +144,7 @@ class Watcher extends Node:
 		var rules := AdvRules.new(w)
 		var ai := AdvAI.new(rules)
 		var cpu: Dictionary = w["players"][1]
+		w["current_player"] = 1  # (the computer's turn: a player acts on their own)
 		var town: Dictionary = w["towns"][cpu["towns"][0]]
 		var h: Dictionary = w["heroes"][cpu["heroes"][0]]
 		h["pos"] = town["pos"]
