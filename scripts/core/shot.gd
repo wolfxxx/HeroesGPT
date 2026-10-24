@@ -74,7 +74,7 @@ func _remote() -> void:
 				"keyup": _key(w[1], 2)
 				"wait": await get_tree().create_timer(float(w[1])).timeout
 				"shot": await _capture(dir.path_join(w[1]))
-				"state": _dump(dir.path_join(w[1]))
+				"state": _dump(dir.path_join(w[1] if w.size() > 1 else "state.json"))  # (a bare `state` used to stop the loop)
 				"probe": log_lines.append(_probe(p))
 				"ctile": await _click_tile(Vector2i(int(w[1]), int(w[2])), w.size() > 3 and w[3] == "right")
 				"rtile": await _hold_tile(Vector2i(int(w[1]), int(w[2])), float(w[3]) if w.size() > 3 else 0.8, dir, w)

@@ -16,6 +16,21 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 setting playtest (2026-10-24), committed with this HANDOFF update:** the assistant played "The Shattered Crown" (Normal,
+  Order of the Dragon, Saint-Germain, artifact bonus) through the real UI with the remote harness on
+  `user://playtest_save.dat` (the player's save hash-checked unchanged, 60b0e1fc928). **Outcome: defeat on day 7**:
+  Blue's Vesna Nightshade besieged and took Temple Bruer, killing Saint-Germain, while Duskhaven, emptied of its
+  garrison by the player, fell to another Blue force (a player mistake; the computer applied real pressure).
+  Seen working in play: the new intro, faction cards and names, Saint-Germain, the Tavern rumour (a true hint: the
+  Signet of Coin south-east of Temple Bruer), declassified lines on first visits (cape tooltip, campfire, chest,
+  windmill, Wayfarer's Cloak) and not on repeats, the Mage Guild, Necromancy, Sergeants, the Pyramid on the map
+  and its panel, a siege of a Temple town with "The garrison of Temple Bruer" in the result, artifact capture.
+  Fixed in play: a bare `state` command stopped the harness (`shot.gd`; now `state.json` by default); the
+  Wayfarer's Cloak's line said "shrine" (now "stone circle"). Noted, not bugs: a level-up window after a
+  chest's experience takes the next click; a fight that interrupts a move stops the hero short of the treasure (as
+  HoMM3). Still to see in play: the new-week omen, stone circles and obelisks, the Pyramid fight, Mummies and the
+  Tomb, a slain hero rehired at his level. Art still generic: the main menu castle and the Temple town screen (no
+  Templar look yet). Evidence in ignored `shots/session67/play/`.
 - **Session67 Mummies and the Tomb of Curses (2026-10-24), committed with this HANDOFF update:** step 2: HoMM3's **Mummy** (`mummy`,
   neutral undead, 7/7, 3-5, 30 health, speed 5, growth 7, 300 gold) with a new `curse_strike` ability (25%: the
   struck stack cursed for 3 rounds, Bless lifted; artifacts' curse immunity holds), painted over the Zombie

@@ -35,7 +35,7 @@ const ENTRIES := {
 	"art:orb_of_bedrock": "Stone from beneath the deepest mine, and it hums when held near the obelisks.",
 	"art:travellers_boots": "The dust on them is from roads that were paved over a thousand years ago.",
 	"art:boots_of_speed": "Seven leagues a stride. Nobody says where the eighth goes.",
-	"art:wayfarers_cloak": "Pilgrims' marks are sewn inside: every shrine from here to the end of the world.",
+	"art:wayfarers_cloak": "Pilgrims' marks are sewn inside: every stone circle from here to the end of the world.",
 	"art:seers_spyglass": "John Dee's black mirror. He saw angels in it, and they saw him.",
 	"art:cape_of_courage": "Woven by the widows of a battle no herald records.",
 	"art:clover_of_fortune": "Four leaves, and a fifth that only shows in a mirror.",

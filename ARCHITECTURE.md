@@ -439,7 +439,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - Remote play (`scripts/core/shot.gd`, `--remote=<dir>`): runs the real game from the main menu and executes
   command files written to `<dir>/cmd.txt` with real input events, then writes `<dir>/done.txt`. Commands: `click`,
   `rclick x y [hold] [shot]`, `dclick`, `move`, `park`, `key` (`ctrl+s` style), `keydown/keyup`, `wait`, `shot`,
-  `state` (JSON of the human kingdom), `ctile x y [right]` (click a map tile, scrolling to it), `rtile x y seconds [file.png]` (hold right on a tile), `look [r]` (status
+  `state [file]` (JSON of the human kingdom; `state.json` by default), `ctile x y [right]` (click a map tile, scrolling to it), `rtile x y seconds [file.png]` (hold right on a tile), `look [r]` (status
   text, route kind and cost of nearby explored objects), `probe x y` (what a click there resolves to),
   `hoverstate` (the hover panel and dialog layer, the viewport and OS cursors), `quit`. The harness moves only input
   events, never the OS cursor: code that needs the cursor reads it from events (`adventure._mouse`).
