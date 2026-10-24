@@ -16,6 +16,10 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Temple town names (2026-10-24), committed with this HANDOFF update:** `TownLogic.TOWN_NAMES["haven"]` is now Rosslyn,
+  Gisors, Tomar, Acre and Temple Bruer (was Stormhold, Brightwater, Valoria, Kingsbridge, Aurelia; earlier entries
+  name towns by the old names). Five names as before, so a seeded map gives the same town the name in the same
+  place (Brightwater became Gisors). The Lodge's names are kept.
 - **Session67 heroes from legend (2026-10-24), committed with this HANDOFF update:** four heroes added (`GameData.HEROES`, portraits by
   the new `tools/art/legend_portraits.py`): Jacques de Molay (Temple Knight, Armorer), Hugues de Payens (Temple
   Knight, Logistics: he guarded the pilgrim roads), the Count of Saint-Germain ("Saint-Germain", Lodge

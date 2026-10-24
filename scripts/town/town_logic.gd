@@ -9,8 +9,10 @@ class_name TownLogic
 ## player dict: {"index": int, "name": String, "color": Color, "is_ai": bool, "faction": String,
 ##               "resources": {res: int}, "heroes": Array[int uid], "towns": Array[int uid], "alive": bool}
 
+## Town names. The Temple's are Templar houses and strongholds of history (docs/SETTING.md); the same number as
+## before, so a seeded map keeps its names' places in the random sequence.
 const TOWN_NAMES := {
-	"haven": ["Stormhold", "Brightwater", "Valoria", "Kingsbridge", "Aurelia"],
+	"haven": ["Rosslyn", "Gisors", "Tomar", "Acre", "Temple Bruer"],
 	"necropolis": ["Gravenmoor", "Ashenveil", "Mortholme", "Duskhaven", "Blackfen"],
 }
 

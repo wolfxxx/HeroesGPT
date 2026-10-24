@@ -63,7 +63,7 @@ Jerusalem and found something, grew richer than kings, were accused of worshippi
   their names (Halberdier, Marksman, Zealot).
 - Legendary heroes: Jacques de Molay (the last Grand Master, who cursed the king and the pope from the pyre),
   Hugues de Payens (the founder).
-- Town names: Rosslyn, Gisors, Tomar, Acre, Temple Bruer.
+- Town names (built): Rosslyn, Gisors, Tomar, Acre, Temple Bruer.
 
 ### Necropolis: the Lodge
 
@@ -150,7 +150,8 @@ Built on 2026-10-24: the factions are named **Temple** (Haven) and **Lodge** (Ne
 premise; the Templar ranks, the artifacts and the map objects above are renamed, and eleven artifacts and two map
 objects repainted to match. Ids stay as they were (ARCHITECTURE.md), so saves keep working. Then the heroes from
 legend (step 3): Jacques de Molay and Hugues de Payens (Temple Knights), the Count of Saint-Germain and Edward Kelley
-(Lodge Necromancers), six heroes a faction now. Still to do: town names, then the art (step 4).
+(Lodge Necromancers), six heroes a faction now. Then the Temple's town names: Rosslyn, Gisors, Tomar, Acre and
+Temple Bruer (the Lodge's already fit). Still to do: the art (step 4).
 
 The plan was these cheap steps, which make the new identity visible without much new art:
 1. Rewrite the lore: the faction descriptions, scenario texts and the main menu's story, around the Shattered Crown
