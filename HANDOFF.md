@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 command layer, what a hero meets (2026-10-24), committed with this HANDOFF update:** `visit` (a site the hero stands on; not
+  a monster or a guarded Pyramid; a chest's offer kept as `hero.pending_chest`), `chest` (the offer's own gold or
+  experience, once), `capture` (an undefended town from its gate) and `battle_result` (`apply_battle` on its
+  player's turn) used by `adventure._interact_with`, `_show_event`, `_post_ready` and `_start_battle`. Tournaments
+  with the current AI identical before and after; one game made 236 visits, 190 battle results, 42 chests and 48
+  captures, none refused. In the real UI: a campfire and a chest (+500, +2000 gold) and a fought battle (the
+  monster gone after OK). Commands test 51 checks. The adventure AI test's hand-built worlds have no
+  `current_player`: `battle_result` skips its turn check there, and the screen sends the attacker. Still direct:
+  building, garrison moves, artifacts, level-ups.
 - **Session67 command layer, movement and the turn (2026-10-24), committed with this HANDOFF update:** `step` (one step to a free
   neighbour, paying `AdvRules.step_cost` exactly as the planner charges, refreshing the tile cache, revealing
   around the hero) and `end_turn` (the next living player, `new_day` at the end of the round). `adventure.move_hero`

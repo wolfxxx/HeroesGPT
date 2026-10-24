@@ -85,6 +85,7 @@ func _ready() -> void:
 	_ok(not rules.do({"t": "no_such_command", "p": 0})["ok"] and not rules.do({"t": "trade", "p": 9})["ok"], "unknown commands and players refused")
 	_stacks(w, rules, town, h)
 	_steps(w, rules, h)
+	_meetings()
 	print("COMMANDS TEST: %d checks, failures: %d" % [checks, failures])
 	get_tree().quit()
 
@@ -172,3 +173,46 @@ func _stacks(w: Dictionary, rules: AdvRules, town: Dictionary, h: Dictionary) ->
 	_ok(mv.call({"t": "upgrade_stack", "town": town["uid"], "army": hr, "si": 0}) and h["army"][0]["id"] == GameData.upgrade_of_base(GameData.base_of(base)),
 		"a stack upgrades in the town")
 	_ok(not mv.call({"t": "upgrade_stack", "town": town["uid"], "army": hr, "si": 0}), "but not twice")
+
+## What a hero meets: a site visited only by a hero standing on it (a monster is a fight), a chest's gold or
+## experience taken from the offer the visit kept (not one the caller names), an undefended town captured only from its
+## gate, a battle's result applied only on its player's turn.
+func _meetings() -> void:
+	var s := GameState.new_game_settings.duplicate()
+	s["seed"] = 4242
+	var w := WorldGen.generate(s)
+	GameState.world = w
+	var rules := AdvRules.new(w)
+	var me: Dictionary = w["players"][0]
+	var h: Dictionary = w["heroes"][me["heroes"][0]]
+	var chest := {}
+	var mon := {}
+	for o in w["objects"].values():
+		if o["type"] == "chest" and chest.is_empty(): chest = o
+		if o["type"] == "monster" and mon.is_empty(): mon = o
+	_ok(not _do(rules, {"t": "visit", "p": 0, "hero": h["uid"], "object": chest["uid"]})["ok"], "not a site the hero is not on")
+	h["pos"] = chest["pos"]
+	rules.rebuild()
+	var r := _do(rules, {"t": "visit", "p": 0, "hero": h["uid"], "object": chest["uid"]})
+	_ok(r["ok"] and r["event"].has("choice") and not w["objects"].has(chest["uid"]), "visiting a chest opens it and offers a choice")
+	var gold: int = me["resources"]["gold"]
+	_ok(not _do(rules, {"t": "chest", "p": 0, "hero": h["uid"], "choice": "jewels"})["ok"], "gold or experience only")
+	r = _do(rules, {"t": "chest", "p": 0, "hero": h["uid"], "choice": "gold", "gold": 999999})
+	_ok(r["ok"] and me["resources"]["gold"] == gold + int(chest["gold"]), "the chest's own gold, whatever the caller says")
+	_ok(not _do(rules, {"t": "chest", "p": 0, "hero": h["uid"], "choice": "gold"})["ok"], "and only once")
+	h["pos"] = mon["pos"]
+	_ok(not _do(rules, {"t": "visit", "p": 0, "hero": h["uid"], "object": mon["uid"]})["ok"], "a monster is not visited: it is fought")
+	# capture: an enemy town with no garrison and no defender, from its gate
+	var t: Dictionary = w["towns"][w["players"][1]["towns"][0]]
+	for i in 7: t["garrison"][i] = null
+	for hid in w["players"][1]["heroes"].duplicate():
+		if w["heroes"][hid]["pos"] == t["pos"]: w["heroes"][hid]["pos"] += Vector2i(0, 3)
+	_ok(not _do(rules, {"t": "capture", "p": 0, "hero": h["uid"], "town": t["uid"]})["ok"], "not a town the hero is not at")
+	h["pos"] = t["pos"]
+	rules.rebuild()
+	_ok(_do(rules, {"t": "capture", "p": 0, "hero": h["uid"], "town": t["uid"]})["ok"] and t["owner"] == 0, "an undefended town is taken")
+	_ok(not _do(rules, {"t": "capture", "p": 0, "hero": h["uid"], "town": t["uid"]})["ok"], "but not twice")
+	# a battle's result, on its player's turn
+	w["current_player"] = 0
+	_ok(not rules.do({"t": "battle_result", "p": 1, "result": {"winner": "attacker"}})["ok"], "not out of turn")
+	_ok(not rules.do({"t": "battle_result", "p": 0, "result": "won"})["ok"], "not without a result")

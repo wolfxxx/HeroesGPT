@@ -26,7 +26,16 @@ class_name Commands
 ##                                                      hero meets (-> "cost")
 ##   end_turn      {p}                                  the next living player's turn; a new day when the round ends
 ##                                                      (-> "next", "day": AdvRules.new_day's report or {})
-## (Visits, battles, building and garrison moves follow, docs/FOUNDATIONS_AUDIT.md.)
+##   visit         {p, hero, object}                    the hero, standing on a map site, takes or uses it (not a
+##                                                      monster, not a guarded Pyramid: those are fights) -> "event"
+##                                                      (AdvRules.visit's report; its icons are textures, local only)
+##   chest         {p, hero, choice: "gold" | "xp"}     the chest the hero just opened (its offer kept on the hero by
+##                                                      `visit`) -> "levels"
+##   capture       {p, hero, town}                      an enemy or neutral town with no garrison and no defender, at
+##                                                      whose gate the hero stands
+##   battle_result {p, result}                          a fought or resolved battle's outcome applied (AdvRules.
+##                                                      apply_battle; the player whose turn it is) -> "event"
+## (Building, garrison moves, artifacts and level-up choices follow, docs/FOUNDATIONS_AUDIT.md.)
 
 const HIRE_COST := 2500
 
@@ -55,7 +64,66 @@ static func run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _step(rules, player, cmd)
 		"end_turn":
 			return _end_turn(rules, player)
+		"visit":
+			return _visit(rules, player, cmd)
+		"chest":
+			return _chest(rules, player, cmd)
+		"capture":
+			return _capture(rules, player, cmd)
+		"battle_result":
+			return _battle_result(rules, player, cmd)
 	return _no("Unknown command.")
+
+static func _hero_of(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var h: Dictionary = rules.world["heroes"].get(int(cmd.get("hero", -1)), {})
+	return h if not h.is_empty() and h["owner"] == player["index"] else {}
+
+static func _visit(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	var o: Dictionary = rules.world["objects"].get(int(cmd.get("object", -1)), {})
+	if hero.is_empty():
+		return _no("Not your hero.")
+	if o.is_empty() or o["pos"] != hero["pos"]:
+		return _no("The hero is not there.")
+	if o["type"] == "monster" or (o["type"] == "pyramid" and not o.get("guards", []).is_empty()):
+		return _no("It must be fought first.")
+	var ev := rules.visit(hero, o)
+	if ev.has("choice"):
+		hero["pending_chest"] = {"gold": int(ev["choice"]["gold"]), "xp": int(ev["choice"]["xp"])}
+	return {"ok": true, "reason": "", "event": ev}
+
+static func _chest(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	if hero.is_empty() or not hero.has("pending_chest"):
+		return _no("No chest to open.")
+	var choice: String = cmd.get("choice", "")
+	if not choice in ["gold", "xp"]:
+		return _no("Gold or experience.")
+	var c: Dictionary = hero["pending_chest"]
+	hero.erase("pending_chest")
+	return {"ok": true, "reason": "", "levels": rules.resolve_chest(hero, choice, int(c["gold"]), int(c["xp"]))}
+
+static func _capture(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	var town: Dictionary = rules.world["towns"].get(int(cmd.get("town", -1)), {})
+	if hero.is_empty() or town.is_empty() or town["pos"] != hero["pos"]:
+		return _no("The hero is not at that town.")
+	if town["owner"] == player["index"]:
+		return _no("It is already yours.")
+	if not GameState.army_is_empty(town["garrison"]) or not rules.town_defender(town, hero).is_empty():
+		return _no("The town is defended.")
+	rules.capture_town(town, player["index"])
+	rules.check_eliminations()
+	return {"ok": true, "reason": ""}
+
+static func _battle_result(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	# (a world without turns, as a test's hand-built one, skips the turn check)
+	if rules.world.has("current_player") and int(rules.world["current_player"]) != player["index"]:
+		return _no("Not your turn.")
+	var result = cmd.get("result")
+	if not result is Dictionary or not result.has("winner"):
+		return _no("No battle result.")
+	return {"ok": true, "reason": "", "event": rules.apply_battle(result)}
 
 ## A tile from a command: [x, y] (as JSON carries it) or a Vector2i.
 static func tile(v) -> Vector2i:

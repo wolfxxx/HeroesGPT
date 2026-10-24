@@ -99,7 +99,8 @@ func _post_ready() -> void:
 	if not GameState.battle_result.is_empty():
 		var result := GameState.battle_result
 		GameState.battle_result = {}
-		var ev := rules.apply_battle(result)
+		var by: int = world.get("current_player", 0)
+		var ev: Dictionary = rules.do({"t": "battle_result", "p": by, "result": result}).get("event", {"hero": -1})
 		view.rebuild_objects()
 		_refresh_fog()
 		hud.refresh()
@@ -934,8 +935,9 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 				if r == "":
 					await _visit_after_guard(hero, human)
 				return r
-			var ev := rules.visit(hero, o)
-			await _show_event(hero, ev, human)
+			var res := rules.do({"t": "visit", "p": hero["owner"], "hero": hero["uid"], "object": o["uid"]})
+			if res["ok"]:
+				await _show_event(hero, res["event"], human)
 		"town":
 			var town: Dictionary = world["towns"][occ["uid"]]
 			if town["owner"] == hero["owner"]:
@@ -944,10 +946,9 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 					open_town(town["uid"], report)  # (the town screen announces what the visit taught)
 				return ""
 			if GameState.army_is_empty(town["garrison"]) and rules.town_defender(town, hero).is_empty():
-				rules.capture_town(town, hero["owner"])
+				rules.do({"t": "capture", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})
 				Audio.sfx("flag_capture")
 				view.rebuild_objects()
-				rules.check_eliminations()
 				if human:
 					await Modal.message(self, town["name"], "The town of %s opens its gates to you." % town["name"]).closed
 				await _check_game_over()
@@ -993,7 +994,8 @@ func _start_battle(setup: Dictionary, involves_human: bool) -> String:
 	if Engine.time_scale > 1.0:  # soak-test diagnostics (tools/sim_test.gd)
 		print("SIMBATTLE day %d %s P%d str %d vs %d -> %s" % [world["day"], setup["context"]["type"], setup["attacker_player"],
 			GameState.army_strength(setup["attacker_army"]), GameState.army_strength(setup["defender_army"]), result["winner"]])
-	var ev := rules.apply_battle(result)
+	var by: int = world.get("current_player", setup.get("attacker_player", 0))
+	var ev: Dictionary = rules.do({"t": "battle_result", "p": by, "result": result}).get("event", {"hero": -1})
 	if ev["hero"] >= 0 and world["heroes"].has(ev["hero"]):
 		await _handle_level_ups(world["heroes"][ev["hero"]])
 	view.rebuild_objects()
@@ -1022,11 +1024,12 @@ func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 			var r = await Modal.choice(self, ev["title"], ev["text"], [
 				["%d Gold" % c["gold"], "gold", Assets.res_icon("gold")],
 				["%d Experience" % c["xp"], "xp", Assets.tex("icons/stat_xp.png")]]).closed
-			var lv := rules.resolve_chest(hero, str(r), c["gold"], c["xp"])
+			var lv: int = rules.do({"t": "chest", "p": hero["owner"], "hero": hero["uid"], "choice": str(r)}).get("levels", 0)
 			if lv > 0:
 				await _handle_level_ups(hero)
 		else:
-			var lv := rules.resolve_chest(hero, "gold" if rules.player_of(hero)["resources"]["gold"] < 10000 else "xp", c["gold"], c["xp"])
+			var pick := "gold" if rules.player_of(hero)["resources"]["gold"] < 10000 else "xp"
+			var lv: int = rules.do({"t": "chest", "p": hero["owner"], "hero": hero["uid"], "choice": pick}).get("levels", 0)
 			if lv > 0:
 				await _handle_level_ups(hero)
 	elif ev.has("factory"):
