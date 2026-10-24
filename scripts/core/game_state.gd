@@ -112,16 +112,20 @@ func make_hero(hero_id: String, owner: int) -> Dictionary:
 		"knowledge": d["knowledge"], "level": 1, "xp": 0, "mana": 0, "movement": 1500, "max_movement": 1500,
 		"army": army, "spells": d.get("spells", []).duplicate(), "skills": d.get("skills", {}).duplicate(),
 		"artifacts": [], "backpack": [], "pos": Vector2i.ZERO,
-		# might heroes march with a ballista, magic heroes with a first aid tent (more at a smith or factory)
-		"machines": ["ballista"] if d["class"] in ["Knight", "Death Knight"] else ["first_aid_tent"],
+		"machines": starting_machines(d["class"]),
 	}
 	h["max_movement"] = hero_max_movement(h)
 	h["movement"] = h["max_movement"]
 	h["mana"] = max_mana(h)
 	return h
 
-## A hero hired from a tavern: one who fled or surrendered comes back as they left (see AdvRules._kill_hero), any
-## other fresh.
+## The war machine a hero starts with: might heroes march with a ballista, magic heroes with a first aid tent (more at
+## a smith or factory).
+func starting_machines(hero_class: String) -> Array:
+	return ["ballista"] if hero_class in ["Knight", "Death Knight"] else ["first_aid_tent"]
+
+## A hero hired from a tavern: one who fled, surrendered or fell in battle comes back as they left (see
+## AdvRules._kill_hero and _slay_hero), any other fresh.
 func tavern_hero(hero_id: String, owner: int) -> Dictionary:
 	var keep: Dictionary = world.get("tavern_keep", {})
 	if not keep.has(hero_id):

@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 slain heroes (2026-10-24), committed with this HANDOFF update:** the user agreed to follow HoMM3: a hero slain in battle
+  no longer comes back from the Tavern fresh at level 1. `AdvRules._slay_hero` keeps them in `tavern_keep` (like
+  one who fled) with their level, experience, primary and secondary skills, spells and spell book; their artifacts
+  go to the winning hero (`_loot`) or are lost to monsters and garrisons, and their army and war machines are lost
+  (rehired: a starting army and `GameState.starting_machines`, as a fresh hero). The Tavern already shows a kept
+  hero's level. No wiki page states the rule outright; it matches community knowledge (Celestial Heavens "Hero
+  buy-back"). Dismissed heroes and those of an eliminated player still leave fresh. 8 new checks in
+  `tools/retreat_test.tscn` (17).
 - **Session67 neutral rings (2026-10-24), committed with this HANDOFF update:** neutral stacks' grey rings were lost on grass (a mid grey
   as bright as the grass). `battle.side_color` now gives neutrals a light silver grey (0.92, 0.91, 0.86), also on
   their turn-queue cards; checked on grass, snow and sand (`shots/session67/rings_compare.png`: before, after,
@@ -903,10 +911,9 @@ human-versus-human battles, a computer attacking the player not at the screen. F
 machine wrecks and visual findings stay on the backlog; online multiplayer remains a separate larger project.
 
 ### Playtest findings (session66, one Haven campaign on Normal, won on day 27)
-Evidence in ignored `shots/session66/play/` (`findings.md`). Two bugs were fixed in play (see §2).
-1. **To verify against HoMM3:** a hero killed in battle comes back from the Tavern at level 1 (Lady Seraphine fell at
-   level 5 and Blue rehired her at level 1). Forum posts (Celestial Heavens "Hero buy-back") suggest HoMM3 keeps a
-   killed hero's experience and skills when they reappear, losing army and artifacts; no wiki page states it. Ask.
+Evidence in ignored `shots/session66/play/` (`findings.md`). Two bugs were fixed in play (see §2); the rest are all
+fixed in session67 (the battle result's garrison name, neutral rings on grass, quiet sounds, and a slain hero coming
+back at level 1).
 
 ### Playtest findings (session57, one Necropolis campaign on Normal; not yet fixed)
 Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has the details).

@@ -365,7 +365,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
 - `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the
   war machines still standing (`battle._lost` leaves them out of the result window), waits in the Tavern and is
-  hired again with them and the artifacts. `-- --capture=shots/dir` in a window saves the result window.
+  hired again with them and the artifacts; a hero slain in battle (`AdvRules._slay_hero`) is hired again at the same
+  level with the skills and spells, without the artifacts (the winner's), army or machines (a starting army and
+  `GameState.starting_machines`). `-- --capture=shots/dir` in a window saves the result window.
 - `tools/map_figure_test.tscn` — in the full suite: a hero of each class on the adventure map drawn with its class's
   figure (`MapView.hero_figure`: `heroes/map_<class>.png`, else the faction's), and the Cleric's gallop with its own
   frames. Also the hero's pennant (`MapView._face_flag`: behind the rider, above its head, mirrored

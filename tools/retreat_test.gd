@@ -1,7 +1,8 @@
 extends Node
 ## A hero who retreats from a battle loses the army but keeps the war machines still standing, as the classic game
 ## (they are equipment, kept like the artifacts): the result window does not list them among the losses, and the hero
-## hired again from the Tavern comes back with them.
+## hired again from the Tavern comes back with them. One slain comes back at the same level, with the skills and
+## spells, without the artifacts, army or machines.
 ##   Godot_console.exe --headless --path . res://tools/retreat_test.tscn  -> "RETREAT TEST: N checks, failures: 0"
 ## In a window, `-- --capture=shots/dir` also saves the result window.
 
@@ -55,6 +56,28 @@ class Watcher extends Node:
 		var back := GameState.tavern_hero(h["id"], 0)
 		_ok(back["machines"].size() == GameData.WAR_MACHINES.size(), "hired again with every war machine")
 		_ok("oaken_buckler" in back["artifacts"], "and the artifacts")
+
+		# slain, as the classic: the level, experience, skills and spells kept, the artifacts to the winner, the army
+		# and machines lost (hired again with a starting army and machine)
+		back["level"] = 5
+		back["xp"] = 4000
+		back["attack"] += 3
+		back["skills"]["archery"] = 2
+		back["spells"].append("haste")
+		w["heroes"][back["uid"]] = back
+		me["heroes"].append(back["uid"])
+		var foe_art: int = foe["artifacts"].size()
+		rules.apply_battle({"winner": "defender", "attacker_army": [null, null, null, null, null, null, null],
+			"defender_army": foe["army"], "xp": 100, "retreated": false, "fled": -1,
+			"context": {"type": "hero", "hero": back["uid"], "defender": foe["uid"]}})
+		_ok(not w["heroes"].has(back["uid"]) and h["id"] in w["tavern"], "the slain hero waits in the Tavern")
+		_ok("oaken_buckler" in foe["artifacts"] and foe["artifacts"].size() == foe_art + 1, "the winner took the artifacts")
+		var again := GameState.tavern_hero(h["id"], 0)
+		_ok(again["level"] == 5 and again["xp"] == 4000 and again["attack"] == back["attack"], "hired again at the same level")
+		_ok(again["skills"].get("archery", 0) == 2 and "haste" in again["spells"], "with the same skills and spells")
+		_ok(again["artifacts"].is_empty() and again["backpack"].is_empty(), "without the artifacts")
+		_ok(again["machines"] == GameState.starting_machines(again["class"]), "with only the starting war machine")
+		_ok(not GameState.army_is_empty(again["army"]), "and a starting army")
 		print("RETREAT TEST: %d checks, failures: %d" % [checks, failures])
 		get_tree().quit()
 

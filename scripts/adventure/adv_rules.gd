@@ -689,9 +689,11 @@ func apply_battle(result: Dictionary) -> Dictionary:
 			if not def.is_empty():
 				_set_army(def["army"], result["defender_army"])
 				if att_won:
-					if fled != 1:
+					if fled == 1:
+						_kill_hero(def, true)
+					else:
 						_loot(att, def)
-					_kill_hero(def, fled == 1)
+						_slay_hero(def)
 		"town":
 			var town: Dictionary = world["towns"].get(ctx["town"], {})
 			var def: Dictionary = world["heroes"].get(ctx.get("defender", -1), {})
@@ -701,9 +703,11 @@ func apply_battle(result: Dictionary) -> Dictionary:
 				_set_army(town["garrison"], result["defender_army"])
 			if att_won and not town.is_empty():
 				if not def.is_empty():
-					if fled != 1:
+					if fled == 1:
+						_kill_hero(def, true)
+					else:
 						_loot(att, def)
-					_kill_hero(def, fled == 1)
+						_slay_hero(def)
 				for i in 7:
 					town["garrison"][i] = null
 				capture_town(town, att["owner"])
@@ -718,7 +722,10 @@ func apply_battle(result: Dictionary) -> Dictionary:
 			ev["levels"] = gain_xp(dh, int(result.get("xp", 0)))
 			if fled != 0:
 				_loot(dh, att)
-		_kill_hero(att, fled == 0)
+		if fled == 0:
+			_kill_hero(att, true)
+		else:
+			_slay_hero(att)
 	# Reward the winning hero on either side, after the surviving army has been restored.
 	var winner: Dictionary = world["heroes"].get(ev["hero"], {})
 	if not winner.is_empty() and int(result.get("raised", 0)) > 0:
@@ -742,8 +749,20 @@ func _set_army(dst: Array, src: Array) -> void:
 		var s = src[i] if i < src.size() else null
 		dst[i] = s if s and s["count"] > 0 else null
 
-## A hero leaves the map: slain, dismissed, or (`kept`) fled or surrendered, when they wait in the taverns as they
-## left, with their skills and artifacts (and, surrendered, their army) to be hired again.
+## A hero slain in battle waits in the taverns, as the classic game: with their level, experience, skills, spells and
+## spell book; without the artifacts (the winning hero took them, see _loot, or monsters and garrisons destroyed
+## them), the army or the war machines (hired again: a starting army and machine, as a fresh hero).
+func _slay_hero(hero: Dictionary) -> void:
+	hero["artifacts"] = []
+	hero["backpack"] = []
+	for i in 7:
+		hero["army"][i] = null
+	hero["machines"] = GameState.starting_machines(hero["class"])
+	_kill_hero(hero, true)
+
+## A hero leaves the map: dismissed or out of the game, or (`kept`) fled, surrendered or slain (_slay_hero), when
+## they wait in the taverns as they left, with their skills and artifacts (and, surrendered, their army) to be hired
+## again.
 func _kill_hero(hero: Dictionary, kept := false) -> void:
 	if not world["heroes"].has(hero["uid"]):
 		return
