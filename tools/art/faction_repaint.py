@@ -1,13 +1,15 @@
-"""The Temple (faction id `haven`) repainted in the Templars' colours (docs/SETTING.md): its town-screen layers, the
-backdrop, the building cards and the map town keep their silhouettes, sizes and places; only colours and emblems change
-(banners and flags white with a red cross pattee, blue roofs grey slate, shields with the red cross).
-python tools/art/temple_repaint.py prep [names]    ->  imagegen/batch37/in/<name>.png + temple.json
-python tools/art/temple_repaint.py paint [names]   ->  imagegen/batch37/out/<name>.png
-python tools/art/temple_repaint.py ingest [names]  ->  the assets (old ones copied to ignored shots/session67/temple_old/)
-python tools/art/temple_repaint.py slate [files]   ->  blue roofs to slate only (default: the siege paintings and pieces;
-                                                       also used on the map towns, too small for the model's roofs)
-Names: town__<layer> (assets/town/haven_<layer>.png; "bg" the backdrop), card__<id> (icons/building_haven_<id>.png),
-map__<file> (map/town_haven*.png), ui__main_menu_bg (the title screen). Layers are painted on a flat backdrop like upgrade_paint's dwellings and pasted back
+"""A faction's town art repainted in its colours from the setting (docs/SETTING.md): the town-screen layers, the
+backdrop, the building cards and the map towns keep their silhouettes, sizes and places; only colours and emblems change.
+  haven (the Temple, session67): banners white with a red cross pattee, blue roofs grey slate, red-cross shields.
+  necropolis (the Order of the Dragon, session67): crimson and black heraldry with the Order's golden coiled dragon.
+python tools/art/faction_repaint.py <faction> prep [names]    ->  imagegen/batch3x/in/<name>.png + faction.json
+python tools/art/faction_repaint.py <faction> paint [names]   ->  imagegen/batch3x/out/<name>.png
+python tools/art/faction_repaint.py <faction> ingest [names]  ->  the assets (originals copied to ignored
+                                                                  shots/session67/<faction>_old/ first)
+python tools/art/faction_repaint.py haven slate [files]       ->  blue roofs to slate only (default: the siege paintings
+                                                                  and pieces; also used on the map towns)
+Names: town__<layer> (assets/town/<f>_<layer>.png; "bg" the backdrop), card__<id> (icons/building_<f>_<id>.png),
+map__<file> (map/town_<f>*.png), and for the Temple ui__main_menu_bg (the title screen). Layers are painted on a flat backdrop like upgrade_paint's dwellings and pasted back
 inside the old alpha (the soft edge keeps the old pixels), so they still fit the layout exactly."""
 import os, sys, json, glob, shutil
 import numpy as np
@@ -16,12 +18,24 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
 import upgrade_paint as up
 
-BATCH = "imagegen/batch37"
-OLD = "shots/session67/temple_old"
+FACTIONS = {
+    "haven": {"batch": "imagegen/batch37", "old": "shots/session67/temple_old",
+              "look": "in the colours of the Knights Templar: keep the white stone walls and the gold trim, but every "
+                      "banner, pennant and flag becomes white with a red Templar cross pattee (a cross with flared arms), "
+                      "every blue roof becomes dark grey slate, blue cloth and trim becomes deep red or white, and shields "
+                      "and emblems show the red cross pattee"},
+    "necropolis": {"batch": "imagegen/batch38", "old": "shots/session67/necropolis_old",
+                   "look": "in the colours of the Order of the Dragon, a secret order of the deathless: keep the dark "
+                           "stone, the bones and the eerie green ghost-light, but every banner, pennant and flag becomes "
+                           "deep crimson and black, bearing the Order's emblem, a golden dragon coiled in a circle biting "
+                           "its own tail, and shields and emblems show that coiled golden dragon; add touches of crimson "
+                           "and old gold to trim"},
+}
+F = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] in FACTIONS else "haven"
+BATCH = FACTIONS[F]["batch"]
+OLD = FACTIONS[F]["old"]
 BG = (148, 140, 124)
-LOOK = ("in the colours of the Knights Templar: keep the white stone walls and the gold trim, but every banner, pennant "
-        "and flag becomes white with a red Templar cross pattee (a cross with flared arms), every blue roof becomes dark "
-        "grey slate, blue cloth and trim becomes deep red or white, and shields and emblems show the red cross pattee")
+LOOK = FACTIONS[F]["look"]
 LAYER = ("This is a town building from a fantasy strategy game, seen from a high three-quarter angle. Repaint it " + LOOK +
          ". " + up.STYLE + "\nVERY IMPORTANT: keep exactly the same building with the same outline, silhouette, size, "
          "position in the frame and camera angle; change only colours, banners and emblems. Keep the background a "
@@ -45,20 +59,21 @@ MAP = ("This is a town as seen on the adventure map of a fantasy strategy game, 
 
 def _src(name):
     kind, rest = name.split("__", 1)
-    return {"town": f"assets/town/haven_{rest}.png", "card": f"assets/icons/building_haven_{rest}.png",
+    return {"town": f"assets/town/{F}_{rest}.png", "card": f"assets/icons/building_{F}_{rest}.png",
             "map": f"assets/map/{rest}.png", "ui": f"assets/ui/{rest}.png"}[kind]
 
 
 def all_names():
-    out = ["town__" + os.path.basename(p)[6:-4] for p in sorted(glob.glob("assets/town/haven_*.png"))]
-    out += ["card__" + os.path.basename(p)[15:-4] for p in sorted(glob.glob("assets/icons/building_haven_*.png"))]
-    out += ["map__" + os.path.basename(p)[:-4] for p in sorted(glob.glob("assets/map/town_haven*.png"))]
-    return out + ["ui__main_menu_bg"]  # (the main menu's castle: the Temple's)
+    n1, n2 = len(F) + 1, len("building_") + len(F) + 1
+    out = ["town__" + os.path.basename(p)[n1:-4] for p in sorted(glob.glob(f"assets/town/{F}_*.png"))]
+    out += ["card__" + os.path.basename(p)[n2:-4] for p in sorted(glob.glob(f"assets/icons/building_{F}_*.png"))]
+    out += ["map__" + os.path.basename(p)[:-4] for p in sorted(glob.glob(f"assets/map/town_{F}*.png"))]
+    return out + (["ui__main_menu_bg"] if F == "haven" else [])  # (the main menu's castle: the Temple's)
 
 
 def prep(names):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
-    pj = f"{BATCH}/in/temple.json"
+    pj = f"{BATCH}/in/faction.json"
     info = json.load(open(pj)) if os.path.exists(pj) else {}
     for name in names or all_names():
         src = _src(name)
@@ -108,7 +123,7 @@ def paint(names):
     from google import genai
     import vertex_paint as vp
     client = genai.Client(vertexai=True, project=vp.PROJECT, location=vp.LOCATION)
-    info = json.load(open(f"{BATCH}/in/temple.json"))
+    info = json.load(open(f"{BATCH}/in/faction.json"))
     os.makedirs(f"{BATCH}/out", exist_ok=True)
     for name in names or list(info):
         img = vp.paint(client, "gemini-nano-banana-2.1", f"{BATCH}/in/{name}.png", _prompt(name), info[name]["ratio"], "2K")
@@ -119,7 +134,7 @@ def paint(names):
 
 
 def ingest(names):
-    info = json.load(open(f"{BATCH}/in/temple.json"))
+    info = json.load(open(f"{BATCH}/in/faction.json"))
     for name in names or list(info):
         p = f"{BATCH}/out/{name}.png"
         if not os.path.exists(p):
@@ -180,4 +195,7 @@ def slate(paths):
 
 
 if __name__ == "__main__":
-    {"prep": prep, "paint": paint, "ingest": ingest, "slate": slate}[sys.argv[1]](sys.argv[2:])
+    a = sys.argv[1:]
+    if a and a[0] in FACTIONS:
+        a = a[1:]
+    {"prep": prep, "paint": paint, "ingest": ingest, "slate": slate}[a[0]](a[1:])

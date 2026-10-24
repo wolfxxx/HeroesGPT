@@ -16,9 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Order of the Dragon art (2026-10-24), committed with this HANDOFF update:** a pilot of five approved by the user ("roll
+  out"), then the rest: the Order's 30 town-screen layers (with the backdrop), 27 building cards and 3 map towns
+  repainted with crimson-and-black heraldry and the Order's golden dragon coiled in a circle (on banners, shields,
+  the Capitol's rose window), the dark stone, bones and green ghost-light kept; the layout unchanged. The Temple
+  tool was generalised and renamed `tools/art/faction_repaint.py <faction>` (`haven`, `necropolis`; `slate` for
+  the Temple). Its siege paintings are unchanged. Screenshots in ignored `shots/session67/dragon/`.
 - **Session67 Temple art (2026-10-24), committed with this HANDOFF update:** the Temple in the Templars' colours, a pilot of five pictures
   approved by the user ("roll out in this style"), then the rest: all 29 town-screen layers and the backdrop, 28
-  building cards and the main menu painting repainted by the new `tools/art/temple_repaint.py` (white stone and
+  building cards and the main menu painting repainted by the new `tools/art/temple_repaint.py` (now `faction_repaint.py`) (white stone and
   gold kept; banners white with a red cross pattee; blue roofs grey slate; red-cross shields), each layer pasted
   back inside its old alpha so the layout and click areas are unchanged. The 3 map towns and the 37 siege
   paintings and damage pieces only had blue turned to slate (`slate`, hue-based: the walls and damage pieces must
