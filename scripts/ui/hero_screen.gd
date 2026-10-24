@@ -224,6 +224,10 @@ static func _placed(h: Dictionary) -> Dictionary:
 			first = false
 	return out
 
+## An artifact action as a command (the screen has no rules of its own: they are made from the world).
+static func _cmd(cmd: Dictionary) -> Dictionary:
+	return AdvRules.new(GameState.world).do(cmd)
+
 ## The hover text of an artifact: name, tier, effect, the set it belongs to, and what a click does.
 static func _artifact_tip(a: String, hint := "", h = null) -> String:
 	var d: Dictionary = GameData.ARTIFACTS[a]
@@ -265,7 +269,7 @@ static func _doll(owner: Node, h: Dictionary, redo: Callable) -> Control:
 			if d.has("parts"):
 				hint += "\nRight-click: split it into its parts."
 				so.rpressed = func():
-					GameState.split_combination(h, a)
+					_cmd({"t": "split_set", "p": h["owner"], "hero": h["uid"], "artifact": a})
 					Audio.sfx("click")
 					redo.call()
 			elif d.has("set") and d["set"] in h.get("apart", []) \
@@ -273,13 +277,13 @@ static func _doll(owner: Node, h: Dictionary, redo: Callable) -> Control:
 				hint += "\nRight-click: join the parts into the %s." % GameData.ARTIFACTS[d["set"]]["name"]
 				var c: String = d["set"]
 				so.rpressed = func():
-					GameState.join_combination(h, c)
+					_cmd({"t": "join_set", "p": h["owner"], "hero": h["uid"], "artifact": c})
 					Audio.sfx("build", -6)
 					redo.call()
 			var tip := _artifact_tip(a, hint, h)
 			HoverInfo.attach(so, func(): return tip)
 			so.pressed = func():
-				GameState.swap_artifact(h, a, true)
+				_cmd({"t": "equip", "p": h["owner"], "hero": h["uid"], "artifact": a, "worn": true})
 				Audio.sfx("click")
 				redo.call()
 		else:
@@ -358,7 +362,7 @@ static func _backpack(m: Modal, h: Dictionary, redo: Callable) -> Control:
 			var tip := _artifact_tip(a, hint, h)
 			HoverInfo.attach(so, func(): return tip)
 			so.pressed = func():
-				var made := GameState.swap_artifact(h, a, false)
+				var made: String = _cmd({"t": "equip", "p": h["owner"], "hero": h["uid"], "artifact": a, "worn": false}).get("made", "")
 				Audio.sfx("build" if made != "" else "click", -6 if made != "" else 0)
 				redo.call()
 				if made != "":  # (its last part: the set merges, as the classic's combination artifacts)

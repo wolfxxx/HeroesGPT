@@ -224,9 +224,15 @@ the owner passes none) and the computer (`AdvAI._recruit`, `hire_hero`, `recruit
 in `_transfer`, `_collect_garrison`, `_merge_stacks`, the rear guard and `_upgrade_all`: commands on real armies,
 direct changes on preview copies) all use them, and every hero's walk and turn end go through `step` / `end_turn`.
 What a hero meets goes through `visit`, `chest`, `capture` and `battle_result` (`adventure._interact_with`,
-`_show_event`, `_post_ready`, `_start_battle`). Still direct (docs/FOUNDATIONS_AUDIT.md): building, garrison moves
-(enter, leave, swap), artifacts (equip, transfer at a meeting), level-up choices, war machine purchases, the
-Skeleton Transformer, and `visit`'s report still carries textures (its icons), so it is not yet network data.
+`_show_event`, `_post_ready`, `_start_battle`). The rest are commands too (session67): `build`, `enter_garrison` /
+`leave_garrison` / `swap_garrison`, `equip`, `split_set`, `join_set`, `give_artifact` (between heroes side by side),
+`buy_machine` (the town's own Blacksmith machine, or a factory the hero stands at; `AdvAI.buy_from_factory(hero)`
+finds that factory, keeping the signature the frozen baselines override), `transform` and level-ups as `level_roll`
+(the rules roll and keep `hero.level_roll`) then `level_up` (one of the offered skills). The town screen, the hero
+screen (`HeroScreen._cmd`), the meeting window, the factory shop (`WarMachineShop.open(..., rules, factory)`), the
+map screen's level-ups and the computer use them: every action a player takes on the map and in towns is a
+command. Not yet: the battle itself (fought on the battle screen, its outcome sent as `battle_result`), and
+`visit`'s report still carries textures (its icons), so it is not yet network data.
 
 To show such a change leaves the computer's play unchanged, compare tournaments **without `--self`** (with `--self`
 every seat plays the frozen baseline policy, never `AdvAI`): `tools/adventure_tournament.tscn -- --pairs=2 --players=4
@@ -453,7 +459,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   moves, merges, splits, swaps, troop moves and upgrades, hero steps and the turn, each applied and refused when the
   rules say no (armies not together, another player's, a hero's last stack, two tiles at once, onto a monster, past
   the movement left, out of turn), visits, chests (the offer's own gold, once), captures and battle results, every
-  command sent through JSON first.
+  command sent through JSON first; then building, the garrison, artifacts, war machines, the Transformer and
+  level-ups (a skill only among those rolled).
 - `tools/faction_data_test.tscn` — in the full suite: every faction record complete and consistent with its classes,
   heroes and specials; the computer's build orders and the building effects as before the data move (session67).
 - `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the

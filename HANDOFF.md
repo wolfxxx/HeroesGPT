@@ -16,6 +16,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 command layer, the rest (2026-10-24), committed with this HANDOFF update:** `build`, `enter_garrison` / `leave_garrison` /
+  `swap_garrison`, `equip` / `split_set` / `join_set` / `give_artifact`, `buy_machine`, `transform`, and level-ups
+  as `level_roll` + `level_up` (the rules roll and keep the offer; the skill must be one offered). Every map and
+  town action is now a command (town screen, hero screen, meeting, factory shop, level-up dialog, computer).
+  `AdvAI.buy_from_factory(hero)` keeps its signature (the frozen baselines override it: changing it broke them)
+  and finds the factory the hero stands at; the war machine test now stands its hero there. Tournaments with the
+  current AI identical; the tally showed every new command running (33 builds, 69 level-ups, garrison moves,
+  machine buys). Level-up checked in the real UI (Attack +1, Basic Luck chosen). Commands test 74 checks.
 - **Session67 command layer, what a hero meets (2026-10-24), committed with this HANDOFF update:** `visit` (a site the hero stands on; not
   a monster or a guarded Pyramid; a chest's offer kept as `hero.pending_chest`), `chest` (the offer's own gold or
   experience, once), `capture` (an undefended town from its gate) and `battle_result` (`apply_battle` on its

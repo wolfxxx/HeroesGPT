@@ -2,7 +2,8 @@ extends RefCounted
 class_name WarMachineShop
 ## Neutral adventure-map shop. No stock/day limit; each visiting hero has one slot per machine type.
 
-static func open(owner_node: Node, hero: Dictionary, player: Dictionary, on_purchase := Callable()) -> void:
+static func open(owner_node: Node, hero: Dictionary, player: Dictionary, on_purchase := Callable(), rules: AdvRules = null,
+		factory := -1) -> void:
 	while true:
 		var m := Modal.custom(owner_node, "War Machine Factory", 1160)
 		m.add_text("%s  •  %d gold" % [hero["name"], player["resources"]["gold"]], 24)
@@ -17,7 +18,7 @@ static func open(owner_node: Node, hero: Dictionary, player: Dictionary, on_purc
 		var id = await m.closed
 		if id == "" or id == null:
 			return
-		if GameState.buy_war_machine(hero, player, str(id)):
+		if rules.do({"t": "buy_machine", "p": player["index"], "hero": hero["uid"], "machine": str(id), "object": factory})["ok"]:
 			Audio.sfx("build", -4)
 			if on_purchase.is_valid():
 				on_purchase.call()

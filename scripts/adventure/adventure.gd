@@ -1034,7 +1034,7 @@ func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 				await _handle_level_ups(hero)
 	elif ev.has("factory"):
 		if human:
-			await WarMachineShop.open(self, hero, rules.player_of(hero), func(): hud.refresh())
+			await WarMachineShop.open(self, hero, rules.player_of(hero), func(): hud.refresh(), rules, ev["factory"])
 		else:
 			ai.buy_from_factory(hero)
 	elif ev.has("dwelling"):
@@ -1054,7 +1054,9 @@ func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 func _handle_level_ups(hero: Dictionary) -> void:
 	var human: bool = not rules.player_of(hero)["is_ai"]
 	while int(hero.get("pending_levels", 0)) > 0:
-		var roll := rules.roll_level_up(hero)
+		var roll := rules.do({"t": "level_roll", "p": hero["owner"], "hero": hero["uid"]})
+		if not roll["ok"]:
+			break
 		var skill := ""
 		if human:
 			Audio.sfx("level_up")
@@ -1069,7 +1071,7 @@ func _handle_level_ups(hero: Dictionary) -> void:
 				await Modal.message(self, "Level up", text).closed
 		elif roll["options"].size() > 0:
 			skill = roll["options"][randi() % roll["options"].size()]
-		rules.apply_level_up(hero, roll, skill)
+		rules.do({"t": "level_up", "p": hero["owner"], "hero": hero["uid"], "skill": skill})
 	hud.refresh()
 
 # ---------------------------------------------------------------------------------------------

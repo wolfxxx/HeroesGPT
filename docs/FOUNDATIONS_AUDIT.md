@@ -43,8 +43,10 @@ what makes a replay possible.
 `hire`, `trade`, then `stack_move`, `move_troops` and `upgrade_stack`, then `step` and `end_turn`, then `visit`, `chest`, `capture` and `battle_result`; the town screen, the map dwelling
 dialog, the army bars, the computer's transfers, every hero's walk, what the hero meets and every turn end use them. Each step left the computer's play unchanged: seeded tournaments with
 `AdvAI` in a seat (no `--self`, which plays only the frozen baseline) identical before and after, the faction data step
-re-checked the same way. Next: building, garrison moves, artifacts, level-up choices, war machine purchases and the
-Transformer, then the visit report without textures.
+re-checked the same way. Then `build`, the garrison moves, the artifact commands, `buy_machine`, `transform`,
+`level_roll` / `level_up`: **every map and town action is a command** (step 2 done for the adventure map). Left: the
+battle as commands (its moves are already `BattleLogic` calls; only `battle_result` crosses), the visit report without
+textures, and steps 3-4 (interface state out of the world, repeatable randomness and the replay test).
 
 A side benefit: the computer player stops re-implementing recruiting, hiring and troop moves, so it can't drift from
 the rules a person plays by.

@@ -86,6 +86,7 @@ func _ready() -> void:
 	_stacks(w, rules, town, h)
 	_steps(w, rules, h)
 	_meetings()
+	_the_rest()
 	print("COMMANDS TEST: %d checks, failures: %d" % [checks, failures])
 	get_tree().quit()
 
@@ -216,3 +217,67 @@ func _meetings() -> void:
 	w["current_player"] = 0
 	_ok(not rules.do({"t": "battle_result", "p": 1, "result": {"winner": "attacker"}})["ok"], "not out of turn")
 	_ok(not rules.do({"t": "battle_result", "p": 0, "result": "won"})["ok"], "not without a result")
+
+## Building, the garrison, artifacts, war machines, the Transformer and level-ups: each checked by the rules, and a
+## level's skill only one of those the rules rolled.
+func _the_rest() -> void:
+	var s := GameState.new_game_settings.duplicate()
+	s["seed"] = 777
+	s["faction"] = "necropolis"
+	var w := WorldGen.generate(s)
+	GameState.world = w
+	var rules := AdvRules.new(w)
+	var me: Dictionary = w["players"][0]
+	me["resources"] = {"gold": 50000, "wood": 50, "ore": 50, "mercury": 50, "sulfur": 50, "crystal": 50, "gems": 50}
+	var town: Dictionary = w["towns"][me["towns"][0]]
+	var h: Dictionary = w["heroes"][me["heroes"][0]]
+	h["pos"] = town["pos"]
+	rules.rebuild()
+	# build
+	town["built_today"] = false
+	_ok(_do(rules, {"t": "build", "p": 0, "town": town["uid"], "building": "blacksmith"})["ok"] and "blacksmith" in town["buildings"], "building a Blacksmith")
+	_ok(not _do(rules, {"t": "build", "p": 0, "town": town["uid"], "building": "marketplace"})["ok"], "but only one building a day")
+	_ok(not _do(rules, {"t": "build", "p": 1, "town": town["uid"], "building": "marketplace"})["ok"], "and not in another player's town")
+	# the town's own war machine at its Blacksmith
+	h["machines"] = []
+	_ok(not _do(rules, {"t": "buy_machine", "p": 0, "hero": h["uid"], "machine": "ballista", "town": town["uid"]})["ok"], "the Order's smith forges no ballista")
+	_ok(_do(rules, {"t": "buy_machine", "p": 0, "hero": h["uid"], "machine": "first_aid_tent", "town": town["uid"]})["ok"] and "first_aid_tent" in h["machines"], "its first aid tent")
+	# the garrison
+	_ok(_do(rules, {"t": "enter_garrison", "p": 0, "hero": h["uid"], "town": town["uid"]})["ok"] and h.get("in_town", false), "the hero goes into the garrison")
+	_ok(_do(rules, {"t": "leave_garrison", "p": 0, "town": town["uid"]})["ok"] and not h.get("in_town", false), "and comes out again")
+	_ok(not _do(rules, {"t": "leave_garrison", "p": 0, "town": town["uid"]})["ok"], "not twice")
+	# the Transformer: a living stack in the town becomes Skeletons
+	town["buildings"].append("skeleton_transformer")
+	h["army"][1] = {"id": "pikeman", "count": 5}
+	_ok(_do(rules, {"t": "transform", "p": 0, "town": town["uid"], "army": {"hero": h["uid"]}, "si": 1})["ok"] and h["army"][1]["id"] == "skeleton", "living creatures transformed")
+	_ok(not _do(rules, {"t": "transform", "p": 0, "town": town["uid"], "army": {"hero": h["uid"]}, "si": 1})["ok"], "not the undead")
+	# artifacts
+	h["artifacts"] = []
+	h["backpack"] = ["sword_of_valor"]
+	_ok(_do(rules, {"t": "equip", "p": 0, "hero": h["uid"], "artifact": "sword_of_valor", "worn": false})["ok"] and "sword_of_valor" in h["artifacts"], "a carried artifact put on")
+	_ok(_do(rules, {"t": "equip", "p": 0, "hero": h["uid"], "artifact": "sword_of_valor", "worn": true})["ok"] and "sword_of_valor" in h["backpack"], "and taken off")
+	_ok(not _do(rules, {"t": "equip", "p": 0, "hero": h["uid"], "artifact": "crown_of_command", "worn": false})["ok"], "not one the hero lacks")
+	for a in ["dragonbone_blade", "dragonscale_shield", "dragonskull_helm"]:
+		GameState.give_artifact(h, a)
+	_ok("dragonheart_arms" in h["artifacts"], "(the set merges as its pieces are worn)")
+	_ok(_do(rules, {"t": "split_set", "p": 0, "hero": h["uid"], "artifact": "dragonheart_arms"})["ok"] and "dragonbone_blade" in h["artifacts"], "a set parted")
+	_ok(_do(rules, {"t": "join_set", "p": 0, "hero": h["uid"], "artifact": "dragonheart_arms"})["ok"] and "dragonheart_arms" in h["artifacts"], "and joined again")
+	var h2 := GameState.make_hero("vesna_nightshade", 0)
+	h2["pos"] = h["pos"] + Vector2i(1, 0)
+	w["heroes"][h2["uid"]] = h2
+	me["heroes"].append(h2["uid"])
+	_ok(_do(rules, {"t": "give_artifact", "p": 0, "hero": h["uid"], "to": h2["uid"], "artifact": "sword_of_valor"})["ok"] and "sword_of_valor" in h2["artifacts"] + h2["backpack"], "passed to the hero alongside")
+	h2["pos"] = h["pos"] + Vector2i(5, 0)
+	_ok(not _do(rules, {"t": "give_artifact", "p": 0, "hero": h2["uid"], "to": h["uid"], "artifact": "sword_of_valor"})["ok"], "not to a hero far away")
+	# level-ups: the rules roll; the player picks one of what was rolled
+	h["pending_levels"] = 1
+	var r := _do(rules, {"t": "level_roll", "p": 0, "hero": h["uid"]})
+	_ok(r["ok"] and r["stat"] in ["attack", "defense", "power", "knowledge"], "a level rolled")
+	_ok(_do(rules, {"t": "level_roll", "p": 0, "hero": h["uid"]})["options"] == r["options"], "asking again shows the same offer")
+	var stat_before: int = h[r["stat"]]
+	if not r["options"].is_empty():
+		_ok(not _do(rules, {"t": "level_up", "p": 0, "hero": h["uid"], "skill": "no_such_skill"})["ok"], "not a skill that was not offered")
+	var pick: String = r["options"][0] if not r["options"].is_empty() else ""
+	_ok(_do(rules, {"t": "level_up", "p": 0, "hero": h["uid"], "skill": pick})["ok"] and h[r["stat"]] == stat_before + 1 and int(h["pending_levels"]) == 0,
+		"the level taken with an offered skill")
+	_ok(not _do(rules, {"t": "level_up", "p": 0, "hero": h["uid"], "skill": pick})["ok"], "and only once")

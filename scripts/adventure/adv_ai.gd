@@ -147,7 +147,7 @@ func manage_towns(player: Dictionary) -> void:
 					continue
 				var reason := TownLogic.build_block_reason(town, player, b)
 				if reason == "":
-					TownLogic.build(town, player, b)
+					rules.do({"t": "build", "p": player["index"], "town": town["uid"], "building": b})
 					break
 				if reason == "Not enough resources" and not b.begins_with("mage"):
 					break  # save up for it
@@ -393,8 +393,12 @@ func factory_purchases(hero: Dictionary, player: Dictionary) -> Array:
 
 func buy_from_factory(hero: Dictionary) -> void:
 	var player := rules.player_of(hero)
+	var factory := -1  # (the factory the hero stands at: purchases are commands made there)
+	for o in world["objects"].values():
+		if o["type"] == "war_machine_factory" and o["pos"] == hero["pos"]:
+			factory = o["uid"]
 	for id in factory_purchases(hero, player):
-		GameState.buy_war_machine(hero, player, id)
+		rules.do({"t": "buy_machine", "p": player["index"], "hero": hero["uid"], "machine": id, "object": factory})
 
 func _strength(hero: Dictionary) -> float:
 	var s := float(GameState.army_strength(hero["army"]))
@@ -613,14 +617,14 @@ func _town_hold(town: Dictionary) -> float:
 func _garrison(hero: Dictionary) -> bool:
 	for town in world["towns"].values():
 		if town["pos"] == hero["pos"] and town["owner"] == hero["owner"] and rules.garrison_hero(town).is_empty():
-			return rules.enter_garrison(hero, town)
+			return rules.do({"t": "enter_garrison", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})["ok"]
 	return false
 
 ## A garrison hero comes out to its town's gate (false while another hero stands there).
 func _step_out(hero: Dictionary) -> bool:
 	for town in world["towns"].values():
 		if town.get("garrison_hero", -1) == hero["uid"]:
-			return rules.leave_garrison(town)
+			return rules.do({"t": "leave_garrison", "p": town["owner"], "town": town["uid"]})["ok"]
 	return false
 
 func _safe_gate(hero: Dictionary, town: Dictionary) -> bool:

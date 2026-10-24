@@ -397,12 +397,12 @@ func _hero_slot(which: String) -> void:
 		return
 	_hero_pick = ""
 	if not gh.is_empty() and not hero.is_empty():
-		_rules.swap_garrison(town)
+		_rules.do({"t": "swap_garrison", "p": town["owner"], "town": town["uid"]})
 	elif which == "garrison":
-		if not _rules.enter_garrison(hero, town):
+		if not _rules.do({"t": "enter_garrison", "p": town["owner"], "hero": hero["uid"], "town": town["uid"]})["ok"]:
 			Audio.sfx("error")
 			await Modal.message(self, "Garrison", "The garrison's troops cannot join %s's army: there is no room for them." % hero["name"]).closed
-	elif not _rules.leave_garrison(town):
+	elif not _rules.do({"t": "leave_garrison", "p": town["owner"], "town": town["uid"]})["ok"]:
 		Audio.sfx("error")
 		await Modal.message(self, "Garrison", "The town gate is taken.").closed
 	hero = _rules.visiting_hero(town)
@@ -759,7 +759,7 @@ func _building_detail(id: String) -> void:
 	var res = await m.closed
 	if res != "build":
 		return
-	if TownLogic.build(town, player, id):
+	if _rules.do({"t": "build", "p": player["index"], "town": town["uid"], "building": id})["ok"]:
 		Audio.sfx("build")
 		var learned := []
 		if hero.size() > 0 and id.begins_with("mage_guild"):
@@ -1015,8 +1015,15 @@ func _open_transformer(id: String) -> void:
 		row.custom_minimum_size.x = 1040
 		m.body.add_child(row)
 		var any := false
-		for army in ([hero["army"]] if not hero.is_empty() else []) + [_rules.town_army(town)]:
-			for st in army:
+		var armies := []  # [army, its reference for the command]
+		if not hero.is_empty():
+			armies.append([hero["army"], {"hero": hero["uid"]}])
+		var gh := _rules.garrison_hero(town)
+		armies.append([_rules.town_army(town), {"hero": gh["uid"]} if not gh.is_empty() else {"town": town["uid"]}])
+		for ar in armies:
+			var army: Array = ar[0]
+			for si in army.size():
+				var st = army[si]
 				if st == null or "undead" in GameData.CREATURES[st["id"]]["abilities"]:
 					continue
 				any = true
@@ -1027,17 +1034,17 @@ func _open_transformer(id: String) -> void:
 				t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				t.custom_minimum_size.x = 150
 				v.add_child(t)
-				var s2: Dictionary = st
-				v.add_child(UI.button("Transform", func(): m.close(s2), 19))
+				var pick := [ar[1], si]
+				v.add_child(UI.button("Transform", func(): m.close(pick), 19))
 				row.add_child(v)
 		if not any:
 			row.add_child(UI.label("There are no living creatures here.", 20, Color(0.8, 0.7, 0.6)))
 		m.add_buttons([["Close", ""]])
 		m.set_meta("cancel", "")
 		var r = await m.closed
-		if not r is Dictionary:
+		if not r is Array:
 			break
-		if TownLogic.transform_stack(r, into):
+		if _rules.do({"t": "transform", "p": player["index"], "town": town["uid"], "army": r[0], "si": r[1]})["ok"]:
 			Audio.sfx("magic_hit", -4)
 		refresh()
 
@@ -1074,7 +1081,7 @@ func _open_smith() -> void:
 	btns.get_child(0).disabled = why != ""
 	m.set_meta("cancel", "")
 	if await m.closed == "buy":
-		if GameState.buy_war_machine(hero, player, id):
+		if _rules.do({"t": "buy_machine", "p": player["index"], "hero": hero["uid"], "machine": id, "town": town["uid"]})["ok"]:
 			Audio.sfx("build", -4)
 			refresh()
 

@@ -900,7 +900,8 @@ func _exchange_artifacts(row: HFlowContainer, h: Dictionary, other: Dictionary, 
 		var tip := HeroScreen._artifact_tip(art, hint, h)
 		HoverInfo.attach(so, func(): return tip)
 		so.pressed = func():
-			var made := GameState.transfer_artifact(h, other, art)
+			var made: String = adv.rules.do({"t": "give_artifact", "p": h["owner"], "hero": h["uid"], "to": other["uid"],
+				"artifact": art}).get("made", "")
 			Audio.sfx("build" if made != "" else "click", -6 if made != "" else 0)
 			redo.call()
 			if made != "":

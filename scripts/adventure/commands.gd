@@ -35,7 +35,20 @@ class_name Commands
 ##                                                      whose gate the hero stands
 ##   battle_result {p, result}                          a fought or resolved battle's outcome applied (AdvRules.
 ##                                                      apply_battle; the player whose turn it is) -> "event"
-## (Building, garrison moves, artifacts and level-up choices follow, docs/FOUNDATIONS_AUDIT.md.)
+##   build         {p, town, building}                  TownLogic.build (its requirements, cost and one a day)
+##   enter_garrison {p, hero, town} / leave_garrison {p, town} / swap_garrison {p, town}
+##                                                      the hero at the gate and the town's garrison hero (AdvRules)
+##   equip         {p, hero, artifact, worn: bool}      a worn artifact to the backpack, or one from it put on
+##   split_set     {p, hero, artifact}                  a worn combination parted into its pieces
+##   join_set      {p, hero, artifact}                  a parted combination joined again (when all its pieces are worn)
+##   give_artifact {p, hero, to: uid, artifact}         to the player's hero standing beside it
+##   buy_machine   {p, hero, machine, town | object}    at the town's Blacksmith (its own machine) or a War Machine
+##                                                      Factory the hero stands at (GameState.war_machine_reason)
+##   transform     {p, town, army, si}                  the town's transforming building on a stack in it
+##   level_roll    {p, hero}                            the rules roll a pending level's stat and skill options (kept
+##                                                      on the hero until chosen) -> "stat", "options"
+##   level_up      {p, hero, skill}                     the rolled level taken, with one of its offered skills
+## (Every action a player takes on the map and in towns is now a command: docs/FOUNDATIONS_AUDIT.md.)
 
 const HIRE_COST := 2500
 
@@ -72,7 +85,136 @@ static func run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _capture(rules, player, cmd)
 		"battle_result":
 			return _battle_result(rules, player, cmd)
+		"build":
+			return _build(rules, player, cmd)
+		"enter_garrison", "leave_garrison", "swap_garrison":
+			return _garrison(rules, player, cmd)
+		"equip", "split_set", "join_set", "give_artifact":
+			return _artifact(rules, player, cmd)
+		"buy_machine":
+			return _buy_machine(rules, player, cmd)
+		"transform":
+			return _transform(rules, player, cmd)
+		"level_roll":
+			return _level_roll(rules, player, cmd)
+		"level_up":
+			return _level_up(rules, player, cmd)
 	return _no("Unknown command.")
+
+static func _own_town(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var t: Dictionary = rules.world["towns"].get(int(cmd.get("town", -1)), {})
+	return t if not t.is_empty() and t["owner"] == player["index"] else {}
+
+static func _build(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var town := _own_town(rules, player, cmd)
+	var id: String = cmd.get("building", "")
+	if town.is_empty() or not GameData.BUILDINGS.has(id):
+		return _no("Not your town.")
+	var why := TownLogic.build_block_reason(town, player, id)
+	if why != "" or not TownLogic.build(town, player, id):
+		return _no(why if why != "" else "Cannot build that.")
+	return {"ok": true, "reason": ""}
+
+static func _garrison(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var town := _own_town(rules, player, cmd)
+	if town.is_empty():
+		return _no("Not your town.")
+	var ok := false
+	match cmd["t"]:
+		"enter_garrison":
+			var hero := _hero_of(rules, player, cmd)
+			ok = not hero.is_empty() and rules.enter_garrison(hero, town)
+		"leave_garrison":
+			ok = rules.leave_garrison(town)
+		"swap_garrison":
+			ok = rules.swap_garrison(town)
+	return {"ok": true, "reason": ""} if ok else _no("Cannot do that here.")
+
+static func _artifact(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	var a: String = cmd.get("artifact", "")
+	if hero.is_empty() or not GameData.ARTIFACTS.has(a):
+		return _no("Not your hero.")
+	var worn: bool = a in hero.get("artifacts", [])
+	var carried: bool = a in hero.get("backpack", [])
+	var made := ""
+	match cmd["t"]:
+		"equip":
+			if bool(cmd.get("worn", false)) != worn or not (worn or carried):
+				return _no("The hero does not have that.")
+			made = GameState.swap_artifact(hero, a, worn)
+		"split_set":
+			if not worn or not GameData.ARTIFACTS[a].has("parts"):
+				return _no("Not a worn combination.")
+			GameState.split_combination(hero, a)
+		"join_set":
+			if not a in hero.get("apart", []):
+				return _no("That set is not parted.")
+			made = GameState.join_combination(hero, a)
+		"give_artifact":
+			var other: Dictionary = rules.world["heroes"].get(int(cmd.get("to", -1)), {})
+			if other.is_empty() or other["owner"] != player["index"] or other["uid"] == hero["uid"]:
+				return _no("Not your hero.")
+			if not together(rules, {"hero": hero["uid"]}, {"hero": other["uid"]}):
+				return _no("The heroes are not together.")
+			if not (worn or carried):
+				return _no("The hero does not have that.")
+			made = GameState.transfer_artifact(hero, other, a)
+	return {"ok": true, "reason": "", "made": made}
+
+static func _buy_machine(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	var id: String = cmd.get("machine", "")
+	if hero.is_empty():
+		return _no("Not your hero.")
+	if cmd.has("town"):
+		var town := _own_town(rules, player, cmd)
+		if town.is_empty() or town["pos"] != hero["pos"] or not TownLogic.has_building(town, "blacksmith"):
+			return _no("No Blacksmith here.")
+		if id != GameData.FACTIONS[town["faction"]]["smith_machine"]:
+			return _no("This Blacksmith does not forge that.")
+	else:
+		var o: Dictionary = rules.world["objects"].get(int(cmd.get("object", -1)), {})
+		if o.is_empty() or o["type"] != "war_machine_factory" or o["pos"] != hero["pos"]:
+			return _no("No factory here.")
+	var why := GameState.war_machine_reason(hero, player, id)
+	if why != "" or not GameState.buy_war_machine(hero, player, id):
+		return _no(why if why != "" else "Cannot buy that.")
+	return {"ok": true, "reason": ""}
+
+static func _transform(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var town := _own_town(rules, player, cmd)
+	var army := army_of(rules, player, cmd.get("army"))
+	var si := int(cmd.get("si", -1))
+	if town.is_empty() or army.is_empty() or si < 0 or si > 6 or army[si] == null:
+		return _no("No such stack.")
+	if not together(rules, cmd["army"], {"town": town["uid"]}):
+		return _no("The army is not in the town.")
+	var into := TownLogic.transform_creature(town)
+	if into == "" or not TownLogic.transform_stack(army[si], into):
+		return _no("Cannot transform that.")
+	return {"ok": true, "reason": "", "into": into}
+
+static func _level_roll(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	if hero.is_empty() or int(hero.get("pending_levels", 0)) <= 0:
+		return _no("No level to take.")
+	if not hero.has("level_roll"):  # (rolled once: asking again shows the same offer)
+		hero["level_roll"] = rules.roll_level_up(hero)
+	var r: Dictionary = hero["level_roll"]
+	return {"ok": true, "reason": "", "stat": r["stat"], "options": r["options"].duplicate()}
+
+static func _level_up(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	if hero.is_empty() or not hero.has("level_roll"):
+		return _no("No level rolled.")
+	var r: Dictionary = hero["level_roll"]
+	var skill: String = cmd.get("skill", "")
+	if (r["options"].is_empty() and skill != "") or (not r["options"].is_empty() and not skill in r["options"]):
+		return _no("That skill was not offered.")
+	hero.erase("level_roll")
+	rules.apply_level_up(hero, r, skill)
+	return {"ok": true, "reason": ""}
 
 static func _hero_of(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
 	var h: Dictionary = rules.world["heroes"].get(int(cmd.get("hero", -1)), {})

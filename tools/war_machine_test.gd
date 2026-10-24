@@ -75,6 +75,7 @@ func _purchases() -> void:
 	hero["machines"] = []
 	_ok(ai.factory_purchases(hero, player).size() == 3, "AI buys useful missing machines")
 	_ok(ai._object_value(hero, player, factory, 10000) > 0, "factory is an AI target")
+	hero["pos"] = factory["pos"]  # (bought by command: the hero stands at the factory)
 	ai.buy_from_factory(hero)
 	_ok(hero["machines"].size() == 3 and player["resources"]["gold"] == 1000, "AI pays and retains reserve")
 	hero["machines"] = []
