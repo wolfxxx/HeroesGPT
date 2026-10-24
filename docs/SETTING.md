@@ -207,7 +207,8 @@ The plan was these cheap steps, which make the new identity visible without much
    as the star-crown.
 2. Rename the headline artifacts, the Templar ranks and the map objects as above (names and texts).
 3. Legendary heroes: add or rename a few (Jacques de Molay, the Count of Saint-Germain).
-4. Then art, as each piece is redone: Templar crosses and mantles on Haven, the Order's dragon sigils on Necropolis, relic
+4. Then art, as each piece is redone: Templar crosses and mantles on Haven (done in session67: the town screen, cards,
+   map towns, sieges and main menu in Templar colours), the Order's dragon sigils on Necropolis, relic
    pictures.
 
 The bigger steps (Eridu, the Iron Order's excavations, new factions) follow the online plan in HANDOFF §8.

@@ -208,3 +208,14 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   at -21, mine_capture at -25, death_undead at -15 and resource_pickup at -17, and remade them.
 - Per-creature (optional): `sfx/<creature_id>_attack.mp3`, `sfx/<creature_id>_death.mp3`.
 - Voice (optional): `voice/<line_id>.mp3` narrator lines: intro, victory, defeat, new_week.
+
+## The Temple's Templar colours (session67)
+The Temple (`haven`) town screen (`town/haven_*.png`, the backdrop, the layout unchanged), its building cards
+(`icons/building_haven_*.png`), its map towns (`map/town_haven*.png`) and the main menu painting (`ui/main_menu_bg.png`)
+were repainted in the Templars' colours by `tools/art/temple_repaint.py` (`prep`, `paint`, `ingest`; imagegen/batch37):
+white stone and gold kept, banners white with a red cross pattee, blue roofs grey slate, red-cross shields. Layers are
+painted on a flat backdrop and pasted back inside their old alpha, so silhouettes and click areas are unchanged. The
+map towns (too small for the model to repaint their roofs) and the siege paintings with their damage and ruin pieces
+(`battle/bg_siege_haven_*`, `siege_haven_*_*_*`; their walls must not move) only had blue turned to slate
+(`temple_repaint.py slate`, a hue-based recolour). The originals are in ignored `shots/session67/temple_old/`.
+

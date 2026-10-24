@@ -481,7 +481,8 @@ Window must not be headless (rendering needed). Screens are saved at the window 
   objects (the stone circle, the observatory) and new ones over an old sprite (the Pyramid):
   `tools/art/map_object_paint.py` (imagegen/batch34). New creatures over an existing one's figure (the ushabti):
   `tools/art/new_creature_paint.py` (imagegen/batch36). Portraits of the
-  heroes from legend: `tools/art/legend_portraits.py` (imagegen/batch35).
+  heroes from legend: `tools/art/legend_portraits.py` (imagegen/batch35). The Temple's Templar colours over its town,
+  cards, map towns, sieges and the main menu: `tools/art/temple_repaint.py` (imagegen/batch37; see ASSETS.md).
 - The setting (`docs/SETTING.md`) renames only what the player sees: ids stay as they were (`haven` is the Temple,
   `necropolis` the Order of the Dragon (`short`: "Dragon", for tight labels), `pikeman` the Sergeant, `monk` the Chaplain Brother, `brotherhood` the Chapter House,
   `shrine` the Stone Circle, `learning_stone` the Obelisk of Thoth, `watchtower` the Observatory, artifacts by their old ids),

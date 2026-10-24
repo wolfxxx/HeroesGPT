@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Temple art (2026-10-24), committed with this HANDOFF update:** the Temple in the Templars' colours, a pilot of five pictures
+  approved by the user ("roll out in this style"), then the rest: all 29 town-screen layers and the backdrop, 28
+  building cards and the main menu painting repainted by the new `tools/art/temple_repaint.py` (white stone and
+  gold kept; banners white with a red cross pattee; blue roofs grey slate; red-cross shields), each layer pasted
+  back inside its old alpha so the layout and click areas are unchanged. The 3 map towns and the 37 siege
+  paintings and damage pieces only had blue turned to slate (`slate`, hue-based: the walls and damage pieces must
+  stay aligned). The backdrop's edges drifted a little in the repaint (a tree at the far left is gone), noted to
+  the user. Screenshots in ignored `shots/session67/temple/` (`pilot_compare.png`, `town_after.png`,
+  `menu_after.png`, `siege_after.png`); originals in `shots/session67/temple_old/`.
 - **Session67 setting playtest (2026-10-24), committed with this HANDOFF update:** the assistant played "The Shattered Crown" (Normal,
   Order of the Dragon, Saint-Germain, artifact bonus) through the real UI with the remote harness on
   `user://playtest_save.dat` (the player's save hash-checked unchanged, 60b0e1fc928). **Outcome: defeat on day 7**:
