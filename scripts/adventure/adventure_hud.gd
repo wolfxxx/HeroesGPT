@@ -492,7 +492,7 @@ func _empty_slot(h: float) -> Control:
 func _hero_card(h: Dictionary) -> Control:
 	var bw := 6.0
 	var b := UI.portrait_button(Assets.hero_portrait(h["id"]), Vector2(COL_W, SLOT_H),
-		h["uid"] == world.get("selected_hero", -1), 2 * bw + 6)
+		h["uid"] == GameState.view()["selected_hero"], 2 * bw + 6)
 	b.tooltip_text = "%s, level %d %s\nMovement %d / %d, spell points %d / %d\nClick to select, click again for hero details" % [h["name"], h["level"], h["class"],
 		h["movement"], h["max_movement"], h["mana"], GameState.max_mana(h)]
 	b.pressed.connect(func():
@@ -501,7 +501,7 @@ func _hero_card(h: Dictionary) -> Control:
 		Audio.sfx("click", -6)
 		# (as the classic: the first click selects the hero and centres the map on them, a click on the selected one
 		# opens the hero screen)
-		if world.get("selected_hero", -1) == h["uid"]:
+		if GameState.view()["selected_hero"] == h["uid"]:
 			open_hero_screen(h)
 		else:
 			adv.select_hero(h["uid"]))

@@ -1,7 +1,8 @@
 # Foundations audit: what stands between the game and several factions played online
 
 Status: **audit** (2026-10-24, at `d17502e`). Step 1, faction data, is **done** (section 4, "Done"). Step 2, the
-command layer, is **under way** (section 1, "Progress"); steps 3-4 are not started. It sizes "Phase 1: Foundations" of the plan in
+command layer, is **done** for the map and towns (section 1, "Progress"; battles still to follow). Step 3, interface
+state, is **done** (section 2, "Done"). Step 4 is not started. It sizes "Phase 1: Foundations" of the plan in
 HANDOFF §8: one action layer, repeatable randomness, a replay test, faction data. Line numbers are as of that commit.
 
 ## Summary
@@ -59,6 +60,12 @@ screen: `selected_hero` (9 uses), `selected_town` (4), `viewer` (3), `intro_show
 AI's notes (`ai_day`, `ai_goal`, `yield`). In hot-seat this works because one screen serves everyone in turn. Online,
 each player needs their own: move them into a per-player view state (or a `world["view"][player]` block that the
 host never sends to others).
+
+**Done (session67):** `world["views"][player]` (`GameState.view`) holds the selected hero and town, `intro_shown`,
+the day's `news` (was `pending_week` + `seen_by`) and `defeat_told`; `viewer` is an unsaved `GameState` variable;
+`_removed` is `AdvRules.removed`; `pending_turn_banner` was dead and is gone. Save version 2 converts version-1
+saves on load. Kept as game state: `game_over`, hero `dest` and `face_left` (a route and facing other players see),
+the AI's notes (`ai_day`, `ai_goal`, `yield`: the computer's own memory; on a host they stay with the host).
 
 ## 3. Randomness
 

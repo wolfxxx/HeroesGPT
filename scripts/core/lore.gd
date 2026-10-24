@@ -282,4 +282,4 @@ static func redact(text: String, salt: String) -> String:
 
 ## The player whose eyes the screens show (hot-seat: whose turn it is).
 static func viewer(world: Dictionary) -> int:
-	return int(world.get("viewer", world.get("current_player", 0)))
+	return GameState.human_player_index() if not world.is_empty() else 0

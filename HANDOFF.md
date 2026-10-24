@@ -2,7 +2,7 @@
 
 Read this first, then `ARCHITECTURE.md` (code map), `ASSETS.md` (every asset path and the art pipeline) and
 `CREDITS.md`. This file is written so that another person or another AI assistant can pick the work up exactly
-where it stopped. Last updated 2026-10-23 (HeroesGPT repository continuation; latest visual review: judge 47,
+where it stopped. Last updated 2026-10-24 (HeroesGPT repository continuation; latest visual review: judge 47,
 overall 9.4), branch `main`, remote `https://github.com/wolfxxx/HeroesGPT.git` (public repo).
 
 ## 1. The project in one paragraph
@@ -16,6 +16,19 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 screen state out of the world (2026-10-24), committed with this HANDOFF update:** step 3 of `docs/FOUNDATIONS_AUDIT.md`. Each player's
+  own screen state now lives in `world["views"][player]` (`GameState.view(p)`): selected hero and town, the
+  scenario briefing shown, the day's news still to announce (`news`, set for every human at the new day, read and
+  cleared by `_turn_banner`; replaces `pending_week` + `seen_by`), a defeat already told. A host can keep each
+  player's view to that player. `GameState.viewer` (whose eyes the screen shows during computer turns) is a plain
+  variable, not saved; objects taken off the map are listed in `AdvRules.removed` instead of `world["_removed"]`;
+  the dead `pending_turn_banner` branch is gone. Saves are now version 2 (`GameState.SAVE_VERSION`); a version-1
+  save is converted on load (`_views_from_v1`). Checked on a copy of the user's save (the original untouched): its
+  selected hero came across and the adventure screen opened on it. Suite passes; tournaments with the current AI
+  identical before and after. In the real game (remote harness): the scenario briefing once, the hero selected,
+  day 2 reached, the town selected from the list, saved and loaded back with the town still selected and no
+  briefing again (`shots/session67/play/v_*.png`). Left in the world as game state: hero `dest`
+  and `face_left`, the AI's notes, `game_over`. Eight tests now read the view instead of world keys.
 - **Session67 command layer, the rest (2026-10-24), committed with this HANDOFF update:** `build`, `enter_garrison` / `leave_garrison` /
   `swap_garrison`, `equip` / `split_set` / `join_set` / `give_artifact`, `buy_machine`, `transform`, and level-ups
   as `level_roll` + `level_up` (the rules roll and keep the offer; the skill must be one offered). Every map and
@@ -435,10 +448,10 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   Extra humans get a human's starting resources for the difficulty; names become "Red
   Player", "Blue Player" (a one-human game is generated exactly as before, tested). The viewpoint is
   `GameState.human_player_index()`: the human whose turn it is, during computer turns the last human who moved
-  (`world["viewer"]`). Each human turn in hot-seat starts behind a dark cover with "<Colour> Player's Turn" and a
+  (`GameState.viewer`, since session67 not saved). Each human turn in hot-seat starts behind a dark cover with "<Colour> Player's Turn" and a
   pennant (`adventure._start_human_turn`, `_cover`, `UI.flag_icon`); the first turn and a loaded game do the same
   (`GameState.handed_over / was_handed`, deliberately not saved). The new-week dialog reaches every human
-  (`pending_week["seen_by"]`). Battles between humans are played by both from the screen (BattleLogic already took
+  (since session67 each human's own `view["news"]`). Battles between humans are played by both from the screen (BattleLogic already took
   per-side control); the result is titled as the winner sees it. A computer attacking a human who is not at the
   screen first shows "To Arms, <Colour> Player!" behind the cover (an aid, not a rule). A human who falls is told
   "<Colour> Player Is Defeated" and the others play on (in a "lose your champion" scenario `AdvRules.eliminate`
@@ -1028,6 +1041,9 @@ Proposed path, discussed with the user (not yet approved as a plan):
    generator saved with the world (about a dozen global `randi`/`randf` calls remain in rules, hero creation and
    towns); a replay test (record a game's commands, replay from the seed, compare the world); faction data (about 60
    "haven"/"necropolis" checks in 9 scripts move into each faction's definition).
+   **Progress (2026-10-24):** faction data done; every map and town action is a command (battles still drive
+   `BattleLogic` from `battle.gd`); per-player screen state is in `world["views"]`. Left: step 4, randomness and the
+   replay test (then a fresh same-policy AI control, since seeded games will change).
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
@@ -1299,6 +1315,10 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Per-player screen state (session67):** `GameState.view(p)` (`world["views"][p]`: `selected_hero`, `selected_town`,
+  `intro_shown`, `news`, `defeat_told`), `adventure._v()`, unsaved `GameState.viewer`, `AdvRules.removed`; save
+  version `GameState.SAVE_VERSION` = 2 with `_views_from_v1` for older saves. Commands: `scripts/adventure/commands.gd`
+  (list at its top), `AdvRules.do(cmd)`, test `tools/commands_test.tscn`.
 - **Fortification levels (session56):** `TownLogic.siege_level`; map picture `MapView.town_sprite`
   (`assets/map/town_<faction>{_village,_fort,}.png`); siege `BattleLogic.is_moat` (Citadel+), `SOLID_SEGS` (corners),
   `breakable` (corners only with a Castle); `battle.gd` `bg_siege_<faction>_<level>`, `siege.json` per level,

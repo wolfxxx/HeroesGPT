@@ -30,7 +30,7 @@ func _reset() -> void:
 	var blocked := PackedByteArray()
 	blocked.resize(terrain.size())
 	world = {"size": Vector2i(16, 16), "day": 1, "current_player": 0, "terrain": terrain, "blocked": blocked,
-		"heroes": {}, "towns": {}, "objects": {}, "players": [], "tavern": [], "selected_hero": -1}
+		"heroes": {}, "towns": {}, "objects": {}, "players": [], "tavern": []}
 	for i in 2:
 		world["players"].append({"index": i, "is_ai": i == 1, "alive": true, "heroes": [], "towns": [],
 			"resources": {"gold": 10000}})
@@ -44,7 +44,7 @@ func _hero(owner_index: int) -> Dictionary:
 	hero["machines"] = []
 	world["heroes"][hero["uid"]] = hero
 	world["players"][owner_index]["heroes"].append(hero["uid"])
-	world["selected_hero"] = hero["uid"]
+	GameState.view(0, world)["selected_hero"] = hero["uid"]
 	return hero
 
 func _counts_and_slots() -> void:

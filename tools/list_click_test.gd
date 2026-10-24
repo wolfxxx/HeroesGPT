@@ -30,12 +30,12 @@ class Watcher extends Node:
 		get_tree().change_scene_to_file("res://scenes/adventure.tscn")
 		await get_tree().create_timer(1.5).timeout
 		var adv = get_tree().current_scene
-		_ok(w["selected_hero"] == h["uid"] and adv.selected_town().is_empty(), "the game starts with the hero selected")
+		_ok(GameState.view(0, w)["selected_hero"] == h["uid"] and adv.selected_town().is_empty(), "the game starts with the hero selected")
 
 		# the town list: a first click selects the town and centres the map, the hero is no longer selected
 		_card(adv, false).pressed.emit()
 		await get_tree().process_frame
-		_ok(w["selected_hero"] == -1 and adv.view.selected_hero == -1, "the hero is no longer selected")
+		_ok(GameState.view(0, w)["selected_hero"] == -1 and adv.view.selected_hero == -1, "the hero is no longer selected")
 		_ok(adv.selected_town().get("uid", -1) == town["uid"], "the town is selected")
 		_ok(get_tree().current_scene == adv, "a first click does not open the town")
 		var target: Vector2 = adv._cam_target
@@ -49,7 +49,7 @@ class Watcher extends Node:
 		# the hero list: a first click selects the hero again (and drops the town), a click on the map is the hero's
 		_card(adv, true).pressed.emit()
 		await get_tree().process_frame
-		_ok(w["selected_hero"] == h["uid"] and adv.selected_town().is_empty(), "a hero click selects the hero, not the town")
+		_ok(GameState.view(0, w)["selected_hero"] == h["uid"] and adv.selected_town().is_empty(), "a hero click selects the hero, not the town")
 		_ok(_shows(adv.hud._detail, h["name"]), "the status window shows the hero")
 		target = adv._cam_target
 		adv.center_on(h["pos"], true)
@@ -65,7 +65,7 @@ class Watcher extends Node:
 		get_tree().change_scene_to_file("res://scenes/adventure.tscn")
 		await get_tree().create_timer(1.5).timeout
 		adv = get_tree().current_scene
-		_ok(adv.selected_town().get("uid", -1) == town["uid"] and w["selected_hero"] == -1, "the town stays selected after its screen")
+		_ok(adv.selected_town().get("uid", -1) == town["uid"] and GameState.view(0, w)["selected_hero"] == -1, "the town stays selected after its screen")
 		_ok(_shows(adv.hud._detail, town["name"]), "and the status window shows it")
 		print("LIST CLICK TEST: %d checks, failures: %d" % [checks, failures])
 		get_tree().quit()

@@ -93,7 +93,7 @@ func _generate(settings: Dictionary) -> Dictionary:
 		"seed": seed_v, "size": Vector2i(w, h), "day": 1, "current_player": 0,
 		"players": [], "heroes": {}, "towns": {}, "objects": {},
 		"terrain": terrain, "blocked": blocked, "decor": decor, "difficulty": difficulty,
-		"tavern": [], "selected_hero": -1, "game_over": false,
+		"tavern": [], "game_over": false,
 		"townless_limit": int(settings.get("townless_limit", 0)),  # (optional classic rule, see AdvRules.tick_townless)
 	}
 
@@ -368,12 +368,15 @@ func _generate(settings: Dictionary) -> Dictionary:
 	for k in GameData.HEROES:
 		if not k in used_heroes:
 			world["tavern"].append(k)
-	world["selected_hero"] = world["players"][0]["heroes"][0]
-	world["start_hero"] = world["selected_hero"]
+	world["start_hero"] = world["players"][0]["heroes"][0]
 	var sc := GameData.scenario(settings.get("scenario", "random"))
 	world["scenario"] = {"id": sc["id"], "name": sc["name"], "desc": sc["desc"], "victory": sc["victory"],
 		"loss": sc["loss"]}
-	world["intro_shown"] = not settings.has("scenario")  # (the briefing only for a game from the New Game screen)
+	for p in world["players"]:  # (each player's own screen: their first hero selected; the briefing only for a game
+		# from the New Game screen)
+		var v := GameState.view(p["index"], world)
+		v["selected_hero"] = p["heroes"][0] if not p["heroes"].is_empty() else -1
+		v["intro_shown"] = not settings.has("scenario")
 	for t in town_list:
 		t["start_owner"] = t["owner"]
 	_start_bonus(world["players"][0], world["heroes"][world["start_hero"]], settings.get("bonus", ""))

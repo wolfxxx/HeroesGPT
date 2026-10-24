@@ -108,7 +108,7 @@ class Watcher extends Node:
 		adv.center_on(mine["pos"], true)
 		await _shot("before_enemy")
 		_ok(not _on_screen(enemy["pos"]), "enemy begins outside the current camera view")
-		var selected: int = adv.world["selected_hero"]
+		var selected: int = GameState.view()["selected_hero"]
 		var result := {"done": false}
 		_walk(enemy, _plan(enemy["pos"], 8), result)
 		_ok(adv._follow == enemy["uid"] and _on_screen(Vector2i(38, 30)), "visible AI walk immediately comes into view")
@@ -123,7 +123,7 @@ class Watcher extends Node:
 		_ok(adv.cam.position.x > start_cam.x + 128, "camera travels with the animated enemy")
 		_ok(_on_screen(enemy["pos"]), "enemy stays in view at the end of its walk")
 		_ok(adv._follow == -1, "follow released after reaching destination")
-		_ok(adv.world["selected_hero"] == selected, "watching an enemy preserves the player's selected hero")
+		_ok(GameState.view()["selected_hero"] == selected, "watching an enemy preserves the player's selected hero")
 
 	func _hidden() -> void:
 		_fog(Rect2i())
@@ -234,7 +234,7 @@ class Watcher extends Node:
 		_ok(not adv.world["objects"].has(object["uid"]), "real AI reaches and collects its chosen target")
 		_ok(adv.world["day"] == day + 1 and adv.world["current_player"] == 0, "AI turn completes and advances to the human's next day")
 		await get_tree().create_timer(0.6).timeout
-		_ok(adv.world["selected_hero"] == mine["uid"] and _on_screen(mine["pos"]), "human turn returns the camera to the player's hero")
+		_ok(GameState.view()["selected_hero"] == mine["uid"] and _on_screen(mine["pos"]), "human turn returns the camera to the player's hero")
 		_ok(adv._follow == -1, "human turn has no stale enemy follow")
 		await _shot("your_turn")
 		# Walk a clear route through unexplored ground with the normal human command.

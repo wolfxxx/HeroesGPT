@@ -74,16 +74,16 @@ left-side cards, which show the colour in `_edit_seat` (`_choice` / `_set_choice
 person's hero unique, greyed for the others). `WorldGen.generate` draws every computer-style faction from the rng first and then
 applies a chosen one, so a one-human game is unchanged; humans get the difficulty's human resources, a per-player
 `start_hero` (their chosen hero unless another took it), and their chosen starting bonus (random if none). `player["is_ai"]` is the only switch the rules read.
-Viewpoint: `GameState.human_player_index()` = the current player if it is a living human, else `world["viewer"]`
-(set at each human turn start), else the first living human (all fallen: the last one, for the defeat). Everything
+Viewpoint: `GameState.human_player_index()` = the current player if it is a living human, else `GameState.viewer`
+(set at each human turn start, not saved), else the first living human (all fallen: the last one, for the defeat). Everything
 that shows "your" kingdom (fog, HUD, town fallback, remote `state`) goes through it. `GameState.hotseat()` = two or
 more living humans. Turn handover: `adventure._start_human_turn` covers the screen (`_cover`, CanvasLayer 80 under
 the modal layer 90), switches the view, selects that player's hero, then shows "<name>'s Turn"; `_post_ready` does the
 same for the first turn and a loaded game, using the unsaved `GameState.handed_over / was_handed` (tied to the world
-instance). `_turn_banner` shows the new week to each human once (`pending_week["seen_by"]`). `_start_battle`: a
+instance). `_turn_banner` shows the day's news to each human once (`_advance_player` puts it in every human's `view["news"]`). `_start_battle`: a
 computer attacking a human other than the viewer shows "To Arms" behind the cover and makes them the viewer.
 `_check_game_over` first runs `_hotseat_defeats` (each fallen human told once, `defeat_told`; a lost champion in a
-hero scenario -> `AdvRules.eliminate`), passes the turn on if the current human fell, then checks defeat/victory for
+hero scenario -> `AdvRules.eliminate`; `defeat_told` is in the player's view), passes the turn on if the current human fell, then checks defeat/victory for
 the viewer (others alive = any other living player). Battles: `BattleLogic.ai_side` per side; `battle._end_battle`
 titles a human-vs-human result from the winner's side. Test: `tools/hotseat_test.tscn`.
 
@@ -91,9 +91,14 @@ titles a human-vs-human result from the winner's side. Test: `tools/hotseat_test
 Right button down on the map: `adventure._right_click` shows `_tile_info(t, true)` (the hover panel; heroes add
 `_army_row`, own towns their garrison) via `HoverInfo.show_for(self, …, 0.0)`; release hides it (`_rclick_info`).
 `MapView.hero_foot` is 1px below `foot_of` so heroes win y-sort ties with buildings on their tile.
-Selection (as HoMM3, one or the other): `world["selected_hero"]` (uid, -1 for none) or, while it is -1,
-`world["selected_town"]`; `adventure.select_town` (the town list's first click) drops the hero selection and centres
-the map, `_select_hero` erases the town, `selected_town()` returns the human's selected town or {}. The status
+Per-player screen state: `GameState.view(p)` = `world["views"][p]` (made on first use): `selected_hero`,
+`selected_town`, `intro_shown`, `news`, `defeat_told`. Kept apart from the game so an online host can keep each view
+to its player; saved with the world (save version 2, `GameState.SAVE_VERSION`; `_views_from_v1` converts older saves
+on load). `adventure._v()` is the screen player's view. Objects removed from the map: `AdvRules.removed` (the screen
+takes their sprites off and clears it).
+Selection (as HoMM3, one or the other): `view["selected_hero"]` (uid, -1 for none) or, while it is -1,
+`view["selected_town"]`; `adventure.select_town` (the town list's first click) drops the hero selection and centres
+the map, `_select_hero` clears the town, `selected_town()` returns the human's selected town or {}. The status
 window's view 0 shows the hero, else the town (`adventure_hud._town_view`), else the kingdom.
 Garrison hero (as HoMM3): `town["garrison_hero"]` = uid and `hero["in_town"] = true`; the hero keeps the town's pos but
 takes no tile in `AdvRules.occ` (the gate stays free, `MapView.rebuild_objects` draws no figure) and cannot plan a

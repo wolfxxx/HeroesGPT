@@ -30,6 +30,9 @@ const SCENE_TOWN := "res://scenes/town.tscn"
 
 var world: Dictionary = {}          # adventure world state (see scripts/adventure/world.gd)
 var pending_battle: Dictionary = {}
+## The player whose eyes the screen shows during the computer players' turns (hot-seat: the human who moved last).
+## Screen state, not saved (human_player_index).
+var viewer := -1
 var battle_result: Dictionary = {}
 var pending_town: Dictionary = {}   # {"town_uid": int}
 var return_scene := SCENE_ADVENTURE
@@ -352,6 +355,8 @@ func xp_level(xp: int) -> int:
 # Save / load (FileAccess.store_var keeps Vector2i, Color and packed arrays intact)
 # ---------------------------------------------------------------------------------------------
 const SAVE_PATH := "user://savegame.dat"
+## 2 (session67): each player's screen state in world["views"] (see view()); older saves are converted on load.
+const SAVE_VERSION := 2
 ## The slot the menus and Ctrl+S use; the remote playtest harness points it at its own file.
 var save_path := SAVE_PATH
 
@@ -364,7 +369,7 @@ func save_game(path := "") -> bool:
 	var f := FileAccess.open(path if path != "" else save_path, FileAccess.WRITE)
 	if f == null:
 		return false
-	f.store_var({"version": 1, "world": world, "uid": _uid})
+	f.store_var({"version": SAVE_VERSION, "world": world, "uid": _uid})
 	return true
 
 func load_game(path := "") -> bool:
@@ -380,11 +385,44 @@ func load_game(path := "") -> bool:
 		return false
 	world = d["world"]
 	_uid = int(d.get("uid", 1000))
+	if int(d.get("version", 1)) < 2:
+		_views_from_v1(world)
+	viewer = -1
 	pending_battle = {}
 	battle_result = {}
 	pending_town = {}
 	return_scene = SCENE_ADVENTURE
 	return true
+
+## A player's own screen state, kept in the world so a saved game restores it but apart from the game itself (an online
+## host never sends one player's view to another): the selected hero and town, the scenario briefing shown, the
+## day's news still to announce, a defeat already told. Without a player: the one whose eyes the screen shows.
+func view(pi := -1, w = null) -> Dictionary:
+	var wd: Dictionary = world if w == null else w
+	if pi < 0:
+		pi = human_player_index()
+	if not wd.has("views"):
+		wd["views"] = {}
+	if not wd["views"].has(pi):
+		wd["views"][pi] = {"selected_hero": -1, "selected_town": -1, "intro_shown": true, "news": {}, "defeat_told": false}
+	return wd["views"][pi]
+
+## A version-1 save's screen state (kept in the world itself) moved into each player's view.
+func _views_from_v1(w: Dictionary) -> void:
+	var pw: Dictionary = w.get("pending_week", {})
+	for p in w["players"]:
+		var v := view(p["index"], w)
+		v["intro_shown"] = w.get("intro_shown", true)
+		v["defeat_told"] = p.get("defeat_told", false)
+		p.erase("defeat_told")
+		if not pw.is_empty() and not p["index"] in pw.get("seen_by", []):
+			v["news"] = pw.duplicate(true)
+			v["news"].erase("seen_by")
+	var v := view(int(w.get("viewer", w.get("current_player", 0))), w)
+	v["selected_hero"] = w.get("selected_hero", -1)
+	v["selected_town"] = w.get("selected_town", -1)
+	for k in ["selected_hero", "selected_town", "viewer", "intro_shown", "pending_week", "pending_turn_banner", "_removed"]:
+		w.erase(k)
 
 func current_player() -> Dictionary:
 	if world.is_empty():
@@ -392,14 +430,14 @@ func current_player() -> Dictionary:
 	return world["players"][world["current_player"]]
 
 ## The player whose eyes the screen shows: the human whose turn it is, and during the computer players' turns the
-## human who moved last (hot-seat: world["viewer"]), else the first human.
+## human who moved last (hot-seat: `viewer`), else the first human.
 func human_player_index() -> int:
 	if world.is_empty():
 		return 0
 	var cur: Dictionary = world["players"][world["current_player"]]
 	if not cur["is_ai"] and cur["alive"]:
 		return cur["index"]
-	var v: int = world.get("viewer", -1)
+	var v: int = viewer
 	var vp: Dictionary = world["players"][v] if v >= 0 and v < world["players"].size() else {}
 	if not vp.is_empty() and not vp["is_ai"] and vp["alive"]:
 		return v

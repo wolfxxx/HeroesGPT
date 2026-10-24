@@ -55,7 +55,7 @@ class Watcher extends Node:
 		w["blocked"].fill(0)
 		w["objects"].clear()
 		w["decor"].clear()
-		w["intro_shown"] = true
+		for vp in w["players"]: GameState.view(vp["index"], w)["intro_shown"] = true
 		w["tavern"].clear() # keep the fixture's two armies fixed during the resumed AI turn
 		for tid in w["towns"].keys():
 			var t: Dictionary = w["towns"][tid]

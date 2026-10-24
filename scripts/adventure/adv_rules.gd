@@ -11,6 +11,7 @@ const TILE := WorldGen.TILE
 const DIRS := [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)]
 
 var world: Dictionary
+var removed: Array = []  # objects taken off the map since the screen last looked (it removes their sprites)
 var w := 0
 var h := 0
 var astar := AStarGrid2D.new()
@@ -493,7 +494,7 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 func _remove_object(o: Dictionary) -> void:
 	world["objects"].erase(o["uid"])
 	rebuild()
-	world["_removed"] = world.get("_removed", []) + [o["uid"]]
+	removed.append(o["uid"])
 
 func resolve_chest(hero: Dictionary, choice: String, gold: int, xp: int) -> int:
 	if choice == "gold":
@@ -852,8 +853,9 @@ func _kill_hero(hero: Dictionary, kept := false) -> void:
 	p["heroes"].erase(hero["uid"])
 	if not hero["id"] in world["tavern"]:
 		world["tavern"].append(hero["id"])
-	if world.get("selected_hero", -1) == hero["uid"]:
-		world["selected_hero"] = p["heroes"][0] if p["heroes"].size() > 0 else -1
+	var v := GameState.view(hero["owner"], world)
+	if v["selected_hero"] == hero["uid"]:
+		v["selected_hero"] = p["heroes"][0] if p["heroes"].size() > 0 else -1
 
 func capture_town(town: Dictionary, new_owner: int) -> void:
 	if town["owner"] >= 0:

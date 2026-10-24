@@ -29,7 +29,7 @@ class Watcher extends Node:
 		var s := GameState.new_game_settings.duplicate()
 		s["seed"] = 12345
 		var w := WorldGen.generate(s)
-		w["intro_shown"] = true
+		for vp in w["players"]: GameState.view(vp["index"], w)["intro_shown"] = true
 		GameState.world = w
 		GameState.return_scene = GameState.SCENE_ADVENTURE
 		return w

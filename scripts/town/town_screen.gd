@@ -889,7 +889,7 @@ func _open_tavern() -> void:
 	var nh: Dictionary = world["heroes"][res["hero"]]
 	var learned := _learn_guild_spells(nh)  # (as any visit: up to level 2, more with Wisdom)
 	hero = nh
-	world["selected_hero"] = nh["uid"]
+	GameState.view(player["index"])["selected_hero"] = nh["uid"]
 	Audio.sfx("recruit")
 	refresh()
 	await _announce_learning(learned)

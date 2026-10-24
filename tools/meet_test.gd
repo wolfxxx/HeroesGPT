@@ -51,7 +51,7 @@ class Watcher extends Node:
 		_ok(adv._describe_tile(spot).begins_with("Meet "), "status line offers the meeting: " + adv._describe_tile(spot))
 		await _click(adv, spot)
 		await _frames(2)
-		_ok(adv.world["selected_hero"] == me["uid"], "first click keeps the selected hero")
+		_ok(GameState.view()["selected_hero"] == me["uid"], "first click keeps the selected hero")
 		_ok(adv._plan_target == spot and adv.view.path_points.size() > 0, "first click shows the route to the other hero")
 		_ok(not adv._modal_open(), "no dialog yet")
 		await _click(adv, spot)
@@ -111,7 +111,7 @@ class Watcher extends Node:
 		adv._select_hero(me["uid"], true)
 		adv._click(walled, false)
 		await _frames(2)
-		_ok(adv.world["selected_hero"] == third["uid"], "an unreachable hero is selected instead")
+		_ok(GameState.view()["selected_hero"] == third["uid"], "an unreachable hero is selected instead")
 		print("MEET TEST: %d checks, failures: %d" % [checks, failures])
 		get_tree().quit()
 

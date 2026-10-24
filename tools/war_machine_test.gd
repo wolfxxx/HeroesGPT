@@ -19,7 +19,7 @@ func _ok(condition: bool, label: String) -> void:
 func _purchases() -> void:
 	var world := WorldGen.generate({"seed": 12345, "map_size": 32, "faction": "haven", "hero": "sir_aldric"})
 	GameState.world = world
-	var hero: Dictionary = world["heroes"][world["selected_hero"]]
+	var hero: Dictionary = world["heroes"][GameState.view(0, world)["selected_hero"]]
 	var player: Dictionary = world["players"][0]
 	var rules := AdvRules.new(world)
 	var ai := AdvAI.new(rules)
@@ -104,7 +104,7 @@ func _maps() -> void:
 					for x in size:
 						var p := Vector2i(x, y)
 						rules.astar.set_point_solid(p, not rules.walkable_ground(p))
-				var hero: Dictionary = world["heroes"][world["selected_hero"]]
+				var hero: Dictionary = world["heroes"][GameState.view(0, world)["selected_hero"]]
 				for factory in factories:
 					_ok(not rules.astar.get_id_path(hero["pos"], factory["pos"]).is_empty(), "factory entrance reachable " + tag)
 					var footprint_ok := true

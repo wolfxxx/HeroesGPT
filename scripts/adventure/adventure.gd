@@ -82,9 +82,9 @@ func _ready() -> void:
 		rules.reveal_all_for(p)
 	_refresh_fog()
 
-	var sel: int = world.get("selected_hero", -1)
+	var sel: int = _v()["selected_hero"]
 	if not selected_town().is_empty() and sel == -1:
-		_select_town(world["selected_town"], true)  # (back from a town picked in the town list)
+		_select_town(_v()["selected_town"], true)  # (back from a town picked in the town list)
 	else:
 		if not world["heroes"].has(sel) or world["heroes"][sel]["owner"] != _human():
 			sel = _first_hero_with_mp()
@@ -109,13 +109,13 @@ func _post_ready() -> void:
 		var mover: Dictionary = world["heroes"].get(result.get("context", {}).get("hero", -1), {})
 		if mover.has("visit_after_guard"):
 			await _visit_after_guard(mover, not rules.player_of(mover)["is_ai"])
-		if not world["heroes"].has(world.get("selected_hero", -1)) and selected_town().is_empty():
+		if not world["heroes"].has(_v()["selected_hero"]) and selected_town().is_empty():
 			_select_hero(_first_hero_with_mp())
 		if await _check_game_over():
 			return
-	if not world.get("intro_shown", false) and world.has("scenario") and not Shot.active:
+	if not _v()["intro_shown"] and world.has("scenario") and not Shot.active:
 		# the scenario's briefing, once, as the game begins
-		world["intro_shown"] = true
+		_v()["intro_shown"] = true
 		var sc: Dictionary = world["scenario"]
 		await Modal.message(self, sc["name"], "%s\n\nVictory: %s.\nDefeat: %s." % [sc["desc"],
 			GameData.victory_text(sc["victory"]), GameData.loss_text(sc["loss"], rules.townless_limit())]).closed
@@ -123,9 +123,6 @@ func _post_ready() -> void:
 		_run_ai_turns()
 	elif GameState.hotseat() and not GameState.was_handed(world["current_player"]):
 		await _start_human_turn()  # (hot-seat: the first turn, or a loaded game: name whose turn it is first)
-	elif world.get("pending_turn_banner", false):
-		world["pending_turn_banner"] = false
-		_turn_banner()
 
 func _human() -> int:
 	return GameState.human_player_index()
@@ -133,14 +130,18 @@ func _human() -> int:
 func human_player() -> Dictionary:
 	return world["players"][_human()]
 
+## The screen's player's own view (GameState.view): what they have selected, their news.
+func _v() -> Dictionary:
+	return GameState.view(_human())
+
 func selected_hero() -> Dictionary:
-	return world["heroes"].get(world.get("selected_hero", -1), {})
+	return world["heroes"].get(_v()["selected_hero"], {})
 
 ## The town picked in the town list while no hero is selected (as the classic: one or the other), else {}.
 func selected_town() -> Dictionary:
-	if world.get("selected_hero", -1) != -1:
+	if _v()["selected_hero"] != -1:
 		return {}
-	var t: Dictionary = world["towns"].get(world.get("selected_town", -1), {})
+	var t: Dictionary = world["towns"].get(_v()["selected_town"], {})
 	return t if not t.is_empty() and t["owner"] == _human() else {}
 
 # ---------------------------------------------------------------------------------------------
@@ -467,7 +468,7 @@ func _click(t: Vector2i, _dbl: bool) -> void:
 		return
 	var hh := rules.hero_at(t)
 	if not hh.is_empty() and hh["owner"] == me:
-		if hh["uid"] == world["selected_hero"]:
+		if hh["uid"] == _v()["selected_hero"]:
 			hud.open_hero_screen(hh)
 			return
 		# As the classic game: with a hero selected, another of yours is a meeting target (walk over and trade);
@@ -728,8 +729,8 @@ func _describe_tile(t: Vector2i) -> String:
 # Selection
 # ---------------------------------------------------------------------------------------------
 func _select_hero(uid: int, instant := false) -> void:
-	world["selected_hero"] = uid
-	world.erase("selected_town")
+	_v()["selected_hero"] = uid
+	_v()["selected_town"] = -1
 	view.set_selected(uid)
 	_plan = {}
 	_plan_target = Vector2i(-1, -1)
@@ -740,8 +741,8 @@ func _select_hero(uid: int, instant := false) -> void:
 		if hero.has("dest") and hero["dest"] != hero["pos"]:
 			_make_plan(hero["dest"])
 	elif human_player()["towns"].size() > 0:
-		world["selected_town"] = human_player()["towns"][0]  # (no hero: the first town is selected)
-		center_on(world["towns"][world["selected_town"]]["pos"], instant)
+		_v()["selected_town"] = human_player()["towns"][0]  # (no hero: the first town is selected)
+		center_on(world["towns"][_v()["selected_town"]]["pos"], instant)
 	hud.refresh()
 
 func select_hero(uid: int) -> void:
@@ -750,8 +751,8 @@ func select_hero(uid: int) -> void:
 
 ## As the classic town list: selecting a town drops the hero selection and centres the map on the town.
 func _select_town(uid: int, instant := false) -> void:
-	world["selected_hero"] = -1
-	world["selected_town"] = uid
+	_v()["selected_hero"] = -1
+	_v()["selected_town"] = uid
 	view.set_selected(-1)
 	_plan = {}
 	_plan_target = Vector2i(-1, -1)
@@ -775,7 +776,7 @@ func next_hero() -> void:
 	var p := human_player()
 	if p["heroes"].is_empty():
 		return
-	var i: int = p["heroes"].find(world["selected_hero"])
+	var i: int = p["heroes"].find(_v()["selected_hero"])
 	for k in p["heroes"].size():
 		var hid: int = p["heroes"][(i + 1 + k) % p["heroes"].size()]
 		var h: Dictionary = world["heroes"][hid]
@@ -980,13 +981,12 @@ func _start_battle(setup: Dictionary, involves_human: bool) -> String:
 				and not setup.get("defender_ai", true) and dp != _human()):
 			# (hot-seat: a computer player attacks a human who is not at the screen: call them to defend)
 			_cover()
-			world["viewer"] = dp
+			GameState.viewer = dp
 			var p: Dictionary = world["players"][dp]
 			await Modal.message(self, "To Arms, %s!" % p["name"], "%s is attacked by %s. Take the field!" % [
 				_defender_name(setup), world["players"][world["current_player"]]["name"]], [[_flag_icon(p), p["name"]]]).closed
 		Audio.sfx("battle_start")
 		GameState.return_scene = GameState.SCENE_ADVENTURE
-		world["selected_hero"] = world.get("selected_hero", -1)
 		GameState.start_battle(setup)
 		busy = true
 		return "battle"
@@ -1011,9 +1011,9 @@ func _defender_name(setup: Dictionary) -> String:
 func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 	if ev.get("sfx", "") != "" and (human or _visible_to_human(hero["pos"])):
 		Audio.sfx(ev["sfx"])
-	for uid in world.get("_removed", []):
+	for uid in rules.removed:
 		view.remove_object(uid)
-	world["_removed"] = []
+	rules.removed.clear()
 	if ev.has("refresh"):
 		view.refresh_object(ev["refresh"])
 	if ev.get("fog", false) and human:
@@ -1112,10 +1112,10 @@ func end_turn() -> void:
 
 func _advance_player() -> void:
 	var res := rules.do({"t": "end_turn", "p": world["current_player"]})
-	if not res["day"].is_empty():  # (a new day: the screen announces it to each human player in turn)
-		var info: Dictionary = res["day"]
-		info["seen_by"] = []
-		world["pending_week"] = info
+	if not res["day"].is_empty():  # (a new day: each human player hears its news on their own next turn)
+		for p in world["players"]:
+			if not p["is_ai"]:
+				GameState.view(p["index"])["news"] = res["day"].duplicate(true)
 
 func _run_ai_turns() -> void:
 	busy = true
@@ -1144,7 +1144,7 @@ func _start_human_turn() -> void:
 	var cover: CanvasLayer = null
 	if GameState.hotseat():
 		cover = _cover()  # (hot-seat: hide the last player's map before switching to the next one's)
-	world["viewer"] = world["current_player"]
+	GameState.viewer = world["current_player"]
 	GameState.handed_over(world["current_player"])
 	_refresh_fog()
 	view.rebuild_objects()
@@ -1174,15 +1174,8 @@ static func _flag_icon(p: Dictionary) -> Texture2D:
 
 func _turn_banner() -> void:
 	# the day's news, once for each human player (hot-seat: every one of them hears of the new week)
-	var info: Dictionary = world.get("pending_week", {})
-	var me: int = human_player()["index"]
-	if info.has("seen_by"):
-		if me in info["seen_by"]:
-			info = {}
-		else:
-			info["seen_by"].append(me)
-	else:
-		world["pending_week"] = {}
+	var info: Dictionary = _v()["news"]
+	_v()["news"] = {}
 	Audio.sfx("new_day", -4)
 	hud.flash_date()
 	if info.get("new_week", false):
@@ -1267,7 +1260,7 @@ func _hotseat_defeats() -> void:
 	var loss: Dictionary = world.get("scenario", {}).get("loss", {})
 	var out := []
 	for p in world["players"]:
-		if p["is_ai"] or p.get("defeat_told", false):
+		if p["is_ai"] or GameState.view(p["index"])["defeat_told"]:
 			continue
 		if p["alive"] and loss.get("type", "") == "hero" and not world["heroes"].has(p.get("start_hero", -1)):
 			rules.eliminate(p)  # (their champion fell: they are out)
@@ -1277,7 +1270,7 @@ func _hotseat_defeats() -> void:
 		return
 	view.rebuild_objects()
 	for p in out:
-		p["defeat_told"] = true
+		GameState.view(p["index"])["defeat_told"] = true
 		var why := ("Seven days have passed without a town to call their own, and their followers have deserted them."
 			if p.get("defeated_townless", false) else "Their last hero has fallen and their towns are lost.")
 		await Modal.message(self, "%s Is Defeated" % p["name"], "%s %s The game goes on for the others." % [
@@ -1291,7 +1284,7 @@ func _refresh_fog() -> void:
 func refresh_after_change() -> void:
 	rules.rebuild()
 	view.rebuild_objects()
-	view.set_selected(world.get("selected_hero", -1))
+	view.set_selected(_v()["selected_hero"])
 	hud.refresh()
 
 func _update_music() -> void:

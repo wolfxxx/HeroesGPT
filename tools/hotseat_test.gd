@@ -116,7 +116,7 @@ class Watcher extends Node:
 
 	func _start(seats: Array) -> Dictionary:
 		var w := WorldGen.generate(_settings(seats))
-		w["intro_shown"] = true
+		for vp in w["players"]: GameState.view(vp["index"], w)["intro_shown"] = true
 		GameState.world = w
 		GameState.return_scene = GameState.SCENE_ADVENTURE
 		get_tree().change_scene_to_file("res://scenes/adventure.tscn")
@@ -140,7 +140,7 @@ class Watcher extends Node:
 		adv.end_turn()
 		_ok(await _wait_modal("Blue Player's Turn"), "ending Red's turn hands the game to Blue")
 		_ok(_covered() and GameState.human_player_index() == 1, "covered, and the view is Blue's")
-		var sel: Dictionary = w["heroes"].get(w["selected_hero"], {})
+		var sel: Dictionary = w["heroes"].get(GameState.view(w["current_player"], w)["selected_hero"], {})
 		_ok(sel.get("owner", -1) == 1, "Blue's hero is selected")
 		_key(KEY_ENTER)
 		await _frames(20)
@@ -207,7 +207,7 @@ class Watcher extends Node:
 		var green: Dictionary = w["heroes"][w["players"][2]["heroes"][0]]
 		var blue: Dictionary = w["heroes"][w["players"][1]["heroes"][0]]
 		w["current_player"] = 2  # (the computer's turn, Red at the screen)
-		w["viewer"] = 0
+		GameState.viewer = 0
 		adv._start_battle(adv.rules.battle_vs_hero(green, blue), true)
 		_ok(await _wait_modal("To Arms, Blue Player!"), "a computer attacking Blue calls Blue to the screen")
 		_ok(_covered() and GameState.human_player_index() == 1, "behind the cover, the view turns to Blue")
