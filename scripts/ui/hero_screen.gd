@@ -236,6 +236,9 @@ static func _artifact_tip(a: String, hint := "", h = null) -> String:
 		if h != null:
 			worn = c["parts"].filter(func(p): return p in h["artifacts"]).size()
 		t += "\nPart of the %s (%d of %d worn): %s" % [c["name"], worn, c["parts"].size(), c["desc"]]
+	var w: Dictionary = GameState.world
+	var who: int = int(h["owner"]) if h != null and h.has("owner") else Lore.viewer(w)
+	t += "\n" + Lore.shown(w, who, "art:" + a)  # (its declassified line)
 	return t + ("\n" + hint if hint != "" else "")
 
 ## The painted figure with a socket on each body part, the misc sockets down its left edge, the war machines and the

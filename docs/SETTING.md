@@ -39,8 +39,8 @@ old mysteries.** Every new piece is judged by one question: *does this make the 
   at noon."), never explaining too much.
 
 Built so far: the weekly omens and Tavern rumours (`scripts/core/lore.gd`, below); the first Egyptian pieces (the Eye
-of Horus, the Ankh of Life, the Obelisk of Thoth). Planned: more Egyptian relics and map
-objects, HoMM3's Pyramid with Mummies, "declassified" descriptions that clear as things are met, the obelisk puzzle
+of Horus, the Ankh of Life, the Obelisk of Thoth). Then the declassified lines (below). Planned: more Egyptian relics and map
+objects, HoMM3's Pyramid with Mummies, the obelisk puzzle
 map and the dig for a Shard of the Crown, the Illuminated as a faction, a story campaign in acts.
 
 ### Omens and rumours (built)
@@ -51,6 +51,15 @@ where a relic lies ("They say the Cloak of Saint-Germain lies somewhere south of
 drunk.") or a mine without a master. Each month's lines are dealt from a pool shuffled once per map, so none repeats
 within a month. They draw from a generator seeded by the map's seed and the week, never the shared random stream, so
 seeded games play as before. New lines go in `Lore.OMENS` and `Lore.RUMOURS` (one list per layer).
+
+### Declassified lines (built)
+
+Every relic and every kind of map site has one strange line (`Lore.ENTRIES`), shown at the bottom of its hover panel
+and its hero-screen tooltip. Until the player has held that relic or visited that kind of site, most of its words are
+blacked out, as in a redacted file ("████ ████ the ███ king's tomb."); the first time, the full line comes with the
+message of finding it, and from then on it reads in full. Only these lines are hidden: an artifact's effect and a
+site's rules always show, as in HoMM3. Known lines are kept per player (`lore_known`, saved). The black bars are the
+full-block character, drawn from a system fallback font (the game's fonts lack it).
 
 ## Tone and register
 

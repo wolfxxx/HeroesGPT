@@ -359,6 +359,12 @@ func hero_in_town(hero: Dictionary, town: Dictionary) -> Array:
 # ---------------------------------------------------------------------------------------------
 func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 	var player := player_of(hero)
+	# its declassified line: revealed in this message the first time the player meets one (an artifact is marked when
+	# taken, in GameState.give_artifact)
+	var lore_key := Lore.key_for(o)
+	var lore_new := lore_key != "" and not Lore.known(world, hero["owner"], lore_key)
+	if o["type"] != "artifact":
+		Lore.mark(world, hero["owner"], lore_key)
 	var ev := {"title": "", "text": "", "icons": [], "sfx": ""}
 	match o["type"]:
 		"resource":
@@ -462,6 +468,8 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 				ev["refresh"] = o["uid"]
 	if ev.has("xp"):
 		ev["levels"] = gain_xp(hero, ev["xp"])
+	if lore_new and ev["text"] != "":
+		ev["text"] += "\n\n" + Lore.ENTRIES[lore_key]
 	return ev
 
 func _remove_object(o: Dictionary) -> void:

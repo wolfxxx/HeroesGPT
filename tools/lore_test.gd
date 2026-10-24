@@ -52,5 +52,39 @@ func _ready() -> void:
 	for i in 7:
 		rules.new_day()
 	_ok(w.get("rumour", {}).get("week", -1) == 1 and Lore.rumour(w) == w["rumour"]["text"], "the new week's rumour is kept for the week")
+	_declassified(w, rules)
 	print("LORE TEST: %d checks, failures: %d" % [checks, failures])
 	get_tree().quit()
+
+## The declassified lines: one for every artifact and mine; blacked out until the player has held the relic or visited
+## that kind of site; revealed in the message of that first meeting only.
+func _declassified(w: Dictionary, rules: AdvRules) -> void:
+	for a in GameData.ARTIFACTS:
+		_ok(Lore.ENTRIES.has("art:" + a), "%s has a declassified line" % a)
+	for m in GameData.MINES:
+		_ok(Lore.ENTRIES.has("site:" + m), "%s has a declassified line" % m)
+	var me := 0
+	var h: Dictionary = w["heroes"][w["players"][me]["heroes"][0]]
+	var key := "art:orb_of_power"
+	var hidden := Lore.shown(w, me, key)
+	_ok(hidden.contains("█") and hidden != Lore.ENTRIES[key] and hidden.split(" ").size() == Lore.ENTRIES[key].split(" ").size(),
+		"an unseen relic's line is blacked out, word for word: " + hidden)
+	_ok(hidden == Lore.shown(w, me, key), "always the same words blacked out")
+	GameState.give_artifact(h, "orb_of_power")
+	_ok(Lore.shown(w, me, key) == Lore.ENTRIES[key], "taking the relic declassifies it")
+	h["artifacts"].erase("orb_of_power")
+	h["backpack"].erase("orb_of_power")
+	_ok(Lore.known(w, me, key), "and it stays known after the relic is gone")
+	_ok(not Lore.known(w, 1, key), "but only for its player")
+	# a site: revealed in the visit's message the first time, not after
+	var circle := {}
+	for o in w["objects"].values():
+		if o["type"] == "shrine":
+			circle = o
+			break
+	if not circle.is_empty():
+		_ok(not Lore.known(w, me, "site:shrine"), "the stone circles are unknown at first")
+		var ev1 := rules.visit(h, circle)
+		_ok(ev1["text"].ends_with(Lore.ENTRIES["site:shrine"]) and Lore.known(w, me, "site:shrine"), "visiting declassifies the stone circles")
+		var ev2 := rules.visit(h, circle)
+		_ok(not ev2["text"].contains(Lore.ENTRIES["site:shrine"]), "the second visit tells it no more")

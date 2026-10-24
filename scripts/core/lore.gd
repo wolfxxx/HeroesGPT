@@ -5,8 +5,70 @@ class_name Lore
 ## the occult, then the ancient, then the cosmic. Some rumours are true hints about the map (a relic, an unclaimed mine).
 ## Everything is drawn from a generator seeded by the map's seed and the week, never the shared random stream, so a
 ## seeded game plays exactly as before and every player hears the same omen and rumour that week.
+## It also keeps the "declassified" lines: one strange sentence for each relic and map site, shown blacked out (as a
+## redacted file) until the player has held that relic or visited that kind of site. Only these lines are hidden: an
+## artifact's effect and a site's rules always show, as in the classic.
 
 const LAYERS := ["historical", "occult", "ancient", "cosmic"]
+
+## The declassified lines: "art:<artifact id>", "site:<object type>" (mines: "site:<mine id>").
+const ENTRIES := {
+	"art:soldiers_shortsword": "Notched in the same three places as the sword on the old king's tomb.",
+	"art:sword_of_valor": "Its owners never lose a duel. Its owners never grow old, either.",
+	"art:ogre_hewn_cleaver": "No ogre ever forged steel. Someone gave them this.",
+	"art:oaken_buckler": "Cut from the oak where the hanged men are said to whisper.",
+	"art:shield_of_dawn": "The sun on it rises in the west.",
+	"art:ironwood_tower_shield": "Ironwood does not grow in this world. The bark is still warm.",
+	"art:quilted_gambeson": "Stitched with a map in the lining, in thread you can only see by moonlight.",
+	"art:breastplate_of_ironbark": "Rings in the bark count back further than the world is supposed to be old.",
+	"art:ring_of_vitality": "The looped cross of life. The priests who wore it were buried with their eyes open.",
+	"art:ring_of_swiftness": "Whoever wears it arrives a moment before they set out.",
+	"art:crown_of_command": "Prester John's crown, from a kingdom no map could find twice.",
+	"art:apprentices_circlet": "Every apprentice who wore it later forgot their own master's name.",
+	"art:helm_of_wisdom": "Solomon bound demons with a ring. The helm, they say, was for listening to them.",
+	"art:amulet_of_insight": "The eye of the falcon god. Turn it over: on the back it is looking at you.",
+	"art:pendant_of_clarity": "The crystal shows the room as it will be when you have gone.",
+	"art:orb_of_power": "Quartz, cut by no tool known to any mason. It is warmer at night.",
+	"art:orb_of_tempests": "The storm inside it is a weather no sky of ours has had.",
+	"art:orb_of_embers": "It still burns with the fire of a city no chronicle names.",
+	"art:orb_of_tides": "The water inside answers a moon that is not ours.",
+	"art:orb_of_bedrock": "Stone from beneath the deepest mine, and it hums when held near the obelisks.",
+	"art:travellers_boots": "The dust on them is from roads that were paved over a thousand years ago.",
+	"art:boots_of_speed": "Seven leagues a stride. Nobody says where the eighth goes.",
+	"art:wayfarers_cloak": "Pilgrims' marks are sewn inside: every shrine from here to the end of the world.",
+	"art:seers_spyglass": "John Dee's black mirror. He saw angels in it, and they saw him.",
+	"art:cape_of_courage": "Woven by the widows of a battle no herald records.",
+	"art:clover_of_fortune": "Four leaves, and a fifth that only shows in a mirror.",
+	"art:signet_of_coin": "The seal of a bank that lent to kings, and was never repaid, and never asked.",
+	"art:bottomless_purse": "The lost wealth of the Temple. It was never in the ships.",
+	"art:banner_of_the_muster": "Men march under it who were not in the muster roll.",
+	"art:dragonbone_blade": "Saint George's sword. The dragon, they say, was never a beast.",
+	"art:dragonscale_shield": "Scales from a creature the bestiaries call a dragon, for want of a better word.",
+	"art:dragonskull_helm": "The skull is too large for any dragon that ever flew under this sky.",
+	"art:bone_crown": "The Count's coronet. He wore it at four courts in two hundred years.",
+	"art:gravecloak": "Saint-Germain's cloak, still faintly warm, as if he had only just stepped out of it.",
+	"art:phylactery_of_ages": "The Elixir of Life. The label is in the Count's hand, and dated next year.",
+	"art:sun_pendant": "The Templar cross. Hold it at dusk and it points, very slightly, to the west.",
+	"art:seraphs_feather": "It is not a cup at all. The cup is what it lets you see.",
+	"art:sunsteel_cuirass": "A Templar's white mantle. The burning at the stake left no mark on it.",
+	"art:dragonheart_arms": "Saint George never killed the dragon. He sealed it away, and these are the keys.",
+	"art:mantle_of_the_lich_king": "Whoever wears all three does not die. Whoever wears them is not quite who they were.",
+	"art:seraphs_covenant": "The Grail Hallows together, as the Temple guarded them. Now the Order of the Dragon knows.",
+	"site:shrine": "The stones are older than the hill they stand on.",
+	"site:learning_stone": "Thoth's glyphs. They are not a language. They are a set of instructions.",
+	"site:watchtower": "The astrologer kept a ledger of the stars. The last page counts one more than the first.",
+	"site:windmill": "The miller grinds at night as well. Nobody has seen what.",
+	"site:campfire": "The fire is still warm. The footprints lead in, and not out.",
+	"site:chest": "The lock was opened from the inside.",
+	"site:war_machine_factory": "The engineers here build to drawings older than the craft of building.",
+	"site:gold_mine": "The Anunnaki came for gold. Some of these shafts were here before any king.",
+	"site:sawmill": "The timber is marked with a sign the woodsmen cannot read and will not explain.",
+	"site:ore_mine": "The miners stopped digging the lowest gallery. Something down there was digging back.",
+	"site:crystal_cavern": "The crystals ring when a star falls, a moment before it is seen.",
+	"site:gem_pond": "The gems are found already cut.",
+	"site:alchemist_lab": "The alchemist left in a hurry. The gold in the crucible had not finished becoming lead.",
+	"site:sulfur_dune": "The smell is not sulfur alone. Something under the dune breathes.",
+}
 
 const OMENS := [
 	[  # historical: the Templars, the Grail, the old kings
@@ -158,3 +220,60 @@ static func _where(world: Dictionary, p: Vector2i) -> String:
 	var dirs := ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"]
 	var k := int(round(atan2(v.y, v.x) / (PI / 4.0))) % 8  # (y grows southward on the map)
 	return "%s of %s" % [dirs[(k + 8) % 8], best["name"]]
+
+## The declassified line's key for a map object ("" when it has none).
+static func key_for(o: Dictionary) -> String:
+	match o.get("type", ""):
+		"artifact":
+			return "art:" + o["artifact"]
+		"mine":
+			return "site:" + o["mine"]
+	var k := "site:" + str(o.get("type", ""))
+	return k if ENTRIES.has(k) else ""
+
+## Has the player held this relic (or holds it now, set pieces and combinations included) or visited this kind of site?
+static func known(world: Dictionary, player_index: int, key: String) -> bool:
+	if player_index < 0 or player_index >= world.get("players", []).size():
+		return false
+	var p: Dictionary = world["players"][player_index]
+	if key in p.get("lore_known", []):
+		return true
+	if key.begins_with("art:"):
+		var a := key.substr(4)
+		for hid in p.get("heroes", []):
+			var h: Dictionary = world["heroes"].get(hid, {})
+			if a in h.get("artifacts", []) or a in h.get("backpack", []):
+				return true
+	return false
+
+## Declassifies a line for a player (an artifact taken, a site visited); saved with the world.
+static func mark(world: Dictionary, player_index: int, key: String) -> void:
+	if not ENTRIES.has(key) or player_index < 0 or player_index >= world.get("players", []).size():
+		return
+	var p: Dictionary = world["players"][player_index]
+	if not p.has("lore_known"):
+		p["lore_known"] = []
+	if not key in p["lore_known"]:
+		p["lore_known"].append(key)
+
+## The line as the player sees it: whole once known, otherwise most of its words blacked out (always the same ones).
+static func shown(world: Dictionary, player_index: int, key: String) -> String:
+	var text: String = ENTRIES.get(key, "")
+	if text == "" or known(world, player_index, key):
+		return text
+	return redact(text, key)
+
+static func redact(text: String, salt: String) -> String:
+	var words := text.split(" ")
+	var out := PackedStringArray()
+	for i in words.size():
+		var w: String = words[i]
+		var core := w.rstrip(".,;:!?")
+		if core.length() >= 3 and absi(hash([salt, i])) % 10 < 7:
+			w = "█".repeat(core.length()) + w.substr(core.length())
+		out.append(w)
+	return " ".join(out)
+
+## The player whose eyes the screens show (hot-seat: whose turn it is).
+static func viewer(world: Dictionary) -> int:
+	return int(world.get("viewer", world.get("current_player", 0)))

@@ -521,8 +521,18 @@ func _right_click(t: Vector2i) -> void:
 	_info_tile = t
 	HoverInfo.show_for(self, info, 0.0, 1, -1.0, Rect2(), Rect2(0, 0, AdventureHUD.PANEL_X - 6, 1036))
 
-## Hover panel for a map tile: what the hero, town or object there is and what visiting it does (null: nothing).
+## Hover panel for a map tile: what the hero, town or object there is and what visiting it does (null: nothing), with
+## a relic's or site's declassified line at the bottom (blacked out until the player has held it or been there).
 func _tile_info(t: Vector2i, detailed := false):
+	var info = _tile_info_base(t, detailed)
+	if info is VBoxContainer and rules.town_covering(t).is_empty():
+		var o := rules.object_covering(t)
+		var key := Lore.key_for(o) if not o.is_empty() else ""
+		if key != "":
+			HoverInfo.line(info, Lore.shown(world, human_player()["index"], key), Color(0.66, 0.62, 0.55), 17)
+	return info
+
+func _tile_info_base(t: Vector2i, detailed := false):
 	if not rules.inside(t) or not rules.is_explored(human_player(), t):
 		return null
 	var hh := rules.hero_at(t)

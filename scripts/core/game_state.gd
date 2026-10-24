@@ -210,6 +210,7 @@ func can_wear(h: Dictionary, a: String) -> bool:
 func give_artifact(h: Dictionary, a: String) -> String:
 	if not h.has("backpack"):
 		h["backpack"] = []
+	Lore.mark(world, int(h.get("owner", -1)), "art:" + a)  # (its declassified line, for good)
 	if can_wear(h, a):
 		h["artifacts"].append(a)
 	else:

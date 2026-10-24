@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 declassified lines (2026-10-24), committed with this HANDOFF update:** one strange line for each of the 41 artifacts and 14
+  kinds of map site (`Lore.ENTRIES`), at the bottom of the map hover panel and the hero-screen tooltip, mostly
+  blacked out (full blocks) until the player has held the relic or visited that kind of site; the first time, the
+  whole line comes with the message. Effects and rules always show, as HoMM3. Known lines per player in
+  `player["lore_known"]` (saved), marked by `GameState.give_artifact` and `AdvRules.visit`. `adventure._tile_info`
+  now wraps `_tile_info_base`. Lore test 97 checks. Screenshot `shots/session67/setting/declassified.png`.
 - **Session67 Egyptian relics (2026-10-24), committed with this HANDOFF update:** the Amulet of Insight is the **Eye of Horus** and the Ring
   of Vitality the **Ankh of Life**, both repainted (`artifact_icons.RETHEMED`, map sprites recut; old art in
   `shots/session67/art_old/`); the Monolith (learning stone) is the **Obelisk of Thoth**, its texts too, and the

@@ -224,7 +224,12 @@ layer a month, `Lore.depth(day)`): the weekly omens added to the new-week procla
 stores the week's rumour in `world["rumour"]` (`{week, text}`) as the map stands at the week's start; `Lore.rumour`
 makes one on the first week or for an older save. Some rumours are true hints (a relic on the map, an unclaimed mine,
 placed by the nearest town). All draws use a generator seeded by `hash([world seed, week or layer, purpose])`, never
-the shared stream. Checked by `tools/lore_test.tscn` (which prints a year's sample). Design: `docs/SETTING.md`.
+the shared stream. It also holds the declassified lines (`Lore.ENTRIES`, keys `art:<id>`, `site:<type or mine id>`):
+`Lore.shown(world, player, key)` gives the line whole once `Lore.known` (in the player's `lore_known`, or a relic a
+hero of theirs holds), else redacted; `GameState.give_artifact` and `AdvRules.visit` mark them (`Lore.mark`), and
+`visit` adds the line to the message the first time. Shown by `adventure._tile_info` (a wrapper over
+`_tile_info_base`) and `HeroScreen._artifact_tip`. Checked by `tools/lore_test.tscn` (which prints a year's sample).
+Design: `docs/SETTING.md`.
 
 ## War machine shops
 `GameData.WAR_MACHINES` lists the three purchasable types, with prices in `CREATURES`; each faction's
@@ -389,7 +394,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
 - `tools/lore_test.tscn` — in the full suite: omens and rumours by layer, fixed for a week, some true hints naming a
-  real town, nothing drawn from the shared random stream; prints a year's sample.
+  real town, nothing drawn from the shared random stream (prints a year's sample); a declassified line for every
+  artifact and mine, redacted until met, revealed once in the first message.
 - `tools/faction_data_test.tscn` — in the full suite: every faction record complete and consistent with its classes,
   heroes and specials; the computer's build orders and the building effects as before the data move (session67).
 - `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the
