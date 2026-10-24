@@ -530,6 +530,7 @@ func battle_vs_town(att: Dictionary, town: Dictionary) -> Dictionary:
 		"context": {"type": "town", "hero": att["uid"], "town": town["uid"], "defender": def_hero.get("uid", -1)},
 		"siege": TownLogic.siege_level(town),
 		"siege_faction": town["faction"],
+		"defender_town": town["name"],
 		"siege_morale": 2 if TownLogic.has_building(town, "brotherhood") else 0,
 	}
 

@@ -114,6 +114,13 @@ class Watcher extends Node:
 		rules.rebuild()
 		var setup: Dictionary = rules.battle_vs_town(foe, town)
 		_ok(setup["defender_hero"] == h1 and setup["siege"] > 0, "the garrison hero defends the walls")
+		var bl := BattleLogic.new()
+		bl.setup(setup)
+		_ok(bl.side_name(1) == h1["name"], "a hero leading the defence names the defenders")
+		setup["defender_hero"] = null
+		bl.setup(setup)
+		_ok(bl.side_name(1) == "The garrison of %s" % town["name"] and bl.side_name(0) == foe["name"], "a town's own garrison is named after the town")
+		setup["defender_hero"] = h1
 		me["is_ai"] = true  # (both computer: quick-resolved on the map)
 		await adv._interact_with(foe, {"kind": "hero", "uid": h2["uid"]}, false)
 		_ok(not w["heroes"].has(h2["uid"]), "the visiting hero fell outside the walls")

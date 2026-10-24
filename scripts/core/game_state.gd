@@ -12,7 +12,8 @@ extends Node
 ##
 ## Battle handoff:
 ##   GameState.start_battle({attacker_army, defender_army, attacker_hero (or null), defender_hero (or null),
-##                           terrain, attacker_player, defender_player, context})
+##                           terrain, attacker_player, defender_player, context; a town battle adds siege, siege_faction,
+##                           siege_morale and defender_town, the name its hero-less garrison goes by})
 ##   -> switches to res://scenes/battle.tscn. The battle reads GameState.pending_battle.
 ##   When finished, battle calls GameState.finish_battle(result) where result =
 ##     {"winner": "attacker"|"defender", "attacker_army": army, "defender_army": army,

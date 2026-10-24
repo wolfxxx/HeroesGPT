@@ -37,6 +37,7 @@ var _uid := 0
 var siege := 0                # 0: open field, 1: Fort (wall, gate), 2: Citadel (+ moat, keep turret), 3: Castle (+ two towers)
 var siege_morale := 0         # morale for the defenders of a siege (Brotherhood of the Sword)
 var siege_faction := "haven"
+var town_name := ""           # the defended town (its garrison is named after it when no hero leads it)
 var walls: Array = []         # segments: {"rows": [int], "kind": "wall"|"tower"|"gate", "hp": int}
 const WALL_X := 11
 const MOAT_X := 10
@@ -62,6 +63,7 @@ func setup(s: Dictionary) -> void:
 	siege = int(s.get("siege", 0))
 	siege_faction = s.get("siege_faction", "haven")
 	siege_morale = int(s.get("siege_morale", 0))
+	town_name = s.get("defender_town", "")
 	if siege > 0:
 		for sg in SEGMENTS:
 			walls.append({"rows": sg[0], "kind": sg[1], "hp": 2})
@@ -177,6 +179,12 @@ func fighters(side: int) -> int:
 # ---------------------------------------------------------------------------------------------
 # Siege
 # ---------------------------------------------------------------------------------------------
+## How the battle result names a side: its hero, else a town's garrison, else the neutral creatures.
+func side_name(side: int) -> String:
+	if heroes[side]:
+		return heroes[side]["name"]
+	return "The garrison of %s" % town_name if side == 1 and town_name != "" else "Neutral creatures"
+
 ## Index of the wall segment standing on a hex (-1: none, or no siege).
 func wall_seg(h: Vector2i) -> int:
 	if siege == 0 or h.x != WALL_X:

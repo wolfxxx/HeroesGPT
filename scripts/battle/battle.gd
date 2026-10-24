@@ -2153,10 +2153,7 @@ func _end_battle(winner: int) -> void:
 	await get_tree().create_timer(0.8).timeout
 
 	var m := Modal.custom(self, "Victory!" if human_won else ("Defeat" if human_side >= 0 else "Battle Over"), 900)
-	var who := ["Attacker", "Defender"]
-	for side in 2:
-		var hh = L.heroes[side]
-		who[side] = hh["name"] if hh else "Neutral creatures"
+	var who := [L.side_name(0), L.side_name(1)]
 	var msg := ""
 	if _surrendered:
 		msg = "%s surrenders, paying %d gold, and leaves the field with the army." % [who[_retreated], _surrender_gold]

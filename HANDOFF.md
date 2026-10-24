@@ -16,6 +16,11 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 garrison name (2026-10-24), committed with this HANDOFF update:** the battle result named a town's own garrison (no hero
+  leading it) "Neutral creatures". `AdvRules.battle_vs_town` now passes `defender_town`, and
+  `BattleLogic.side_name(side)` names a side by its hero, else "The garrison of <town>", else "Neutral creatures"
+  ("The garrison of Brightwater — casualties"; screenshot in ignored `shots/session67/garrison_result.png`).
+  Checked in `garrison_hero_test.gd`. This fixes session66 playtest finding 2.
 - **Session67 quiet sounds (2026-10-24), committed with this HANDOFF update:** `mine_capture` and `death_undead` remade (ElevenLabs, prompts
   asking for a loud close-up sound: pickaxe strikes then a shower of coins; cracking bones clattering into a pile). The
   first of three takes each, measured in a window: mine_capture peak -1.6 dB, low/mid/high 0.34/0.43/1.05 (the old
@@ -893,9 +898,7 @@ Evidence in ignored `shots/session66/play/` (`findings.md`). Two bugs were fixed
 1. **To verify against HoMM3:** a hero killed in battle comes back from the Tavern at level 1 (Lady Seraphine fell at
    level 5 and Blue rehired her at level 1). Forum posts (Celestial Heavens "Hero buy-back") suggest HoMM3 keeps a
    killed hero's experience and skills when they reappear, losing army and artifacts; no wiki page states it. Ask.
-2. Text: the battle result names the garrison of an enemy player's town with no hero "Neutral creatures" (Blue's
-   Brightwater). It should name the town or its owner.
-3. Visual: neutral stacks' grey rings are faint on grass.
+2. Visual: neutral stacks' grey rings are faint on grass.
 
 ### Playtest findings (session57, one Necropolis campaign on Normal; not yet fixed)
 Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has the details).
