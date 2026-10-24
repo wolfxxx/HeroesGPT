@@ -16,7 +16,7 @@ func _ok(cond: bool, what: String) -> void:
 func _ready() -> void:
 	for f in GameData.FACTIONS:
 		var d: Dictionary = GameData.FACTIONS[f]
-		for k in ["name", "desc", "creatures", "upgrades", "terrain", "smith_machine", "specials", "requires",
+		for k in ["name", "short", "desc", "creatures", "upgrades", "terrain", "smith_machine", "specials", "requires",
 				"dwelling_names", "town_names", "classes"]:
 			_ok(d.has(k), "%s has %s" % [f, k])
 		_ok(d["creatures"].size() == 7 and d["upgrades"].size() == 7 and d["dwelling_names"].size() == 7,
@@ -54,7 +54,7 @@ func _ready() -> void:
 		"brotherhood", "necromancy_amplifier", "dwelling_7", "castle", "dwelling_1u", "dwelling_2u", "dwelling_3u", "dwelling_4u",
 		"capitol", "mage_guild_3", "dwelling_5u", "dwelling_6u", "dwelling_7u", "mage_guild_4"]
 	_ok(AdvAI.build_order("haven") == old.filter(func(b): return b != "necromancy_amplifier"), "the Temple's build order")
-	_ok(AdvAI.build_order("necropolis") == old.filter(func(b): return not b in ["stables", "brotherhood"]), "the Lodge's build order")
+	_ok(AdvAI.build_order("necropolis") == old.filter(func(b): return not b in ["stables", "brotherhood"]), "the Order of the Dragon's build order")
 
 	# the rules read the effects
 	var t := TownLogic.make_town("haven", 0, Vector2i.ZERO, "Rosslyn", true)

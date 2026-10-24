@@ -104,7 +104,7 @@ static func effect(town: Dictionary, key: String) -> int:
 		v += int(GameData.BUILDINGS[b].get("effects", {}).get(key, 0))
 	return v
 
-## The creature a transforming building of the town turns living creatures into ("" when it has none; the Lodge's
+## The creature a transforming building of the town turns living creatures into ("" when it has none; the Order of the Dragon's
 ## Skeleton Transformer).
 static func transform_creature(town: Dictionary) -> String:
 	for b in town["buildings"]:

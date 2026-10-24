@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Order of the Dragon (2026-10-24), committed with this HANDOFF update:** the Lodge is renamed the **Order of the Dragon** (the
+  user's choice): "Lodge" is the Freemasons' word, a living organisation, which the setting's lines keep out. The
+  real knightly order of 1408 gave Vlad Dracul and Dracula their names, so its vampires and dragons are its own
+  legend. Description "Deathless heirs of the Dracula legend." New faction field `short` ("Temple", "Dragon") for
+  the New Game seat buttons. Checked on the New Game screen and in the Tavern
+  (`shots/session67/setting/newgame_dragon.png`, `tavern_dragon.png`).
 - **Session67 faction data (2026-10-24), committed with this HANDOFF update:** step 1 of `docs/FOUNDATIONS_AUDIT.md`. `GameData.FACTIONS` holds
   each faction's whole record (smith machine, specials, extra requirements, dwelling and town names, classes,
   `battle_figure_lift`; `SMITH_MACHINE`, `FACTION_REQUIRES`, `SPECIALS`, `DWELLING_NAMES` and

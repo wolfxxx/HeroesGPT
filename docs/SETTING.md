@@ -14,7 +14,7 @@ orders have fought for ages over what the old kings hid.
 The **Shattered Crown** of the game's title was never a king's crown. It was forged from the crystal heart of a
 ship that fell from the sky, Alalu's ship (see `docs/ERIDU_PROPOSAL.md`): the Me that taught men kingship. Whoever
 wore it ruled. When it shattered, its shards scattered across the world, and every secret order hunts them: the
-Templars to guard them, the Lodge to use them, the Anunnaki to take back what is theirs, and the Iron Order to build
+Templars to guard them, the Order of the Dragon to use them, the Anunnaki to take back what is theirs, and the Iron Order to build
 an empire with them.
 
 This keeps the game's title and its first scenario ("two lords claim the broken crown of the old kingdom") and
@@ -41,7 +41,7 @@ gives every faction a reason to fight.
 | **Villains only** | Occult Nazis, as pulp has used them (Indiana Jones, Hellboy) | A fictional order: the **Iron Order** (below). Never playable, never sympathetic. No real Nazi symbols, names, ranks, insignia, slogans or uniforms, and none of the symbols neo-Nazi groups use today (the swastika and its variants, SS runes, the Black Sun, the Reich eagle, "Vril", "Thule"). It must never be possible to play as them. |
 | **Out** | Live modern conspiracy theories: vaccines, chemtrails, 5G, QAnon, election fraud, flat earth; anything aimed at real living people or real groups | Not in the game |
 | **Out** | "A secret cabal of a people secretly rules the world" in any form, and its codes (the Protocols, "the Rothschilds", "globalists", reptilian elites, blood libel). These grew from antisemitic sources | Not in the game. Secret orders are fictional and never tied to a real people, faith or nation |
-| **Care** | Real faiths and living organisations (the Church, the Freemasons) | Our orders are fictional (the "Lodge", not the Freemasons). Faiths are never the villain |
+| **Care** | Real faiths and living organisations (the Church, the Freemasons) | Our orders are fictional or long gone (not the Freemasons: "Lodge", their own word, was dropped as the undead faction's name for that reason). Faiths are never the villain |
 
 Why the "out" lines: those theories are not myths at a safe distance. They have living targets and cost real
 lives, and inside a game where "the conspiracies are true", including them reads as endorsing them. They would also
@@ -65,13 +65,16 @@ Jerusalem and found something, grew richer than kings, were accused of worshippi
   Hugues de Payens (the founder).
 - Town names (built): Rosslyn, Gisors, Tomar, Acre, Temple Bruer.
 
-### Necropolis: the Lodge
+### Necropolis: the Order of the Dragon
 
-A secret society of the deathless. What the elixir legends whisper of, eternal life, is their necromancy: the Lodge
-cheats death and makes the dead serve. Behind the Hellfire Club, the grimoires and the immortal Count, it is always
-the Lodge.
+In 1408 the King of Hungary founded the Order of the Dragon to fight the Ottomans. One of its knights, Vlad II, took
+the name *Dracul*, "the Dragon"; his son was Vlad *Dracula*, "son of the Dragon", and the root of the vampire
+legend. In the game the Order never ended: it is a society of the deathless, and what the elixir legends whisper
+of, eternal life, is its necromancy. Behind the Hellfire Club, the grimoires and the immortal Count, it is always the
+Order. (Named in place of "the Lodge", which is the Freemasons' word: see the lines.)
 
-- Fits as it is: skeletons, ghosts, vampires, liches, dread knights, bone dragons.
+- Fits as it is: skeletons, ghosts, vampires, liches, dread knights, bone dragons (its vampires and dragons are its
+  name's own legend).
 - Legendary heroes: the Count of Saint-Germain (who, it was said, never aged and never died), Edward Kelley (John
   Dee's scryer, who claimed to speak with spirits).
 - Town names: keep the existing (Gravenmoor, Ashenveil, Mortholme, Duskhaven, Blackfen).
@@ -146,19 +149,20 @@ centre).
 
 ## What changed first
 
-Built on 2026-10-24: the factions are named **Temple** (Haven) and **Lodge** (Necropolis); the scenario texts tell the
+Built on 2026-10-24: the factions are named **Temple** (Haven) and **Lodge** (Necropolis; renamed the **Order of the Dragon** the same
+day); the scenario texts tell the
 premise; the Templar ranks, the artifacts and the map objects above are renamed, and eleven artifacts and two map
 objects repainted to match. Ids stay as they were (ARCHITECTURE.md), so saves keep working. Then the heroes from
 legend (step 3): Jacques de Molay and Hugues de Payens (Temple Knights), the Count of Saint-Germain and Edward Kelley
-(Lodge Necromancers), six heroes a faction now. Then the Temple's town names: Rosslyn, Gisors, Tomar, Acre and
-Temple Bruer (the Lodge's already fit). Still to do: the art (step 4).
+(Order of the Dragon Necromancers), six heroes a faction now. Then the Temple's town names: Rosslyn, Gisors, Tomar, Acre and
+Temple Bruer (the Order's already fit). Still to do: the art (step 4).
 
 The plan was these cheap steps, which make the new identity visible without much new art:
 1. Rewrite the lore: the faction descriptions, scenario texts and the main menu's story, around the Shattered Crown
    as the star-crown.
 2. Rename the headline artifacts, the Templar ranks and the map objects as above (names and texts).
 3. Legendary heroes: add or rename a few (Jacques de Molay, the Count of Saint-Germain).
-4. Then art, as each piece is redone: Templar crosses and mantles on Haven, Lodge sigils on Necropolis, relic
+4. Then art, as each piece is redone: Templar crosses and mantles on Haven, the Order's dragon sigils on Necropolis, relic
    pictures.
 
 The bigger steps (Eridu, the Iron Order's excavations, new factions) follow the online plan in HANDOFF §8.
@@ -166,7 +170,8 @@ The bigger steps (Eridu, the Iron Order's excavations, new factions) follow the 
 ## The user's answers (2026-10-24)
 
 1. **The standing rule:** yes, changed in CLAUDE.md and HANDOFF §3.
-2. **Faction names:** rename (built as Temple and Lodge).
+2. **Faction names:** rename (built as Temple and Lodge; then the Lodge became the Order of the Dragon, the user's
+   choice, as "Lodge" is the Freemasons' word).
 3. **The premise:** yes.
 4. **The renames:** all (built, with three adjustments noted above: the Archer, the Grail Hallows' parts, the Helm
    of Solomon).

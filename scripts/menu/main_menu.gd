@@ -784,7 +784,7 @@ func _refresh_seats() -> void:
 		b.clip_text = true  # (four colours must fit the column)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var f := _choice("faction", i)
-		b.text = "%s\n%s" % ["You" if i == 0 and not _hotseat_setup() else "Human", GameData.FACTIONS[f]["name"] if GameData.FACTIONS.has(f) else ""] if _seat_human(i) else "Computer"
+		b.text = "%s\n%s" % ["You" if i == 0 and not _hotseat_setup() else "Human", GameData.FACTIONS[f]["short"] if GameData.FACTIONS.has(f) else ""] if _seat_human(i) else "Computer"
 		var si := i
 		b.pressed.connect(func():
 			Audio.sfx("click", -6)

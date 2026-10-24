@@ -101,7 +101,7 @@ positions) into one presentation table keyed by faction with a default.
 
 **Done (session67):** the faction tables are one `FACTIONS` record each, `CLASSES` replaces the class lists, the
 specials' effects are building data read by `TownLogic.effect`, Necromancy's creature comes from the skill's data, and
-the computer's build order is derived per faction. `battle.gd`'s Lodge figure brightening is a faction flag. Left as
+the computer's build order is derived per faction. `battle.gd`'s Order of the Dragon figure brightening is a faction flag. Left as
 presentation keyed by id (fine): `battle.gd` `ARCHER_SPOTS`, `town_layout.gd` positions, `army_strip.gd` portrait
 crops, per-creature sounds. Verified unchanged: a seeded four-player computer tournament (2 maps, 21 days, 244
 battles) gives identical results before and after, and `tools/faction_data_test.tscn` checks the old build orders.

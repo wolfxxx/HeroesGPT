@@ -16,14 +16,15 @@ const PLAYER_COLOR_NAMES := ["Red", "Blue", "Green", "Gold"]
 # ---------------------------------------------------------------------------------------------
 ## Everything that makes a faction itself, in one record (docs/FOUNDATIONS_AUDIT.md): a new faction is this record,
 ## its creatures, classes, heroes and buildings' data, and art under its id. Ids stay as first named (`haven` is the
-## Temple, `necropolis` the Lodge; docs/SETTING.md).
-##   creatures / upgrades: tiers 1-7; terrain: native terrain; smith_machine: the war machine its Blacksmith forges;
+## Temple, `necropolis` the Order of the Dragon; docs/SETTING.md).
+##   name, short (for tight labels), desc; creatures / upgrades: tiers 1-7; terrain: native terrain; smith_machine: the war machine its Blacksmith forges;
 ##   specials: its own buildings (the Town Hall's second row); requires: extra prerequisites in its towns;
 ##   dwelling_names, town_names; classes: [might, magic] (see CLASSES); battle_figure_lift: its battle hero figures
 ##   are brightened with a rim light (dark figures before dark siege towers).
 const FACTIONS := {
 	"haven": {
 		"name": "Temple",
+		"short": "Temple",
 		"desc": "Templar knight-monks, guardians of the Grail.",
 		"creatures": ["pikeman", "archer", "griffin", "swordsman", "monk", "cavalier", "angel"],
 		"upgrades": ["halberdier", "marksman", "royal_griffin", "crusader", "zealot", "champion", "archangel"],
@@ -38,8 +39,10 @@ const FACTIONS := {
 		"classes": ["Knight", "Cleric"],
 	},
 	"necropolis": {
-		"name": "Lodge",
-		"desc": "A secret society of the deathless.",
+		# (the knightly order of 1408 whose Vlad Dracul gave the Dracula legend its name: its vampires and dragons)
+		"name": "Order of the Dragon",
+		"short": "Dragon",
+		"desc": "Deathless heirs of the Dracula legend.",
 		"creatures": ["skeleton", "zombie", "ghost", "vampire", "lich", "dread_knight", "bone_dragon"],
 		"upgrades": ["skeleton_warrior", "plague_zombie", "wraith", "vampire_lord", "arch_lich", "doom_rider", "ghost_dragon"],
 		"terrain": "dirt",
@@ -276,7 +279,7 @@ const BUILDINGS := {
 	"mage_guild_2": {"name": "Mage Guild Lv2", "cost": {"gold": 1000, "wood": 5, "ore": 5, "crystal": 4, "gems": 4}, "requires": ["mage_guild_1"], "replaces": "mage_guild_1", "desc": "Teaches level 2 spells."},
 	"mage_guild_3": {"name": "Mage Guild Lv3", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 4, "sulfur": 4, "crystal": 4, "gems": 4}, "requires": ["mage_guild_2"], "replaces": "mage_guild_2", "desc": "Teaches level 3 spells."},
 	"mage_guild_4": {"name": "Mage Guild Lv4", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 6, "sulfur": 6, "crystal": 6, "gems": 6}, "requires": ["mage_guild_3"], "replaces": "mage_guild_3", "desc": "Teaches level 4 spells."},
-	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in a Temple, a First Aid Tent in a Lodge."},
+	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's."},
 	# faction special buildings ("faction": only that faction's towns can build them). "effects" are what they do, read
 	# by the rules (TownLogic.effect): start_day_movement (a hero starting the day in the town), siege_morale (the
 	# town's defenders), necromancy (+% raised by all the owner's heroes), transform_to (turns a visiting hero's

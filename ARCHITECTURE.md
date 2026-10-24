@@ -442,7 +442,7 @@ Window must not be headless (rendering needed). Screens are saved at the window 
   objects (the stone circle, the observatory): `tools/art/map_object_paint.py` (imagegen/batch34). Portraits of the
   heroes from legend: `tools/art/legend_portraits.py` (imagegen/batch35).
 - The setting (`docs/SETTING.md`) renames only what the player sees: ids stay as they were (`haven` is the Temple,
-  `necropolis` the Lodge, `pikeman` the Sergeant, `monk` the Chaplain Brother, `brotherhood` the Chapter House,
+  `necropolis` the Order of the Dragon (`short`: "Dragon", for tight labels), `pikeman` the Sergeant, `monk` the Chaplain Brother, `brotherhood` the Chapter House,
   `shrine` the Stone Circle, `learning_stone` the Monolith, `watchtower` the Observatory, artifacts by their old ids),
   so asset paths, saves and tests keep working.
 - Python post-processing: `tools/art/postfx.py` (ink outline, saturation), `sky.py` (painted skies),
