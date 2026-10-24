@@ -14,6 +14,11 @@ Side-view full-body battle sprite, **facing RIGHT**, transparent background, fee
 ~512px tall canvas (square 512x512, 2-hex creatures 768x512). Ids: see `GameData.CREATURES`:
 pikeman archer griffin swordsman monk cavalier angel skeleton zombie ghost vampire lich dread_knight bone_dragon
 Also `creatures/portraits/<id>.png` — 128x128 bust/head close-up with painted background (used in recruit/army slots).
+The neutral ushabti (`gold_golem`, `diamond_golem`, the Pyramid's guards) were painted over the Swordsman's figure
+and portrait by `tools/art/new_creature_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch36; it shares
+`upgrade_paint.idle_canvas` / `ingest_figure`), then given poses and walk cycles by `pose_paint.py` and
+`cycle_paint.py` (their notes in `vertex_paint.CREATURE_NOTES` / `POSE_NOTES`). Those two tools' `ingest` re-cut every
+creature: after running them, restore the other creatures' files from git and keep only the new ones (session67).
 
 **Source models.** Creatures, hero portraits and mounted hero sprites are rendered from Sketchfab library models
 (see `CREDITS.md`), not the procedural `figures.py` bodies. `tools/art/blender/imported.py` downloads a model
@@ -83,7 +88,9 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   (the Observatory, id `watchtower`). The stone circle and the observatory were repainted for the setting by
   `tools/art/map_object_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch34; the old sprite is the reference for
   view, size and light, kept as `imagegen/batch34/in/<name>_ref.png`; `GROW` enlarges a figure past a fit into the
-  old one's box). The old sprites are in ignored `shots/session67/art_old/`.
+  old one's box). The old sprites are in ignored `shots/session67/art_old/`. `map/pyramid.png` (HoMM3's Pyramid) was
+  painted the same way over the old domed shrine (`REFS`), 2.2 times its size; the canvas grows to fit and its foot
+  point is written to `map/anchors.json`.
 - `map/war_machine_factory.png` — neutral workshop with ballista, medical supplies and ammo wagon. Built-in
   OpenAI imagegen, native 1536x1024 RGBA copied unmodified; exact prompt in `tools/art/war_machine_factory_prompt.md`.
   No Blender anchor: `MapView._object_node` scales it to 3.2 tiles wide and offsets the transparent bottom margin

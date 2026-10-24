@@ -5,7 +5,7 @@ and given a synthetic cast shadow, on the old sprite's canvas (so the map places
 python tools/art/map_object_paint.py prep           ->  imagegen/batch34/in/<name>.png (old figure on magenta)
 python tools/art/map_object_paint.py paint [names]  ->  imagegen/batch34/out/<name>.png
 python tools/art/map_object_paint.py ingest         ->  assets/map/<name>.png (old ones in ignored shots/session67/art_old)"""
-import os, sys
+import os, sys, json
 import numpy as np
 from PIL import Image
 
@@ -20,12 +20,16 @@ OBJECTS = {
     "shrine": "a stone circle on a ley line: a ring of seven tall weathered grey standing stones on a low grassy mound, "
               "one great flat altar stone in the middle, faint blue-white spirals and cup-and-ring carvings "
               "glowing on the stones (abstract carvings, no letters or runes)",
+    "pyramid": "a great ancient Egyptian pyramid of weathered golden sandstone blocks with a gilded capstone, a dark "
+               "doorway at its base facing the viewer flanked by two small obelisks, drifts of sand at its foot",
     "watchtower": "a small round stone observatory tower of an astrologer, with a domed copper roof opened by a slit, "
                   "a long brass telescope pointing out of the slit at the sky, a little wooden door at its foot",
 }
 # how much larger than a fit into the old figure's box (a low stone circle in place of a tall domed shrine read as
 # much smaller on the map; so did a squat observatory in place of a watchtower on long legs)
-GROW = {"shrine": 1.4, "watchtower": 1.6}
+GROW = {"shrine": 1.4, "watchtower": 1.6, "pyramid": 2.2}
+# a new object painted over another one's old sprite (its view, size and light): the Pyramid over the domed shrine
+REFS = {"pyramid": "shrine"}
 PROMPT = ("The image shows an object of the adventure map of a hand-painted fantasy strategy game, seen from a 3/4 "
           "top-down view, on a flat magenta backdrop. Repaint it as {what}. Keep the same viewpoint, the same size and "
           "place in the image, standing on the same spot, the same hand-painted style and palette, lighting from the "
@@ -34,8 +38,9 @@ PROMPT = ("The image shows an object of the adventure map of a hand-painted fant
 
 
 def _ref(name):
-    """The old sprite, kept by prep (so ingest can run again after the asset was replaced)."""
-    return f"{BATCH}/in/{name}_ref.png"
+    """The old sprite, kept by prep (so ingest can run again after the asset was replaced); a new object's is its
+    reference object's (REFS)."""
+    return f"{BATCH}/in/{REFS.get(name, name)}_ref.png"
 
 
 def _fig(name):
@@ -53,7 +58,7 @@ def prep():
     os.makedirs(f"{BATCH}/in", exist_ok=True)
     for name in OBJECTS:
         if not os.path.exists(_ref(name)):
-            Image.open(f"{D}/{name}.png").save(_ref(name))
+            Image.open(f"{D}/{REFS.get(name, name)}.png").save(_ref(name))
         c = _fig(name)
         c = c.crop(c.getbbox())
         s = _scale(c)
@@ -92,15 +97,26 @@ def ingest():
         # fitted into the old figure's box, standing on its bottom centre
         s = min((box[2] - box[0]) / cut.width, (box[3] - box[1]) / cut.height) * GROW.get(name, 1.0)
         cut = cut.resize((max(1, int(cut.width * s)), max(1, int(cut.height * s))), Image.LANCZOS)
-        x = (box[0] + box[2]) // 2 - cut.width // 2
-        y = box[3] - cut.height
-        layer = Image.new("RGBA", old.size, (0, 0, 0, 0))
-        layer.paste(cut, (x, y))
+        fx, fy = (box[0] + box[2]) // 2, box[3]  # (the foot point, on the old canvas)
+        x = fx - cut.width // 2
+        y = fy - cut.height
+        # the old canvas, grown where a larger figure and its shadow (leaning back-right) need more room
+        x0, y0 = min(0, x - 8), min(0, y - 8)
+        x1 = max(old.width, x + cut.width + int(cut.height * 0.35) + 8)
+        y1 = old.height
+        cw, ch = x1 - x0, y1 - y0
+        layer = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        layer.paste(cut, (x - x0, y - y0))
         la = np.asarray(layer)[..., 3]
-        sha = shadow(la, (box[0] + box[2]) / 2, box[3] - 2)
+        sha = shadow(la, fx - x0, fy - y0 - 2)
         out = Image.fromarray(np.dstack([np.full(la.shape + (3,), (12, 10, 8), np.uint8), (sha * 255).astype(np.uint8)]), "RGBA")
         Image.alpha_composite(out, layer).save(f"{D}/{name}.png")
-        print("ingested", name, "scale", round(s, 3), "size", old.size)
+        # a new object's anchor (its foot point), or one whose canvas grew; the others keep their rendered anchors
+        anchors = json.load(open(f"{D}/anchors.json"))
+        if f"{name}.png" not in anchors or (cw, ch) != old.size:
+            anchors[f"{name}.png"] = [round((fx - x0) / cw, 4), round((fy - y0) / ch, 4)]
+            json.dump(anchors, open(f"{D}/anchors.json", "w"), indent=0, sort_keys=True)
+        print("ingested", name, "scale", round(s, 3), "size", (cw, ch))
 
 
 if __name__ == "__main__":

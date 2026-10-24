@@ -648,6 +648,23 @@ func _tile_info_base(t: Vector2i, detailed := false):
 			else:
 				_visit_line(v, false, "Not visited this week.")
 			return v
+		"pyramid":
+			var v := HoverInfo.box("Pyramid")
+			var gs: Array = o.get("guards", [])
+			if not gs.is_empty():
+				var by := {}
+				for g in gs:
+					by[g["id"]] = by.get(g["id"], 0) + int(g["count"])
+				var parts := PackedStringArray()
+				for id in by:
+					parts.append("%d %s" % [by[id], GameData.CREATURES[id]["plural"]])
+				HoverInfo.line(v, "Guarded by " + " and ".join(parts) + ".", Color(1, 0.6, 0.5), 18)
+				HoverInfo.line(v, "Inside: a spell of the highest level, for a hero wise enough to learn it.")
+			elif o.get("spell", "") != "":
+				HoverInfo.line(v, "Its guardians are fallen. The spell waits inside.")
+			else:
+				HoverInfo.line(v, "Empty. Searching it disturbs the dead: -2 luck until the next battle.", Color(0.8, 0.75, 0.65), 18)
+			return v
 		"watchtower":
 			var v := HoverInfo.box("Observatory")
 			HoverInfo.line(v, "Reveals the land around it.")
@@ -694,6 +711,8 @@ func _describe_tile(t: Vector2i) -> String:
 				return "Obelisk of Thoth" + ("" if sel.is_empty() else (" (visited)" if sel["uid"] in o.get("visited", []) else " (not visited)"))
 			"windmill":
 				return "Windmill (%s)" % ("visited this week" if human_player()["index"] in o.get("visited_week", []) else "not visited this week")
+			"pyramid":
+				return "Pyramid (%s)" % ("guarded" if not o.get("guards", []).is_empty() else ("empty" if o.get("spell", "") == "" else "unguarded"))
 			"watchtower":
 				return "Observatory (%s)" % ("visited" if human_player()["index"] in o.get("visited_by", []) else "not visited")
 			_:
@@ -908,6 +927,12 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 			var o: Dictionary = world["objects"][occ["uid"]]
 			if o["type"] == "monster":
 				return await _start_battle(rules.battle_vs_monster(hero, o), human)
+			if o["type"] == "pyramid" and not o.get("guards", []).is_empty():  # (its guards first, then inside)
+				hero["visit_after_guard"] = o["uid"]
+				var r := await _start_battle(rules.battle_vs_site(hero, o), human)
+				if r == "":
+					await _visit_after_guard(hero, human)
+				return r
 			var ev := rules.visit(hero, o)
 			await _show_event(hero, ev, human)
 		"town":

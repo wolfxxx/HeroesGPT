@@ -418,7 +418,7 @@ func luck(side: int) -> int:
 	var h = heroes[side]
 	if h == null:
 		return 0
-	return int(h["skills"].get("luck", 0)) + GameState.hero_stat(h, "luck")
+	return int(h["skills"].get("luck", 0)) + GameState.hero_stat(h, "luck") + int(h.get("next_battle_luck", 0))
 
 ## Morale of a stack's side (-3..3): the hero's Leadership and artifacts, -1 for each extra faction in the army.
 ## Undead feel nothing: always 0 for them.
@@ -855,6 +855,11 @@ func spell_power(side: int) -> int:
 	var h = heroes[side]
 	return 0 if h == null else maxi(1, GameState.hero_stat(h, "power"))
 
+## A spell's damage to one stack: less for a creature that resists spells (the ushabti, as HoMM3's golems).
+func spell_damage_to(side: int, spell: String, target: Dictionary) -> int:
+	var resist := int(cdata(target).get("spell_resist", 0))
+	return int(spell_damage(side, spell) * (100 - resist) / 100.0)
+
 func spell_damage(side: int, spell: String) -> int:
 	var d: Array = GameData.SPELLS[spell]["damage"]
 	var v: float = d[0] + d[1] * spell_power(side)
@@ -904,7 +909,7 @@ func cast(side: int, spell: String, hex: Vector2i) -> Array:
 	var out := [ev]
 	for s in targets:
 		if sp.has("damage"):
-			var dmg := spell_damage(side, spell)
+			var dmg := spell_damage_to(side, spell, s)
 			ev["dmg"][s["uid"]] = dmg
 			ev["killed"][s["uid"]] = apply_damage(s, dmg)
 			if not s["alive"]:

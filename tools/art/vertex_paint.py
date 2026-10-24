@@ -39,6 +39,11 @@ CREATURE = ("Repaint this image as a creature portrait for a fantasy strategy ga
 
 # per-creature fixes for weak spots in the library models
 CREATURE_NOTES = {
+    # the neutral ushabti (new_creature_paint.py): living Egyptian tomb statues, as HoMM3's golems
+    "gold_golem": "It is a living statue of gilded wood and gold: it moves stiffly and heavily, like a statue, never "
+                  "bending like flesh; it keeps its nemes headdress and painted face exactly.",
+    "diamond_golem": "It is a living statue of clear glowing rock crystal: it moves stiffly and heavily, like a statue, "
+                     "never bending like flesh; it keeps its headdress, gold inlay and shield exactly.",
     "zombie": "Make it a medieval fantasy zombie: dress it in torn, rotting peasant rags and a ragged tunic (no modern "
               "clothes), with grey-green decaying skin.",
     "dread_knight": "A sinister undead death knight: keep the armour and horse barding blackened dark steel with a cold "
@@ -100,6 +105,8 @@ POSE_TEXT = {
 }
 
 POSE_NOTES = {  # how each creature attacks
+    "gold_golem": "For the attack: swinging the bronze khopesh down in a heavy, stiff stroke to the right.",
+    "diamond_golem": "For the attack: swinging the gold khopesh down in a heavy, stiff stroke to the right.",
     "archer": "For the attack: drawing the bow and loosing an arrow to the right.",
     "monk": "For the attack: thrusting both hands forward, casting a bolt of holy light.",
     "lich": "For the attack: raising the staff and hurling a green necrotic bolt from its hand.",

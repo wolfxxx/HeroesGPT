@@ -133,6 +133,15 @@ const CREATURES := {
 	"arrow_tower": {"name": "Arrow Tower", "plural": "Arrow Towers", "faction": "neutral", "tier": 0, "machine": true,
 		"attack": 10, "defense": 10, "dmg": [10, 15], "hp": 999, "speed": 0, "growth": 0, "shots": 99,
 		"cost": {}, "abilities": ["ranged"], "ai_value": 0},
+	# ---------------- NEUTRALS (no town recruits them; met on the map). HoMM3's Gold and Diamond Golems, as the setting's
+	# ushabti: Egyptian tomb figurines come to life, the Pyramid's guards (docs/SETTING.md). "spell_resist": % less
+	# damage from spells.
+	"gold_golem": {"name": "Gilded Ushabti", "plural": "Gilded Ushabtis", "faction": "neutral", "tier": 5,
+		"attack": 11, "defense": 12, "dmg": [8, 10], "hp": 50, "speed": 5, "growth": 3, "shots": 0,
+		"cost": {"gold": 500}, "abilities": ["golem"], "spell_resist": 85, "ai_value": 600},
+	"diamond_golem": {"name": "Crystal Ushabti", "plural": "Crystal Ushabtis", "faction": "neutral", "tier": 6,
+		"attack": 13, "defense": 12, "dmg": [10, 14], "hp": 60, "speed": 5, "growth": 2, "shots": 0,
+		"cost": {"gold": 750}, "abilities": ["golem"], "spell_resist": 95, "ai_value": 775},
 	# ---------------- UPGRADES (from an upgraded dwelling; "upgrade_of" names the base creature) ----------------
 	"halberdier": {"name": "Halberdier", "plural": "Halberdiers", "faction": "haven", "tier": 1, "upgrade_of": "pikeman",
 		"attack": 6, "defense": 5, "dmg": [2, 3], "hp": 10, "speed": 5, "growth": 14, "shots": 0,
@@ -194,6 +203,7 @@ const ABILITY_TEXT := {
 	"anti_cavalry": "Immune to jousting", "hates_undead": "Hates undead (+50% dmg)",
 	"disease": "Disease (-2 Atk/Def)", "regenerate": "Regenerates", "death_cloud": "Death cloud",
 	"death_blow": "Chance for double damage", "fear": "Causes fear", "two_hex": "Large creature",
+	"golem": "Golem: spells hurt it far less",
 }
 
 # ---------------------------------------------------------------------------------------------

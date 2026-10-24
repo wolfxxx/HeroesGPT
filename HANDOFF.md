@@ -16,6 +16,17 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 the Pyramid and the ushabti (2026-10-24), committed with this HANDOFF update:** step 1 of the user's choice ("both, in two
+  steps"; step 2 is Mummies with HoMM3's Tomb of Curses). I had said HoMM3's Pyramid is guarded by Mummies; it is
+  not: 40 Gold Golems and 2 x 10 Diamond Golems guard it (Heroes 3 wiki), and they are the new neutral **Gilded**
+  and **Crystal Ushabti** (`gold_golem`, `diamond_golem`: the golems' numbers, 85 / 95% less spell damage, not
+  raised by Necromancy), painted over the Swordsman by the new `tools/art/new_creature_paint.py` with poses and
+  walk cycles. One **Pyramid** near the middle of medium and larger maps (new `map/pyramid.png`); beat the guards,
+  go inside, learn its level-4 spell with Advanced Wisdom or lose it forever; empty, -2 luck until the next
+  battle. `WorldGen._place_obj` split into `_spot_ok` / `_put_obj`. **Seeded medium and large maps change** from
+  the Pyramid's placement on (small maps verified identical: a seeded size-36 tournament matches line for line);
+  a seeded 4-player tournament before the Pyramid also matched. New `tools/pyramid_test.tscn` (37 checks).
+  Screenshots `shots/session67/setting/pyramid_map.png`, `pyramid_battle.png`.
 - **Session67 declassified lines (2026-10-24), committed with this HANDOFF update:** one strange line for each of the 41 artifacts and 14
   kinds of map site (`Lore.ENTRIES`), at the bottom of the map hover panel and the hero-screen tooltip, mostly
   blacked out (full blocks) until the player has held the relic or visited that kind of site; the first time, the

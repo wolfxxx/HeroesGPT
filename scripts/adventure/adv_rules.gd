@@ -422,6 +422,24 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 				ev["sfx"] = "spell_cast"
 			else:
 				ev["text"] = "You lack the wisdom to understand %s (level %d)." % [sp["name"], sp["level"]]
+		"pyramid":  # (HoMM3: the guards beaten first; a spell of the highest level, once; empty, -2 luck)
+			ev["title"] = "Pyramid"
+			var sp: String = o.get("spell", "")
+			if sp == "":
+				hero["next_battle_luck"] = -2
+				ev["text"] = "The pyramid is empty. Searching it, you disturb the dead: -2 luck until your next battle."
+			elif sp in hero["spells"]:
+				ev["text"] = "Deep inside, the walls teach %s, which you already know." % GameData.SPELLS[sp]["name"]
+				ev["icons"] = [[Assets.spell_icon(sp), GameData.SPELLS[sp]["name"]]]
+			elif learn_spell(hero, sp):
+				o["spell"] = ""
+				ev["text"] = "Deep inside, the walls teach %s. Behind you, the glyphs crumble to dust." % GameData.SPELLS[sp]["name"]
+				ev["icons"] = [[Assets.spell_icon(sp), GameData.SPELLS[sp]["name"]]]
+				ev["sfx"] = "spell_cast"
+			else:
+				o["spell"] = ""
+				ev["text"] = ("Deep inside, the walls teach %s, but you lack the wisdom to understand it (level %d). The glyphs "
+					+ "crumble to dust: it is lost forever.") % [GameData.SPELLS[sp]["name"], GameData.SPELLS[sp]["level"]]
 		"windmill":
 			var visited: Array = o.get("visited_week", [])
 			ev["title"] = "Windmill"
@@ -506,6 +524,26 @@ func battle_vs_monster(hero: Dictionary, o: Dictionary) -> Dictionary:
 		"terrain": _battle_terrain(o["pos"]), "attacker_player": hero["owner"], "defender_player": -1,
 		"attacker_ai": player_of(hero)["is_ai"], "defender_ai": true,
 		"context": {"type": "monster", "hero": hero["uid"], "object": o["uid"]},
+	}
+
+## A site's own guards (HoMM3's Pyramid) as an army, its stacks in the middle rows first.
+func site_army(o: Dictionary) -> Array:
+	var army: Array = [null, null, null, null, null, null, null]
+	var slots := [3, 1, 5, 0, 6, 2, 4]
+	var i := 0
+	for g in o.get("guards", []):
+		if g["count"] > 0 and i < 7:
+			army[slots[i]] = {"id": g["id"], "count": g["count"]}
+			i += 1
+	return army
+
+func battle_vs_site(hero: Dictionary, o: Dictionary) -> Dictionary:
+	return {
+		"attacker_army": hero["army"], "defender_army": site_army(o),
+		"attacker_hero": hero, "defender_hero": null,
+		"terrain": _battle_terrain(o["pos"]), "attacker_player": hero["owner"], "defender_player": -1,
+		"attacker_ai": player_of(hero)["is_ai"], "defender_ai": true,
+		"context": {"type": "site", "hero": hero["uid"], "object": o["uid"]},
 	}
 
 func battle_vs_hero(att: Dictionary, def: Dictionary) -> Dictionary:
@@ -680,7 +718,19 @@ func apply_battle(result: Dictionary) -> Dictionary:
 		if not payer.is_empty():
 			var res: Dictionary = world["players"][payer["owner"]]["resources"]
 			res["gold"] = maxi(0, res["gold"] - int(result.get("surrender_gold", 0)))
+	for k in ["hero", "defender"]:  # (a Pyramid's curse lasts until the next battle)
+		var hh: Dictionary = world["heroes"].get(ctx.get(k, -1), {})
+		hh.erase("next_battle_luck")
 	match ctx.get("type", ""):
+		"site":  # (a Pyramid's guards: gone when beaten, else the survivors stay)
+			var o: Dictionary = world["objects"].get(ctx["object"], {})
+			if not o.is_empty():
+				var left := []
+				if not att_won:
+					for s in result["defender_army"]:
+						if s and s["count"] > 0:
+							left.append({"id": s["id"], "count": s["count"]})
+				o["guards"] = left
 		"monster":
 			var o: Dictionary = world["objects"].get(ctx["object"], {})
 			if att_won:
@@ -916,7 +966,8 @@ func new_day() -> Dictionary:
 					o["available"] = o["available"] + GameData.CREATURES[o["creature"]]["growth"]
 				"monster":
 					o["count"] = int(ceil(o["count"] * 1.1))
-		var ids := GameData.CREATURES.keys().filter(func(c): return GameData.CREATURES[c]["tier"] > 0)
+		# (faction creatures only: the list as it always was, so the neutral ushabti never change a seeded week)
+		var ids := GameData.CREATURES.keys().filter(func(c): return GameData.CREATURES[c]["tier"] > 0 and GameData.FACTIONS.has(GameData.CREATURES[c]["faction"]))
 		info["week_creature"] = ids[randi() % ids.size()]
 		world["week_creature"] = info["week_creature"]
 		world["rumour"] = Lore.make_rumour(world)  # (the Tavern's rumour for the week, as the map stands at its start)

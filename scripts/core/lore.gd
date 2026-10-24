@@ -68,6 +68,7 @@ const ENTRIES := {
 	"site:gem_pond": "The gems are found already cut.",
 	"site:alchemist_lab": "The alchemist left in a hurry. The gold in the crucible had not finished becoming lead.",
 	"site:sulfur_dune": "The smell is not sulfur alone. Something under the dune breathes.",
+	"site:pyramid": "No king is buried here. The chamber was built for something to wait in.",
 }
 
 const OMENS := [
@@ -184,6 +185,8 @@ static func make_rumour(world: Dictionary) -> Dictionary:
 		if o["type"] == "artifact" and GameData.ARTIFACTS.has(o["artifact"]):
 			hints.append(["They say %s lies somewhere %s, if you can believe a drunk.",
 				_the(GameData.ARTIFACTS[o["artifact"]]["name"]), o["pos"]])
+		elif o["type"] == "pyramid" and not o.get("guards", []).is_empty():
+			hints.append(["They say a pyramid stands somewhere %s%s, and its guardians have never slept.", "", o["pos"]])
 		elif o["type"] == "mine" and o.get("owner", -1) < 0:
 			var m := _the(GameData.MINES[o["mine"]]["name"])
 			hints.append(["%s %s has no master yet.", m[0].to_upper() + m.substr(1), o["pos"]])

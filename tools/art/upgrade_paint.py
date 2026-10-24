@@ -116,6 +116,26 @@ def _ratio(w, h):
     return min(RATIOS, key=lambda k: abs(np.log(RATIOS[k] / (w / h))))
 
 
+def idle_canvas(base):
+    """The base creature's idle figure on magenta with room around it (a repaint may be a little bigger):
+    (canvas, origin, scale, ratio). Shared with new_creature_paint.py."""
+    im, fig, (x0, y0, x1, y1) = figure(base)
+    fw, fh = x1 - x0, y1 - y0
+    cx0, cx1 = x0 - fw * 0.25, x1 + fw * 0.25
+    cy0, cy1 = y0 - fh * 0.2, y1 + fh * 0.06
+    w, h = cx1 - cx0, cy1 - cy0
+    r = _ratio(w, h)
+    if w / h > RATIOS[r]:
+        h2 = w / RATIOS[r]; cy0 -= (h2 - h); h = h2
+    else:
+        w2 = h * RATIOS[r]; cx0 -= (w2 - w) / 2; w = w2
+    s = LONG / max(w, h)
+    canvas = Image.new("RGBA", (int(round(w * s)), int(round(h * s))), (255, 0, 255, 255))
+    big = fig.resize((int(round(fig.width * s)), int(round(fig.height * s))), Image.LANCZOS)
+    canvas.alpha_composite(big, (int(round(-cx0 * s)), int(round(-cy0 * s))))
+    return canvas, [cx0, cy0], s, r
+
+
 def prep(only=None):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
     pj = f"{BATCH}/in/upgrades.json"
@@ -123,23 +143,9 @@ def prep(only=None):
     for uid, (base, _) in UPGRADES.items():
         if only and uid not in only:
             continue
-        # idle: the base figure on magenta with room around it (upgrades may be a little bigger)
-        im, fig, (x0, y0, x1, y1) = figure(base)
-        fw, fh = x1 - x0, y1 - y0
-        cx0, cx1 = x0 - fw * 0.25, x1 + fw * 0.25
-        cy0, cy1 = y0 - fh * 0.2, y1 + fh * 0.06
-        w, h = cx1 - cx0, cy1 - cy0
-        r = _ratio(w, h)
-        if w / h > RATIOS[r]:
-            h2 = w / RATIOS[r]; cy0 -= (h2 - h); h = h2
-        else:
-            w2 = h * RATIOS[r]; cx0 -= (w2 - w) / 2; w = w2
-        s = LONG / max(w, h)
-        canvas = Image.new("RGBA", (int(round(w * s)), int(round(h * s))), (255, 0, 255, 255))
-        big = fig.resize((int(round(fig.width * s)), int(round(fig.height * s))), Image.LANCZOS)
-        canvas.alpha_composite(big, (int(round(-cx0 * s)), int(round(-cy0 * s))))
+        canvas, origin, s, r = idle_canvas(base)
         canvas.convert("RGB").save(f"{BATCH}/in/upg__{uid}.png")
-        info[f"upg__{uid}"] = {"uid": uid, "base": base, "origin": [cx0, cy0], "scale": s, "ratio": r}
+        info[f"upg__{uid}"] = {"uid": uid, "base": base, "origin": origin, "scale": s, "ratio": r}
         # portrait
         Image.open(f"{D}/portraits/{base}.png").convert("RGB").resize((1024, 1024), Image.LANCZOS).save(f"{BATCH}/in/uport__{uid}.png")
     for (fac, t) in DWELLINGS:
@@ -173,6 +179,44 @@ def _out(name):
     return next((f"{BATCH}/out/{name}.{e}" for e in ("png", "jpg", "webp") if os.path.exists(f"{BATCH}/out/{name}.{e}")), None)
 
 
+def ingest_figure(src, ref_path, base, s, uid, anchors, grow=1.08):
+    """A painted idle figure (on magenta, at the reference's scale `s`) cut out, sized against the base figure (`grow`:
+    how much bigger it may be; within 0.8-1.15), stood on its feet with a soft cast shadow and saved as
+    assets/creatures/<uid>.png with its anchor. False if nothing was left after keying. Shared with new_creature_paint."""
+    ref = Image.open(ref_path)
+    cut = key_out(Image.open(src).convert("RGB").resize(ref.size, Image.LANCZOS))
+    cut = cut.resize((max(1, int(round(cut.width / s))), max(1, int(round(cut.height / s)))), Image.LANCZOS)
+    cut = drop_specks(cut)
+    ca = np.asarray(cut)[..., 3]
+    if (ca > 128).sum() < 50:
+        print(f"  {uid}: nothing left after keying")
+        return False
+    im, fig, _ = figure(base)
+    # an upgrade may be a little grander, never smaller or much bigger than the base figure
+    f = float(np.clip(np.sqrt((np.asarray(fig)[..., 3] > 128).sum() * grow / (ca > 128).sum()), 0.8, 1.15))
+    if abs(f - 1) > 0.02:
+        cut = cut.resize((max(1, int(round(cut.width * f))), max(1, int(round(cut.height * f)))), Image.LANCZOS)
+        ca = np.asarray(cut)[..., 3]
+    px, py = feet(ca)
+    ys, xs = np.nonzero(ca > 20)
+    x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+    fig_rgba = cut.crop((x0, y0, x1, y1))
+    fx, fy = px - x0, py - y0
+    pad = 12
+    sh_w = int((y1 - y0) * 0.55 * 0.32) + 30
+    W, H = int(fig_rgba.width + 2 * pad + sh_w), int(fig_rgba.height + 2 * pad + 10)
+    fa = np.zeros((H, W), np.uint8)
+    fa[pad:pad + fig_rgba.height, pad:pad + fig_rgba.width] = np.asarray(fig_rgba)[..., 3]
+    sha = shadow(fa, pad + fx, pad + fy)
+    out = Image.fromarray(np.dstack([np.zeros((H, W, 3), np.uint8) + np.array([12, 10, 8], np.uint8),
+                                     (sha * 255).astype(np.uint8)]), "RGBA")
+    out.alpha_composite(fig_rgba, (pad, pad))
+    out.save(f"{D}/{uid}.png")
+    anchors[f"{uid}.png"] = [round((pad + fx) / W, 4), round((pad + fy) / H, 4)]
+    print(f"  {uid}: {W}x{H}")
+    return True
+
+
 def ingest():
     info = json.load(open(f"{BATCH}/in/upgrades.json"))
     anchors = json.load(open(f"{D}/anchors.json"))
@@ -180,36 +224,8 @@ def ingest():
         src = _out(name)
         if name.startswith("upg__") and src:
             uid, base, s = d["uid"], d["base"], d["scale"]
-            ref = Image.open(f"{BATCH}/in/{name}.png")
-            cut = key_out(Image.open(src).convert("RGB").resize(ref.size, Image.LANCZOS))
-            cut = cut.resize((max(1, int(round(cut.width / s))), max(1, int(round(cut.height / s)))), Image.LANCZOS)
-            cut = drop_specks(cut)
-            ca = np.asarray(cut)[..., 3]
-            if (ca > 128).sum() < 50:
-                print(f"  {name}: nothing left after keying"); continue
-            im, fig, _ = figure(base)
-            # an upgrade may be a little grander, never smaller or much bigger than the base figure
-            f = float(np.clip(np.sqrt((np.asarray(fig)[..., 3] > 128).sum() * 1.08 / (ca > 128).sum()), 0.8, 1.15))
-            if abs(f - 1) > 0.02:
-                cut = cut.resize((max(1, int(round(cut.width * f))), max(1, int(round(cut.height * f)))), Image.LANCZOS)
-                ca = np.asarray(cut)[..., 3]
-            px, py = feet(ca)
-            ys, xs = np.nonzero(ca > 20)
-            x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
-            fig_rgba = cut.crop((x0, y0, x1, y1))
-            fx, fy = px - x0, py - y0
-            pad = 12
-            sh_w = int((y1 - y0) * 0.55 * 0.32) + 30
-            W, H = int(fig_rgba.width + 2 * pad + sh_w), int(fig_rgba.height + 2 * pad + 10)
-            fa = np.zeros((H, W), np.uint8)
-            fa[pad:pad + fig_rgba.height, pad:pad + fig_rgba.width] = np.asarray(fig_rgba)[..., 3]
-            sha = shadow(fa, pad + fx, pad + fy)
-            out = Image.fromarray(np.dstack([np.zeros((H, W, 3), np.uint8) + np.array([12, 10, 8], np.uint8),
-                                             (sha * 255).astype(np.uint8)]), "RGBA")
-            out.alpha_composite(fig_rgba, (pad, pad))
-            out.save(f"{D}/{uid}.png")
-            anchors[f"{uid}.png"] = [round((pad + fx) / W, 4), round((pad + fy) / H, 4)]
-            print(f"  {uid}: {W}x{H}")
+            if not ingest_figure(src, f"{BATCH}/in/{name}.png", base, s, uid, anchors):
+                continue
             ps = _out(f"uport__{uid}")
             if ps:
                 Image.open(ps).convert("RGB").resize((256, 256), Image.LANCZOS).save(f"{D}/portraits/{uid}.png")

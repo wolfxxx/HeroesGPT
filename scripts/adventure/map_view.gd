@@ -427,6 +427,8 @@ func _object_node(o: Dictionary) -> Node2D:
 			n.add_child(_sprite("map/watchtower.png", Vector2.ZERO, 2.2 * TILE))
 		"learning_stone":
 			n.add_child(_sprite("map/obelisk.png", Vector2.ZERO, 1.8 * TILE))
+		"pyramid":
+			n.add_child(_sprite("map/pyramid.png", Vector2.ZERO, 3.0 * TILE))
 		"dwelling":
 			n.add_child(_sprite("map/dwelling_neutral.png", Vector2.ZERO, 2.8 * TILE))
 		"monster":

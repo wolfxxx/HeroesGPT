@@ -1045,7 +1045,7 @@ func _update_hover() -> void:
 				if hit.size() > 0:
 					txt += " on %s" % ", ".join(hit) + (" (%d damage each)" % L.spell_damage(cur["side"], _spell) if sp.has("damage") else "")
 			elif sp.has("damage") and t:
-				txt += " on %s (%d damage)" % [L._name(t), L.spell_damage(cur["side"], _spell)]
+				txt += " on %s (%d damage)" % [L._name(t), L.spell_damage_to(cur["side"], _spell, t)]
 		else:
 			txt = "Select a target for %s (right click to cancel)" % sp["name"]
 	elif L.on_field(_hover):

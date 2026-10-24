@@ -28,11 +28,15 @@ static func town_footprint() -> Array:
 
 static func footprint_for(type: String) -> Array:
 	match type:
-		"mine", "dwelling", "shrine", "windmill", "watchtower", "learning_stone", "war_machine_factory":
+		"mine", "dwelling", "shrine", "windmill", "watchtower", "learning_stone", "war_machine_factory", "pyramid":
 			return FOOT_BUILDING
 	return []
 
 # ---------------------------------------------------------------------------------------------
+## HoMM3's Pyramid guards: 40 Gold Golems and two stacks of 10 Diamond Golems (the setting's ushabti).
+const PYRAMID_GUARDS := [{"id": "gold_golem", "count": 40}, {"id": "diamond_golem", "count": 10},
+	{"id": "diamond_golem", "count": 10}]
+
 static func generate(settings: Dictionary) -> Dictionary:
 	var g := WorldGen.new()
 	return g._generate(settings)
@@ -247,6 +251,29 @@ func _generate(settings: Dictionary) -> Dictionary:
 
 	var rare_mines := ["gold_mine", "crystal_cavern", "gem_pond", "alchemist_lab", "sulfur_dune"]
 	var area_scale := float(w * h) / (48.0 * 48.0)
+	# HoMM3's Pyramid on medium and larger maps, near the middle, with a spell of the highest level inside: its spot
+	# taken first among the central sites (a crowded map later had none), chosen with a generator of its own (the main
+	# one restored after); the objects placed after it find those tiles taken.
+	if area_scale >= 1.0:
+		var main_state := rng.state
+		rng.seed = hash([seed_v, "pyramid"])
+		var top := 0
+		for s in GameData.SPELLS:
+			top = maxi(top, int(GameData.SPELLS[s]["level"]))
+		var best := GameData.SPELLS.keys().filter(func(s): return GameData.SPELLS[s]["level"] == top)
+		var pyr := {"type": "pyramid", "guards": PYRAMID_GUARDS.duplicate(true), "spell": best[rng.randi() % best.size()]}
+		# (every free spot listed, one of the nearest to the middle taken)
+		var spots := []
+		var pfoot := footprint_for("pyramid")
+		for y in range(2, h - 2):
+			for x in range(2, w - 2):
+				if _spot_ok(pyr, Vector2i(x, y), pfoot, reach, 10):
+					spots.append(Vector2i(x, y))
+		if not spots.is_empty():
+			var mid := Vector2(w / 2.0, h / 2.0)
+			spots.sort_custom(func(a, b): return Vector2(a).distance_to(mid) < Vector2(b).distance_to(mid))
+			_put_obj(pyr, spots[rng.randi() % mini(8, spots.size())], pfoot, [], false)
+		rng.state = main_state
 	for k in int(round(5 * area_scale)):
 		_place_obj({"type": "mine", "mine": rare_mines[k % rare_mines.size()], "owner": -1}, Vector2i(w / 2, h / 2), 0, n, reach, true, 10)
 	for k in int(round(5 * area_scale)):
@@ -640,75 +667,86 @@ func _place_obj(o: Dictionary, center: Vector2i, rmin: int, rmax: int, reach: Di
 			var ang := rng.randf() * TAU
 			var r := rng.randf_range(rmin, rmax)
 			p = center + Vector2i(roundi(cos(ang) * r), roundi(sin(ang) * r))
-		if not inside(p) or not reach.has(p) or occupied.has(p) or not _passable(p):
+		if not _spot_ok(o, p, foot, reach, min_town_dist):
 			continue
-		if terrain[idx(p)] == T_ROAD and foot.size() > 0:
-			continue
-		# keep entrances free: the tile below the action tile must be walkable for buildings
-		if foot.size() > 0 and not _passable(p + Vector2i(0, 1)):
-			continue
-		var ok := true
-		for off in foot:
-			var q: Vector2i = p + off
-			if not inside(q) or not _passable(q) or occupied.has(q) or keep_clear[idx(q)] or terrain[idx(q)] == T_ROAD:
-				ok = false
-				break
-		if not ok:
-			continue
-		# don't crowd other objects (nor stand a building's walls beside a monster: figures pressed between them)
-		for t in [Vector2i.ZERO] + foot:
-			for dy in range(-1, 2):
-				for dx in range(-1, 2):
-					var q: Vector2i = p + t + Vector2i(dx, dy)
-					if t == Vector2i.ZERO:
-						if (occupied.has(q) or (covered.has(q) and o["type"] == "monster")) and not (dx == 0 and dy == 0):
-							ok = false
-					elif occupied.has(q) and world["objects"].get(occupied[q], {}).get("type", "") == "monster":
-						ok = false  # (a building's walls never right beside a monster)
-		if not ok:
-			continue
-		if min_town_dist > 0:
-			for s in _town_positions():
-				if Vector2(s).distance_to(Vector2(p)) < min_town_dist:
-					ok = false
-			if not ok:
-				continue
 		var factory_path: Array[Vector2i] = []
 		if o["type"] == "war_machine_factory":
 			factory_path = _factory_access(p)
 			if factory_path.is_empty():
 				continue
-		o["uid"] = GameState.next_uid()
-		o["pos"] = p
-		if o["type"] == "monster":
-			_fill_monster(o)
-		elif o["type"] == "chest":
-			o["gold"] = [1000, 1500, 2000][rng.randi() % 3]
-		elif o["type"] == "campfire":
-			o["gold"] = rng.randi_range(4, 6) * 100
-			o["res"] = ["wood", "ore", "mercury", "sulfur", "crystal", "gems"][rng.randi() % 6]
-			o["amount"] = rng.randi_range(4, 6)
-		world["objects"][o["uid"]] = o
-		occupied[p] = o["uid"]
-		covered[p] = o["uid"]
-		for off in foot:
-			blocked[idx(p + off)] = 1
-			covered[p + off] = o["uid"]
-		if foot.size() > 0:
-			keep_clear[idx(p + Vector2i(0, 1))] = 1
-		for q in factory_path:
-			keep_clear[idx(q)] = 1 # later buildings must not seal off the shop
-		for step in range(1, factory_path.size()):
-			var a := factory_path[step - 1]
-			var b := factory_path[step]
-			# A diagonal also needs a free side tile; protecting only the path cells can leave a pinched corner.
-			for q in [Vector2i(a.x, b.y), Vector2i(b.x, a.y)]:
-				if _passable(q):
-					keep_clear[idx(q)] = 1
-		if guarded:
-			_guard(o)
-		return o
+		return _put_obj(o, p, foot, factory_path, guarded)
 	return {}
+
+## Can the object stand with its action tile at p: inside the reachable land, free, its footprint and entrance clear,
+## not crowding other objects, far enough from the towns (draws no random numbers).
+func _spot_ok(o: Dictionary, p: Vector2i, foot: Array, reach: Dictionary, min_town_dist: int) -> bool:
+	if not inside(p) or not reach.has(p) or occupied.has(p) or not _passable(p):
+		return false
+	if terrain[idx(p)] == T_ROAD and foot.size() > 0:
+		return false
+	# keep entrances free: the tile below the action tile must be walkable for buildings
+	if foot.size() > 0 and not _passable(p + Vector2i(0, 1)):
+		return false
+	var ok := true
+	for off in foot:
+		var q: Vector2i = p + off
+		if not inside(q) or not _passable(q) or occupied.has(q) or keep_clear[idx(q)] or terrain[idx(q)] == T_ROAD:
+			ok = false
+			break
+	if not ok:
+		return false
+	# don't crowd other objects (nor stand a building's walls beside a monster: figures pressed between them)
+	for t in [Vector2i.ZERO] + foot:
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var q: Vector2i = p + t + Vector2i(dx, dy)
+				if t == Vector2i.ZERO:
+					if (occupied.has(q) or (covered.has(q) and o["type"] == "monster")) and not (dx == 0 and dy == 0):
+						ok = false
+				elif occupied.has(q) and world["objects"].get(occupied[q], {}).get("type", "") == "monster":
+					ok = false  # (a building's walls never right beside a monster)
+	if not ok:
+		return false
+	if min_town_dist > 0:
+		for s in _town_positions():
+			if Vector2(s).distance_to(Vector2(p)) < min_town_dist:
+				ok = false
+		if not ok:
+			return false
+	return true
+
+## Puts the object at p: its uid, contents (a monster's stack, a chest's gold), footprint and kept-clear paths.
+func _put_obj(o: Dictionary, p: Vector2i, foot: Array, factory_path: Array, guarded: bool) -> Dictionary:
+	o["uid"] = GameState.next_uid()
+	o["pos"] = p
+	if o["type"] == "monster":
+		_fill_monster(o)
+	elif o["type"] == "chest":
+		o["gold"] = [1000, 1500, 2000][rng.randi() % 3]
+	elif o["type"] == "campfire":
+		o["gold"] = rng.randi_range(4, 6) * 100
+		o["res"] = ["wood", "ore", "mercury", "sulfur", "crystal", "gems"][rng.randi() % 6]
+		o["amount"] = rng.randi_range(4, 6)
+	world["objects"][o["uid"]] = o
+	occupied[p] = o["uid"]
+	covered[p] = o["uid"]
+	for off in foot:
+		blocked[idx(p + off)] = 1
+		covered[p + off] = o["uid"]
+	if foot.size() > 0:
+		keep_clear[idx(p + Vector2i(0, 1))] = 1
+	for q in factory_path:
+		keep_clear[idx(q)] = 1 # later buildings must not seal off the shop
+	for step in range(1, factory_path.size()):
+		var a: Vector2i = factory_path[step - 1]
+		var b: Vector2i = factory_path[step]
+		# A diagonal also needs a free side tile; protecting only the path cells can leave a pinched corner.
+		for q in [Vector2i(a.x, b.y), Vector2i(b.x, a.y)]:
+			if _passable(q):
+				keep_clear[idx(q)] = 1
+	if guarded:
+		_guard(o)
+	return o
 
 ## Verify access with the actual diagonal rule and the proposed walls already solid.
 ## The general placement flood admits corner-only gaps; a shop must be physically reachable.
@@ -815,7 +853,8 @@ func _fill_monster(o: Dictionary) -> void:
 	var cands := []
 	for cid in GameData.CREATURES:
 		var t: int = GameData.CREATURES[cid]["tier"]
-		if t >= tier_lo and t <= tier_hi:
+		# (faction creatures only: the neutral ushabti guard pyramids, and seeded maps keep their monsters)
+		if t >= tier_lo and t <= tier_hi and GameData.FACTIONS.has(GameData.CREATURES[cid]["faction"]):
 			cands.append(cid)
 	var cid: String = cands[rng.randi() % cands.size()]
 	o["creature"] = cid

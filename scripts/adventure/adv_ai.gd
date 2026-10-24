@@ -715,6 +715,12 @@ func _object_value(hero: Dictionary, player: Dictionary, o: Dictionary, me: floa
 			return 1200.0 + c["ai_value"] * mini(n, 10) * 0.3
 		"watchtower":
 			return 0.0 if hero["owner"] in o.get("visited_by", []) else 150.0
+		"pyramid":  # (only with an army well beyond its guards, and a spell the hero can learn)
+			var sp: String = o.get("spell", "")
+			if sp == "" or sp in hero["spells"] or GameData.SPELLS[sp]["level"] > rules.max_spell_level(hero):
+				return 0.0
+			var gs := float(GameState.army_strength(o.get("guards", [])))
+			return 3500.0 if gs <= 0.0 or me > gs * 1.6 else 0.0
 		"war_machine_factory":
 			return 1400.0 if not factory_purchases(hero, player).is_empty() else 0.0
 		"monster":

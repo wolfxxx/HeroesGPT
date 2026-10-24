@@ -244,6 +244,22 @@ The three-card modal refreshes prices/owned states and the HUD after each purcha
 list with target valuation, keeps 1000 gold, and only buys a cart for shooters. Existing battle, hero-screen and
 save systems already use `machines`; no save schema change. Existing saves keep their map, new games gain factories.
 
+## The Pyramid and the ushabti
+HoMM3's Pyramid (`"type": "pyramid"`): `WorldGen` places one on medium and larger maps (`area_scale >= 1`) near the
+middle, first among the central sites, with a generator of its own seeded from the map seed (the main one restored
+after; small maps are unchanged). It scans every tile with `_spot_ok` (the placement checks, split out of `_place_obj`
+with `_put_obj`, which draw no random numbers) and takes one of the eight free spots nearest the middle. The object
+holds `guards` (`WorldGen.PYRAMID_GUARDS`: 40 `gold_golem`, 2 x 10 `diamond_golem`) and a top-level `spell`.
+Stepping on it (`adventure._interact_with`) fights the guards (`AdvRules.battle_vs_site` / `site_army`, context
+`"site"`); `apply_battle` clears them or keeps the survivors, and the hero goes inside after a win
+(`visit_after_guard`). `AdvRules.visit` teaches the spell once if `max_spell_level` allows, else it is lost forever;
+searching an empty one sets the hero's `next_battle_luck` (-2), read by `BattleLogic.luck` and cleared by
+`apply_battle` after the hero's next battle. The ushabti are neutral (`faction: "neutral"`, kept out of wandering
+monsters and the creature of the week, so those lists are as they were) with `"golem"` and `spell_resist` (85, 95):
+`BattleLogic.spell_damage_to` reduces spell damage per target (also in the battle AI and the cast preview);
+Necromancy skips them. The computer values a Pyramid only with a learnable spell and an army over 1.6 times the
+guards (`AdvAI._object_value`). Lore: a declassified line and a rumour hint. Checked by `tools/pyramid_test.tscn`.
+
 ## Necromancy
 `scripts/battle/necromancy.gd` (`Necromancy.calculate`) previews the reward against the winner's surviving army;
 it does not mutate it. Played battles supply separate lost stacks from `BattleLogic.necromancy_casualties`, including
@@ -393,6 +409,9 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/pyramid_test.tscn` — in the full suite: the ushabti's numbers, sprites and spell resistance, one Pyramid near
+  the middle of a medium map and none on a small one, the guard battle and its result, the spell learned or lost, the
+  empty pyramid's luck, no Skeletons from ushabti, the computer's valuation, and the walk-in on the map screen.
 - `tools/lore_test.tscn` — in the full suite: omens and rumours by layer, fixed for a week, some true hints naming a
   real town, nothing drawn from the shared random stream (prints a year's sample); a declassified line for every
   artifact and mine, redacted until met, revealed once in the first message.
@@ -456,7 +475,9 @@ Window must not be headless (rendering needed). Screens are saved at the window 
   `retop`, `ingest`;
   imagegen/batch28); the earlier single painting's `siege_wall_paint.py` is superseded. Town map pictures per level:
   `tools/art/town_levels_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch29). Map objects repainted as other
-  objects (the stone circle, the observatory): `tools/art/map_object_paint.py` (imagegen/batch34). Portraits of the
+  objects (the stone circle, the observatory) and new ones over an old sprite (the Pyramid):
+  `tools/art/map_object_paint.py` (imagegen/batch34). New creatures over an existing one's figure (the ushabti):
+  `tools/art/new_creature_paint.py` (imagegen/batch36). Portraits of the
   heroes from legend: `tools/art/legend_portraits.py` (imagegen/batch35).
 - The setting (`docs/SETTING.md`) renames only what the player sees: ids stay as they were (`haven` is the Temple,
   `necropolis` the Order of the Dragon (`short`: "Dragon", for tight labels), `pikeman` the Sergeant, `monk` the Chaplain Brother, `brotherhood` the Chapter House,

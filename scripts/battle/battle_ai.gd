@@ -219,7 +219,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 						continue
 					var v := 0.0
 					if d.has("damage"):
-						v = _value_of_damage(L, e, L.spell_damage(side, sp))
+						v = _value_of_damage(L, e, L.spell_damage_to(side, sp, e))
 					elif sp == "slow" and not e["effects"].has("slow"):
 						v = L.cdata(e)["ai_value"] * e["count"] * 0.12
 					elif sp in ["curse", "weakness"] and not e["effects"].has(sp):
@@ -255,7 +255,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 					for s in L.stacks_on([hex] + BattleLogic.neighbors(hex)):
 						if L.immune(s["side"], sp):
 							continue
-						var val := _value_of_damage(L, s, L.spell_damage(side, sp))
+						var val := _value_of_damage(L, s, L.spell_damage_to(side, sp, s))
 						v += val if s["side"] != side else -1.2 * val
 					if v > bv:
 						bv = v
@@ -264,7 +264,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 				var v := 0.0
 				for s in L.alive_stacks():
 					if not L.has_ab(s, "undead") and not L.immune(s["side"], sp):
-						var val := _value_of_damage(L, s, L.spell_damage(side, sp))
+						var val := _value_of_damage(L, s, L.spell_damage_to(side, sp, s))
 						v += val if s["side"] != side else -1.0 * val
 				if v > bv:
 					bv = v

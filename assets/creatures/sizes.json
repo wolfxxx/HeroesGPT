@@ -349,6 +349,46 @@
 307,
 144
 ],
+"diamond_golem.png": [
+124,
+332,
+125
+],
+"diamond_golem_attack.png": [
+281,
+289,
+275
+],
+"diamond_golem_dead.png": [
+321,
+150,
+322
+],
+"diamond_golem_hit.png": [
+212,
+294,
+212
+],
+"diamond_golem_move0.png": [
+214,
+335,
+194
+],
+"diamond_golem_move1.png": [
+188,
+334,
+188
+],
+"diamond_golem_move2.png": [
+199,
+331,
+190
+],
+"diamond_golem_move3.png": [
+187,
+335,
+189
+],
 "doom_rider.png": [
 350,
 521,
@@ -518,6 +558,46 @@
 134,
 281,
 136
+],
+"gold_golem.png": [
+116,
+346,
+117
+],
+"gold_golem_attack.png": [
+277,
+300,
+266
+],
+"gold_golem_dead.png": [
+332,
+131,
+333
+],
+"gold_golem_hit.png": [
+224,
+365,
+223
+],
+"gold_golem_move0.png": [
+169,
+346,
+121
+],
+"gold_golem_move1.png": [
+117,
+354,
+119
+],
+"gold_golem_move2.png": [
+136,
+359,
+133
+],
+"gold_golem_move3.png": [
+111,
+356,
+112
 ],
 "griffin.png": [
 489,
