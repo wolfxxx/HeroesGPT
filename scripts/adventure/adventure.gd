@@ -614,7 +614,7 @@ func _tile_info_base(t: Vector2i, detailed := false):
 			return v
 		"dwelling":
 			var c: Dictionary = GameData.CREATURES[o["creature"]]
-			var v := HoverInfo.creature(o["creature"], -1, "%s dwelling" % c["name"])
+			var v := HoverInfo.creature(o["creature"], -1, c.get("dwelling", "%s dwelling" % c["name"]))
 			HoverInfo.line(v, "%d available to recruit." % o["available"], UI.GOLD, 18)
 			var own: int = o.get("owner", -1)
 			_visit_line(v, own == me, "Yours: new recruits every week." if own == me else
@@ -703,7 +703,8 @@ func _describe_tile(t: Vector2i) -> String:
 				var owner: String = "unclaimed" if o["owner"] < 0 else world["players"][o["owner"]]["name"]
 				return "%s (%s)" % [GameData.MINES[o["mine"]]["name"], owner]
 			"dwelling":
-				return "%s dwelling (%d available)" % [GameData.CREATURES[o["creature"]]["name"], o["available"]]
+				var dc: Dictionary = GameData.CREATURES[o["creature"]]
+				return "%s (%d available)" % [dc.get("dwelling", "%s dwelling" % dc["name"]), o["available"]]
 			"shrine":
 				return "Stone Circle (%s)" % GameData.SPELLS[o["spell"]]["name"]
 			"learning_stone":

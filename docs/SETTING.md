@@ -41,8 +41,8 @@ old mysteries.** Every new piece is judged by one question: *does this make the 
 Built so far: the weekly omens and Tavern rumours (`scripts/core/lore.gd`, below); the first Egyptian pieces (the Eye
 of Horus, the Ankh of Life, the Obelisk of Thoth). Then the declassified lines (below). Then HoMM3's Pyramid near the
 middle of medium and larger maps, guarded by the ushabti (HoMM3's Gold and Diamond Golems as Egyptian tomb figurines
-come to life: the Gilded and Crystal Ushabti), a spell of the highest level inside. Planned: Mummies with HoMM3's Tomb
-of Curses (the user chose both, in two steps), more Egyptian relics and map objects, the obelisk puzzle map and the
+come to life: the Gilded and Crystal Ushabti), a spell of the highest level inside. Then HoMM3's Mummies (cursing what they strike) with their neutral dwelling, the Tomb of Curses.
+Planned: more Egyptian relics and map objects, the obelisk puzzle map and the
 dig for a Shard of the Crown, the Illuminated as a faction, a story campaign in acts.
 
 ### Omens and rumours (built)

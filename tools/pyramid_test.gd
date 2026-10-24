@@ -58,7 +58,48 @@ func _ready() -> void:
 			"guarded by 40 Gilded and 2 x 10 Crystal Ushabtis, a level-4 spell inside")
 		_play(w, o)
 
+	_mummies()
 	get_tree().root.add_child.call_deferred(Walk.new(checks, failures))
+
+## HoMM3's Mummy and its neutral dwelling, the Tomb of Curses: the numbers, a 25% curse on what it strikes (minimum
+## damage for 3 rounds, Bless gone), one guarded Tomb on medium and larger maps, its name and its declassified line.
+func _mummies() -> void:
+	var m: Dictionary = GameData.CREATURES["mummy"]
+	_ok(m["attack"] == 7 and m["defense"] == 7 and m["dmg"] == [3, 5] and m["hp"] == 30 and m["speed"] == 5
+		and m["growth"] == 7 and m["cost"]["gold"] == 300 and "undead" in m["abilities"], "the Mummy has HoMM3's numbers")
+	for s in ["", "_attack", "_hit", "_dead", "_move0", "_move3"]:
+		_ok(Assets.has("creatures/mummy%s.png" % s), "mummy%s sprite" % s)
+	_ok(Assets.has("creatures/portraits/mummy.png") and Assets.has("map/dwelling_mummy.png"), "its portrait and its Tomb")
+	var L := BattleLogic.new()
+	L.setup({"attacker_army": [{"id": "mummy", "count": 20}, null, null, null, null, null, null],
+		"defender_army": [{"id": "pikeman", "count": 100000}, null, null, null, null, null, null],
+		"attacker_hero": null, "defender_hero": null, "seed": 3})
+	var mu: Dictionary = L.stacks.filter(func(s): return s["side"] == 0)[0]
+	var pk: Dictionary = L.stacks.filter(func(s): return s["side"] == 1)[0]
+	var cursed := 0
+	for i in 200:
+		pk["effects"] = {"bless": 2}
+		L._strike(mu, pk, false, 0, false)
+		if pk["effects"].has("curse"):
+			cursed += 1
+			_ok(pk["effects"]["curse"] == 3 and not pk["effects"].has("bless"), "the curse lasts 3 rounds and lifts Bless")
+	_ok(cursed > 30 and cursed < 70, "about one strike in four curses (%d of 200)" % cursed)
+	var s := GameState.new_game_settings.duplicate()
+	s["seed"] = 12345
+	var w := WorldGen.generate(s)
+	var tombs: Array = w["objects"].values().filter(func(o): return o["type"] == "dwelling" and o["creature"] == "mummy")
+	_ok(tombs.size() == 1, "one Tomb of Curses on a medium map")
+	if tombs.size() == 1:
+		var rules := AdvRules.new(w)
+		_ok(rules.guards(tombs[0]["pos"]).size() > 0 or tombs[0].get("guarded", false) or _guarded(w, tombs[0]), "guarded")
+		_ok(Lore.key_for(tombs[0]) == "site:tomb_of_curses" and Lore.ENTRIES.has("site:tomb_of_curses"), "its declassified line")
+	_ok(m["dwelling"] == "Tomb of Curses", "named the Tomb of Curses")
+
+func _guarded(w: Dictionary, o: Dictionary) -> bool:
+	for x in w["objects"].values():
+		if x["type"] == "monster" and Vector2(x["pos"]).distance_to(Vector2(o["pos"])) < 2.5:
+			return true
+	return false
 
 func _play(w: Dictionary, o: Dictionary) -> void:
 	GameState.world = w

@@ -22,14 +22,17 @@ OBJECTS = {
               "glowing on the stones (abstract carvings, no letters or runes)",
     "pyramid": "a great ancient Egyptian pyramid of weathered golden sandstone blocks with a gilded capstone, a dark "
                "doorway at its base facing the viewer flanked by two small obelisks, drifts of sand at its foot",
+    "dwelling_mummy": "the Tomb of Curses: an ancient Egyptian rock-cut tomb entrance in a weathered sandstone outcrop, a "
+                      "dark doorway framed by carved pillars and painted hieroglyphs, a winged scarab relief above, "
+                      "torn linen strips at the threshold and a faint green glow inside",
     "watchtower": "a small round stone observatory tower of an astrologer, with a domed copper roof opened by a slit, "
                   "a long brass telescope pointing out of the slit at the sky, a little wooden door at its foot",
 }
 # how much larger than a fit into the old figure's box (a low stone circle in place of a tall domed shrine read as
 # much smaller on the map; so did a squat observatory in place of a watchtower on long legs)
-GROW = {"shrine": 1.4, "watchtower": 1.6, "pyramid": 2.2}
+GROW = {"shrine": 1.4, "watchtower": 1.6, "pyramid": 2.2, "dwelling_mummy": 1.2}
 # a new object painted over another one's old sprite (its view, size and light): the Pyramid over the domed shrine
-REFS = {"pyramid": "shrine"}
+REFS = {"pyramid": "shrine", "dwelling_mummy": "dwelling_neutral"}
 PROMPT = ("The image shows an object of the adventure map of a hand-painted fantasy strategy game, seen from a 3/4 "
           "top-down view, on a flat magenta backdrop. Repaint it as {what}. Keep the same viewpoint, the same size and "
           "place in the image, standing on the same spot, the same hand-painted style and palette, lighting from the "

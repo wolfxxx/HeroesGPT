@@ -258,7 +258,10 @@ searching an empty one sets the hero's `next_battle_luck` (-2), read by `BattleL
 monsters and the creature of the week, so those lists are as they were) with `"golem"` and `spell_resist` (85, 95):
 `BattleLogic.spell_damage_to` reduces spell damage per target (also in the battle AI and the cast preview);
 Necromancy skips them. The computer values a Pyramid only with a learnable spell and an army over 1.6 times the
-guards (`AdvAI._object_value`). Lore: a declassified line and a rumour hint. Checked by `tools/pyramid_test.tscn`.
+guards (`AdvAI._object_value`). Lore: a declassified line and a rumour hint. HoMM3's Mummy (`mummy`, neutral, undead)
+comes from its own map dwelling, the Tomb of Curses (`"dwelling"` in its creature record names it), placed guarded
+in the same block as the Pyramid; its `curse_strike` (`BattleLogic._strike`) curses the struck stack for 3 rounds one
+time in four, lifting Bless, unless an artifact makes it immune. Checked by `tools/pyramid_test.tscn`.
 
 ## Necromancy
 `scripts/battle/necromancy.gd` (`Necromancy.calculate`) previews the reward against the winner's surviving army;

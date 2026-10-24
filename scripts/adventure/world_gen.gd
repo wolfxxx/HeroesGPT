@@ -251,7 +251,8 @@ func _generate(settings: Dictionary) -> Dictionary:
 
 	var rare_mines := ["gold_mine", "crystal_cavern", "gem_pond", "alchemist_lab", "sulfur_dune"]
 	var area_scale := float(w * h) / (48.0 * 48.0)
-	# HoMM3's Pyramid on medium and larger maps, near the middle, with a spell of the highest level inside: its spot
+	# HoMM3's Pyramid on medium and larger maps (and the Tomb of Curses), near the middle, with a spell of the highest
+	# level inside: its spot
 	# taken first among the central sites (a crowded map later had none), chosen with a generator of its own (the main
 	# one restored after); the objects placed after it find those tiles taken.
 	if area_scale >= 1.0:
@@ -273,6 +274,8 @@ func _generate(settings: Dictionary) -> Dictionary:
 			var mid := Vector2(w / 2.0, h / 2.0)
 			spots.sort_custom(func(a, b): return Vector2(a).distance_to(mid) < Vector2(b).distance_to(mid))
 			_put_obj(pyr, spots[rng.randi() % mini(8, spots.size())], pfoot, [], false)
+		# and HoMM3's Tomb of Curses, the Mummies' dwelling, guarded, anywhere away from the towns
+		_place_obj({"type": "dwelling", "creature": "mummy", "available": 0}, Vector2i(w / 2, h / 2), 0, n, reach, true, 9)
 		rng.state = main_state
 	for k in int(round(5 * area_scale)):
 		_place_obj({"type": "mine", "mine": rare_mines[k % rare_mines.size()], "owner": -1}, Vector2i(w / 2, h / 2), 0, n, reach, true, 10)

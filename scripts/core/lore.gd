@@ -69,6 +69,7 @@ const ENTRIES := {
 	"site:alchemist_lab": "The alchemist left in a hurry. The gold in the crucible had not finished becoming lead.",
 	"site:sulfur_dune": "The smell is not sulfur alone. Something under the dune breathes.",
 	"site:pyramid": "No king is buried here. The chamber was built for something to wait in.",
+	"site:tomb_of_curses": "The seals on the doors were broken from the inside, and then put back.",
 }
 
 const OMENS := [
@@ -231,6 +232,8 @@ static func key_for(o: Dictionary) -> String:
 			return "art:" + o["artifact"]
 		"mine":
 			return "site:" + o["mine"]
+		"dwelling":  # (a neutral creature's own dwelling has a line: the Tomb of Curses)
+			return "site:tomb_of_curses" if o.get("creature", "") == "mummy" else ""
 	var k := "site:" + str(o.get("type", ""))
 	return k if ENTRIES.has(k) else ""
 

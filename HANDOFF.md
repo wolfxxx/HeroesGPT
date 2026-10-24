@@ -16,6 +16,13 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Mummies and the Tomb of Curses (2026-10-24), committed with this HANDOFF update:** step 2: HoMM3's **Mummy** (`mummy`,
+  neutral undead, 7/7, 3-5, 30 health, speed 5, growth 7, 300 gold) with a new `curse_strike` ability (25%: the
+  struck stack cursed for 3 rounds, Bless lifted; artifacts' curse immunity holds), painted over the Zombie
+  (`new_creature_paint.py`, poses, walk cycle); its dwelling the **Tomb of Curses** (`map/dwelling_mummy.png`,
+  over the neutral dwelling), one guarded on medium and larger maps, placed with the Pyramid's own generator;
+  named by the creature's `"dwelling"`; a declassified line. Pyramid test now 106 checks (Mummy numbers and
+  sprites, the curse rate, the Tomb). Screenshots `shots/session67/setting/tomb_map.png`, `mummy_battle.png`.
 - **Session67 the Pyramid and the ushabti (2026-10-24), committed with this HANDOFF update:** step 1 of the user's choice ("both, in two
   steps"; step 2 is Mummies with HoMM3's Tomb of Curses). I had said HoMM3's Pyramid is guarded by Mummies; it is
   not: 40 Gold Golems and 2 x 10 Diamond Golems guard it (Heroes 3 wiki), and they are the new neutral **Gilded**

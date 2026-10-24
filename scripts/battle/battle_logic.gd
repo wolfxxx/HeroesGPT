@@ -828,6 +828,9 @@ func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation
 			ev.append({"t": "heal", "s": a, "amount": g})
 	if has_ab(a, "disease") and d["alive"] and not has_ab(d, "undead") and rng.randf() < 0.3:
 		d["effects"]["disease"] = 3
+	if has_ab(a, "curse_strike") and d["alive"] and not immune(d["side"], "curse") and rng.randf() < 0.25:
+		d["effects"].erase("bless")  # (the Mummy's curse, as the spell: minimum damage for 3 rounds)
+		d["effects"]["curse"] = 3
 	if not d["alive"]:
 		ev.append({"t": "death", "s": d})
 	return ev

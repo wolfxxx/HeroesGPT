@@ -25,10 +25,14 @@ NEW = {
                       "warrior statue carved from clear rock crystal, faintly glowing pale blue inside, with gold inlay, a "
                       "lapis-lazuli striped nemes headdress, a calm carved face, hieroglyphs etched down its body, holding "
                       "a gold khopesh sword point-down in front of it where the knight holds his sword"),
+    "mummy": ("zombie", "a Mummy: an ancient Egyptian mummy risen from its tomb, its gaunt body tightly wrapped in "
+              "yellowed, age-stained linen bandages with loose torn strips trailing, a faded painted gold collar and a "
+              "scarab amulet on its chest, dark empty eye sockets with a faint green glow, reaching forward with "
+              "bandaged hands, shambling"),
 }
 IDLE = ("This is a battle unit sprite from a fantasy strategy game. Redraw it as a DIFFERENT creature in exactly the same "
         "side view facing right, the same pose, the same size in the frame, standing on the same ground line at the same "
-        "spot: {desc}. Nothing of the original knight's armour or face remains. Same hand-painted style and lighting "
+        "spot: {desc}. Nothing of the original creature's clothes, armour or face remains. Same hand-painted style and lighting "
         "from the upper left. Keep the whole figure inside the frame.\nThe background must stay a perfectly flat, pure "
         "magenta (#FF00FF) everywhere around the figure: no ground, no cast shadow, no scenery, no effects, no text.")
 PORT = ("This is a creature portrait from a fantasy strategy game (the unit portrait shown when recruiting). Repaint it "

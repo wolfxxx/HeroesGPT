@@ -142,6 +142,10 @@ const CREATURES := {
 	"diamond_golem": {"name": "Crystal Ushabti", "plural": "Crystal Ushabtis", "faction": "neutral", "tier": 6,
 		"attack": 13, "defense": 12, "dmg": [10, 14], "hp": 60, "speed": 5, "growth": 2, "shots": 0,
 		"cost": {"gold": 750}, "abilities": ["golem"], "spell_resist": 95, "ai_value": 775},
+	# HoMM3's Mummy, recruited at its neutral dwelling on the map, the Tomb of Curses ("dwelling": its name)
+	"mummy": {"name": "Mummy", "plural": "Mummies", "faction": "neutral", "tier": 3, "dwelling": "Tomb of Curses",
+		"attack": 7, "defense": 7, "dmg": [3, 5], "hp": 30, "speed": 5, "growth": 7, "shots": 0,
+		"cost": {"gold": 300}, "abilities": ["undead", "curse_strike"], "ai_value": 270},
 	# ---------------- UPGRADES (from an upgraded dwelling; "upgrade_of" names the base creature) ----------------
 	"halberdier": {"name": "Halberdier", "plural": "Halberdiers", "faction": "haven", "tier": 1, "upgrade_of": "pikeman",
 		"attack": 6, "defense": 5, "dmg": [2, 3], "hp": 10, "speed": 5, "growth": 14, "shots": 0,
@@ -204,6 +208,7 @@ const ABILITY_TEXT := {
 	"disease": "Disease (-2 Atk/Def)", "regenerate": "Regenerates", "death_cloud": "Death cloud",
 	"death_blow": "Chance for double damage", "fear": "Causes fear", "two_hex": "Large creature",
 	"golem": "Golem: spells hurt it far less",
+	"curse_strike": "Curses what it strikes (25%)",
 }
 
 # ---------------------------------------------------------------------------------------------

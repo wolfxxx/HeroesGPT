@@ -799,6 +799,46 @@
 289,
 91
 ],
+"mummy.png": [
+219,
+282,
+210
+],
+"mummy_attack.png": [
+296,
+265,
+277
+],
+"mummy_dead.png": [
+322,
+132,
+323
+],
+"mummy_hit.png": [
+213,
+279,
+194
+],
+"mummy_move0.png": [
+222,
+296,
+217
+],
+"mummy_move1.png": [
+184,
+314,
+186
+],
+"mummy_move2.png": [
+227,
+299,
+226
+],
+"mummy_move3.png": [
+201,
+310,
+195
+],
 "pikeman.png": [
 158,
 312,
