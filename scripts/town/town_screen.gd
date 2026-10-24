@@ -47,15 +47,6 @@ func _announce_learning(learned: Array, mana_gain := 0) -> void:
 	Audio.sfx("build", -8)
 	await m.closed
 
-## The guild's spells a hero can learn now (spell level up to 2, more with Wisdom, as AdvRules.max_spell_level).
-func _learn_guild_spells(h: Dictionary) -> Array:
-	var learned := []
-	for sp in town["mage_spells"]:
-		if not sp in h["spells"] and GameData.SPELLS[sp]["level"] <= 2 + int(h["skills"].get("wisdom", 0)):
-			h["spells"].append(sp)
-			learned.append(sp)
-	return learned
-
 func _resolve_state() -> void:
 	if GameState.world.is_empty():
 		var s := GameState.new_game_settings.duplicate()
@@ -759,11 +750,10 @@ func _building_detail(id: String) -> void:
 	var res = await m.closed
 	if res != "build":
 		return
-	if _rules.do({"t": "build", "p": player["index"], "town": town["uid"], "building": id})["ok"]:
+	var built := _rules.do({"t": "build", "p": player["index"], "town": town["uid"], "building": id})
+	if built["ok"]:
 		Audio.sfx("build")
-		var learned := []
-		if hero.size() > 0 and id.begins_with("mage_guild"):
-			learned = _learn_guild_spells(hero)
+		var learned: Array = built["learned"]  # (a new Mage Guild teaches the visiting hero)
 		refresh()
 		_flash_building(id)
 		await _announce_learning(learned)
@@ -887,7 +877,7 @@ func _open_tavern() -> void:
 		await Modal.message(self, "Tavern", res["reason"]).closed
 		return
 	var nh: Dictionary = world["heroes"][res["hero"]]
-	var learned := _learn_guild_spells(nh)  # (as any visit: up to level 2, more with Wisdom)
+	var learned: Array = res["learned"]  # (hired in the town: it learned the guild's spells, as any visit)
 	hero = nh
 	GameState.view(player["index"])["selected_hero"] = nh["uid"]
 	Audio.sfx("recruit")

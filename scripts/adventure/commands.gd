@@ -36,6 +36,9 @@ class_name Commands
 ##   battle_result {p, result}                          a fought or resolved battle's outcome applied (AdvRules.
 ##                                                      apply_battle; the player whose turn it is) -> "event"
 ##   build         {p, town, building}                  TownLogic.build (its requirements, cost and one a day)
+##   town_visit    {p, hero, town}                      a hero in its own town learns the Mage Guild's spells and has
+##                                                      its spell points restored -> "learned", "mana"
+##   (build teaches a hero visiting the town a new Mage Guild's spells, hire the hired hero the town's: "learned")
 ##   enter_garrison {p, hero, town} / leave_garrison {p, town} / swap_garrison {p, town}
 ##                                                      the hero at the gate and the town's garrison hero (AdvRules)
 ##   equip         {p, hero, artifact, worn: bool}      a worn artifact to the backpack, or one from it put on
@@ -52,7 +55,19 @@ class_name Commands
 
 const HIRE_COST := 2500
 
+## A recorder (tools/replay_test.gd): while `log_world` is set, every command accepted on that world is appended to
+## `log` as a deep copy taken before it was applied.
+static var log: Array = []
+static var log_world = null
+
 static func run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
+	var rec = cmd.duplicate(true) if log_world != null and is_same(rules.world, log_world) else null
+	var res := _run(rules, cmd)
+	if rec != null and res["ok"]:
+		log.append(rec)
+	return res
+
+static func _run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 	var w: Dictionary = rules.world
 	var pi: int = int(cmd.get("p", -1))
 	if pi < 0 or pi >= w["players"].size():
@@ -87,6 +102,8 @@ static func run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _battle_result(rules, player, cmd)
 		"build":
 			return _build(rules, player, cmd)
+		"town_visit":
+			return _town_visit(rules, player, cmd)
 		"enter_garrison", "leave_garrison", "swap_garrison":
 			return _garrison(rules, player, cmd)
 		"equip", "split_set", "join_set", "give_artifact":
@@ -113,7 +130,20 @@ static func _build(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dict
 	var why := TownLogic.build_block_reason(town, player, id)
 	if why != "" or not TownLogic.build(town, player, id):
 		return _no(why if why != "" else "Cannot build that.")
-	return {"ok": true, "reason": ""}
+	var learned := []
+	var vh := rules.visiting_hero(town)  # (a new Mage Guild teaches the hero visiting the town at once)
+	if id.begins_with("mage_guild") and not vh.is_empty():
+		learned = rules.learn_guild(vh, town)
+	return {"ok": true, "reason": "", "learned": learned}
+
+static func _town_visit(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var town := _own_town(rules, player, cmd)
+	var hero := _hero_of(rules, player, cmd)
+	if town.is_empty() or hero.is_empty() or hero["pos"] != town["pos"]:
+		return _no("The hero is not in the town.")
+	var mana: int = hero["mana"]
+	var learned := rules.hero_in_town(hero, town)
+	return {"ok": true, "reason": "", "learned": learned, "mana": hero["mana"] - mana}
 
 static func _garrison(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
 	var town := _own_town(rules, player, cmd)
@@ -470,7 +500,8 @@ static func _hire(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dicti
 	hero["pos"] = town["pos"]
 	w["heroes"][hero["uid"]] = hero
 	player["heroes"].append(hero["uid"])
-	return {"ok": true, "reason": "", "hero": hero["uid"]}
+	var learned := rules.learn_guild(hero, town)  # (hired in the town: it learns the town's guild, as any visit)
+	return {"ok": true, "reason": "", "hero": hero["uid"], "learned": learned}
 
 static func _trade(player: Dictionary, cmd: Dictionary) -> Dictionary:
 	var give: String = cmd.get("give", "")

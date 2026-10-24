@@ -294,7 +294,7 @@ func _build_scene() -> void:
 			fig = "heroes/battle_%s_idle0.png" % fig_name
 		s.texture = Assets.tex(fig, Vector2i(200, 200))
 		_hero_figs[side] = [s, fig_name]
-		_hero_idle[side] = randf_range(2.0, 6.0) + side * 1.5
+		_hero_idle[side] = Dice.look().randf_range(2.0, 6.0) + side * 1.5
 		var sc := 230.0 / s.texture.get_height()
 		s.scale = Vector2(sc, sc)
 		s.flip_h = side == 1
@@ -415,8 +415,8 @@ func _make_unit(st: Dictionary) -> void:
 func _breathe(n: Node2D, base: Vector2) -> void:
 	var s: Sprite2D = n.get_node("Sprite")
 	var tw := s.create_tween().set_loops()
-	tw.tween_property(s, "scale", base * Vector2(1.0, 1.025), 0.9 + randf() * 0.4).set_trans(Tween.TRANS_SINE)
-	tw.tween_property(s, "scale", base, 0.9 + randf() * 0.4).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(s, "scale", base * Vector2(1.0, 1.025), 0.9 + Dice.look().randf() * 0.4).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(s, "scale", base, 0.9 + Dice.look().randf() * 0.4).set_trans(Tween.TRANS_SINE)
 	n.set_meta("breath", tw)
 	n.set_meta("base_scale", base)
 
@@ -1444,7 +1444,7 @@ func _shake(strength: float) -> void:
 	var tw := create_tween()
 	for i in 6:
 		var k := strength * (1.0 - i / 6.0)
-		tw.tween_property(self, "position", Vector2(randf_range(-k, k), randf_range(-k, k)), 0.035)
+		tw.tween_property(self, "position", Vector2(Dice.look().randf_range(-k, k), Dice.look().randf_range(-k, k)), 0.035)
 	tw.tween_property(self, "position", Vector2.ZERO, 0.04)
 
 func _anim_death(st: Dictionary) -> void:
@@ -1671,7 +1671,7 @@ func _anim_catapult(ev: Dictionary) -> void:
 			_set_wall(ev["seg"], true)
 			for k in 2:
 				var d2 := _Dust.new()
-				d2.position = to + Vector2(randf_range(-40, 40), 50 + k * 20)
+				d2.position = to + Vector2(Dice.look().randf_range(-40, 40), 50 + k * 20)
 				d2.big = true
 				_fx.add_child(d2)
 		else:  # battered
@@ -1811,7 +1811,7 @@ func _process(_d: float) -> void:
 		if _hero_figs[side] != null and not _hero_busy[side]:
 			_hero_idle[side] -= _d
 			if _hero_idle[side] <= 0.0:
-				_hero_idle[side] = randf_range(5.0, 9.0)
+				_hero_idle[side] = Dice.look().randf_range(5.0, 9.0)
 				_hero_loop(side)
 	if _grid and _grid.hover.x >= 0 and _modal_open():  # (a window is up: no hex lit under it)
 		_update_hover()
@@ -2094,7 +2094,7 @@ func _hero_cast(side: int) -> void:
 		return
 	f[0].texture = Assets.tex("heroes/battle_%s_idle0.png" % f[1])
 	_hero_busy[side] = false
-	_hero_idle[side] = randf_range(4.0, 8.0)
+	_hero_idle[side] = Dice.look().randf_range(4.0, 8.0)
 
 ## Spell name as a banner under the turn queue (not over the units), tinted by the caster's side.
 func _spell_banner(t: String, side: int) -> void:
@@ -2587,7 +2587,7 @@ class _Burst extends Node2D:
 	var _seeds := []
 	func _ready() -> void:
 		for i in 26:
-			_seeds.append([randf() * TAU, randf_range(0.4, 1.0), randf_range(3.0, 8.0)])
+			_seeds.append([Dice.look().randf() * TAU, Dice.look().randf_range(0.4, 1.0), Dice.look().randf_range(3.0, 8.0)])
 		var tw := create_tween()
 		tw.tween_property(self, "t", 1.0, 0.75)
 		tw.tween_callback(queue_free)
@@ -2624,7 +2624,7 @@ class _Dust extends Node2D:
 	func _ready() -> void:
 		z_index = -1  # in front of the corpse layer but behind standing units' text
 		for i in 9:
-			_puffs.append([randf_range(-1, 1), randf_range(0.5, 1.0), randf_range(0.6, 1.2)])
+			_puffs.append([Dice.look().randf_range(-1, 1), Dice.look().randf_range(0.5, 1.0), Dice.look().randf_range(0.6, 1.2)])
 		var tw := create_tween()
 		tw.tween_property(self, "t", 1.0, 0.7).set_ease(Tween.EASE_OUT)
 		tw.tween_callback(queue_free)

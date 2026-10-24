@@ -92,7 +92,7 @@ func run_turn(adv, player: Dictionary) -> String:
 				for town in world["towns"].values():
 					if town["pos"] == hero["pos"] and town["owner"] == hero["owner"]:
 						_reinforce(hero, town, player)
-						rules.hero_in_town(hero, town)
+						rules.do({"t": "town_visit", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})
 	return ""
 
 ## Several same-day deliveries can unlock an assault even when no individual delivery does.
@@ -191,7 +191,7 @@ func hire_hero(player: Dictionary, town: Dictionary) -> Dictionary:
 		cands = world["tavern"].duplicate()
 	if cands.is_empty():
 		return {}
-	var hid: String = cands[randi() % cands.size()]
+	var hid: String = cands[Dice.derived(world, ["tavern pick", player["index"], world["day"]]).randi() % cands.size()]
 	var res := rules.do({"t": "hire", "p": player["index"], "town": town["uid"], "hero_id": hid})
 	if not res["ok"]:
 		return {}

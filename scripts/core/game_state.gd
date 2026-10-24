@@ -100,15 +100,22 @@ func open_town(town_uid: int) -> void:
 # ---------------------------------------------------------------------------------------------
 # Hero helpers
 # ---------------------------------------------------------------------------------------------
-func make_hero(hero_id: String, owner: int) -> Dictionary:
+## A fresh hero. With a world, its starting troops roll on that world's dice (map generation, a Tavern hire); without
+## (a quick battle, a demo) on the global stream.
+func make_hero(hero_id: String, owner: int, w = null) -> Dictionary:
 	var d: Dictionary = GameData.HEROES[hero_id]
 	var faction: String = d["faction"]
 	var army: Array = [null, null, null, null, null, null, null]
 	var c: Array = GameData.FACTIONS[faction]["creatures"]
-	army[0] = {"id": c[0], "count": randi_range(18, 28)}
-	army[1] = {"id": c[1], "count": randi_range(6, 10)}
-	if randf() < 0.6:
-		army[2] = {"id": c[2], "count": randi_range(2, 4)}
+	var r := Dice.gen(w) if w != null else RandomNumberGenerator.new()
+	if w == null:
+		r.seed = randi()
+	army[0] = {"id": c[0], "count": r.randi_range(18, 28)}
+	army[1] = {"id": c[1], "count": r.randi_range(6, 10)}
+	if r.randf() < 0.6:
+		army[2] = {"id": c[2], "count": r.randi_range(2, 4)}
+	if w != null:
+		Dice.keep(w, r)
 	var h := {
 		"uid": next_uid(), "id": hero_id, "name": d["name"], "faction": faction, "class": d["class"],
 		"owner": owner, "attack": d["attack"], "defense": d["defense"], "power": d["power"],
@@ -131,7 +138,7 @@ func starting_machines(hero_class: String) -> Array:
 func tavern_hero(hero_id: String, owner: int) -> Dictionary:
 	var keep: Dictionary = world.get("tavern_keep", {})
 	if not keep.has(hero_id):
-		return make_hero(hero_id, owner)
+		return make_hero(hero_id, owner, world)
 	var h: Dictionary = keep[hero_id]
 	keep.erase(hero_id)
 	h["uid"] = next_uid()
@@ -139,7 +146,7 @@ func tavern_hero(hero_id: String, owner: int) -> Dictionary:
 	h["max_movement"] = hero_max_movement(h)
 	h["movement"] = h["max_movement"]
 	if GameState.army_is_empty(h["army"]):  # (a hero who fled comes with a few troops, as a fresh one)
-		h["army"] = make_hero(hero_id, owner)["army"]
+		h["army"] = make_hero(hero_id, owner, world)["army"]
 	return h
 
 ## Shared by the faction Blacksmith and the neutral War Machine Factory. Machines occupy

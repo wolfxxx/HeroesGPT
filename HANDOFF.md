@@ -16,6 +16,23 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 dice and the replay test (2026-10-24), committed with this HANDOFF update:** step 4 of `docs/FOUNDATIONS_AUDIT.md`, the last of
+  phase 1. New `scripts/core/dice.gd`: the rules roll on the world's own generator (`world["rng"]`, saved), and
+  only inside commands (week creature, Windmill, level rolls, a hired hero's troops); choices outside commands
+  (the computer's Tavern and skill picks, quick battles' luck, a played battle's seed, now always set) use
+  `Dice.derived`, seeded from the world's state without moving it; battle and map presentation use `Dice.look()`.
+  New `tools/replay_test.tscn` (in the suite): two computer-played maps recorded as commands, replayed on the
+  starting world through `var_to_bytes`, compared, and each played twice: identical. It found one rule outside the
+  commands, a hero learning the Mage Guild's spells: now `town_visit` (screen and computer), and `build` (a new Mage
+  Guild teaches the visiting hero) and `hire` (the hired hero learns the guild) return `learned`. Commands test 80
+  checks. Seeded games changed, so the tournament references are new: 4 players size 48 maps 600-601 21 days
+  +6.51 +/- 12.17 (344 battles), 2 players size 36 maps 700-702 +15.28 +/- 19.45 (65 battles); the 4-player run
+  repeats exactly. Same-policy controls in the suite still exactly 0.00.
+  The current AI is not weaker: 10 two-player size-48 maps (900-909, 28 days) gave +56.42 +/- 26.23 at 2b72882 and
+  +78.41 +/- 29.98 now (overlapping); on size 36 (800-809) the current AI now wins 20/20, but games there are
+  settled by day-4/5 rushes and swing on any change of dice. Suite: 24 groups pass. In the real game: a Mage Guild
+  built with Sir Aldric visiting taught him 4 spells (`build`'s `learned`); a played battle (map-seeded) ran and
+  returned to the map (`shots/session67/play/d_*.png`).
 - **Session67 screen state out of the world (2026-10-24), committed with this HANDOFF update:** step 3 of `docs/FOUNDATIONS_AUDIT.md`. Each player's
   own screen state now lives in `world["views"][player]` (`GameState.view(p)`): selected hero and town, the
   scenario briefing shown, the day's news still to announce (`news`, set for every human at the new day, read and
@@ -1041,9 +1058,9 @@ Proposed path, discussed with the user (not yet approved as a plan):
    generator saved with the world (about a dozen global `randi`/`randf` calls remain in rules, hero creation and
    towns); a replay test (record a game's commands, replay from the seed, compare the world); faction data (about 60
    "haven"/"necropolis" checks in 9 scripts move into each faction's definition).
-   **Progress (2026-10-24):** faction data done; every map and town action is a command (battles still drive
-   `BattleLogic` from `battle.gd`); per-player screen state is in `world["views"]`. Left: step 4, randomness and the
-   replay test (then a fresh same-policy AI control, since seeded games will change).
+   **Progress (2026-10-24):** phase 1 done. Faction data; every map and town action is a command (battles still
+   drive `BattleLogic` from `battle.gd`); per-player screen state in `world["views"]`; the world's dice and the
+   replay test (`scripts/core/dice.gd`, `tools/replay_test.tscn`). Next: phase 2, the online first version.
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
@@ -1315,6 +1332,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Dice and replay (session67):** `scripts/core/dice.gd` (`Dice.roll/chance/index/pick`, `gen`/`keep`, `derived`,
+  `look`), `world["rng"]`, `world["battles"]`, `AdvRules.battle_seed`, `Commands.log`/`log_world`,
+  `tools/replay_test.tscn`. ARCHITECTURE.md "Dice and the replay test" says which generator each roll uses.
 - **Per-player screen state (session67):** `GameState.view(p)` (`world["views"][p]`: `selected_hero`, `selected_town`,
   `intro_shown`, `news`, `defeat_told`), `adventure._v()`, unsaved `GameState.viewer`, `AdvRules.removed`; save
   version `GameState.SAVE_VERSION` = 2 with `_views_from_v1` for older saves. Commands: `scripts/adventure/commands.gd`
@@ -1389,6 +1409,11 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- Randomness (session67): a rule that changes the game rolls with `Dice` on the world and only inside a command; a
+  choice made outside a command uses `Dice.derived`; presentation uses `Dice.look()`. Never the global
+  `randi()`/`randf()` in game code: `tools/replay_test.tscn` fails on anything that changes the world outside a
+  command or rolls on the wrong generator. Changing what rolls changes every seeded game: record new tournament
+  references (ARCHITECTURE.md "Commands" gives the two runs).
 - Keep screen-only state out of `GameState.world`: `campaign_flow_test` checks that a save/load round trip returns the
   world byte for byte, so a marker erased on load fails it (hot-seat's handover marker lives in `GameState._handed`).
 - Python edits sent through a Bash heredoc lost GDScript's backslash line continuations; use parentheses for

@@ -290,9 +290,12 @@ func gain_xp(hero: Dictionary, xp: int) -> int:
 
 ## Rolls a level-up: returns {"stat": String, "options": Array[skill_id]} (does not apply).
 func roll_level_up(hero: Dictionary, rng: RandomNumberGenerator = null) -> Dictionary:
+	var own := rng == null  # (no generator given: the world's dice, Dice)
+	if own:
+		rng = Dice.gen(world)
 	var might: bool = GameData.CLASSES[hero["class"]]["might"]
 	var weights := {"attack": 35, "defense": 35, "power": 15, "knowledge": 15} if might else {"attack": 15, "defense": 15, "power": 35, "knowledge": 35}
-	var roll := rng.randi_range(1, 100) if rng else randi_range(1, 100)
+	var roll := rng.randi_range(1, 100)
 	var stat := "attack"
 	for k in weights:
 		roll -= weights[k]
@@ -311,7 +314,7 @@ func roll_level_up(hero: Dictionary, rng: RandomNumberGenerator = null) -> Dicti
 				fresh.append(s)
 	for pool in [upgradable, fresh]:
 		for i in range(pool.size() - 1, 0, -1):
-			var j := rng.randi_range(0, i) if rng else randi_range(0, i)
+			var j := rng.randi_range(0, i)
 			var swap: String = pool[i]
 			pool[i] = pool[j]
 			pool[j] = swap
@@ -325,6 +328,8 @@ func roll_level_up(hero: Dictionary, rng: RandomNumberGenerator = null) -> Dicti
 			opts.append(upgradable[1])
 		elif fresh.size() > 1:
 			opts.append(fresh[1])
+	if own:
+		Dice.keep(world, rng)
 	return {"stat": stat, "options": opts}
 
 func apply_level_up(hero: Dictionary, roll: Dictionary, skill: String) -> void:
@@ -345,12 +350,17 @@ func learn_spell(hero: Dictionary, spell: String) -> bool:
 	hero["spells"].append(spell)
 	return true
 
-## Visiting own town: learn mage guild spells, refill mana.
-func hero_in_town(hero: Dictionary, town: Dictionary) -> Array:
+## The town's Mage Guild spells the hero can learn (up to its spell level), learned: the ones it gained.
+func learn_guild(hero: Dictionary, town: Dictionary) -> Array:
 	var learned := []
 	for s in town["mage_spells"]:
 		if learn_spell(hero, s):
 			learned.append(s)
+	return learned
+
+## Visiting own town: learn mage guild spells, refill mana.
+func hero_in_town(hero: Dictionary, town: Dictionary) -> Array:
+	var learned := learn_guild(hero, town)
 	if TownLogic.mage_guild_level(town) > 0:
 		hero["mana"] = maxi(hero["mana"], GameState.max_mana(hero))
 	return learned
@@ -449,8 +459,8 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 			else:
 				visited.append(hero["owner"])
 				o["visited_week"] = visited
-				var r: String = ["mercury", "sulfur", "crystal", "gems"][randi() % 4]
-				var amt := randi_range(3, 5)
+				var r: String = Dice.pick(world, ["mercury", "sulfur", "crystal", "gems"])
+				var amt := Dice.roll(world, 3, 5)
 				player["resources"][r] += amt
 				ev["text"] = "The miller shares this week's harvest."
 				ev["icons"] = [[Assets.res_icon(r), "+%d" % amt]]
@@ -666,6 +676,11 @@ func _battle_terrain(p: Vector2i) -> String:
 		return "grass"
 	return t
 
+## A played battle's seed (BattleLogic): from the world's state, so the same battle on a reloaded game rolls the same,
+## as HoMM3's; it does not move the world's dice.
+func battle_seed() -> int:
+	return Dice.derived(world, ["battle", int(world.get("battles", 0))]).randi()
+
 ## Instant battle resolution for battles no human takes part in.
 func quick_resolve(setup: Dictionary) -> Dictionary:
 	var a_army: Array = setup["attacker_army"]
@@ -680,7 +695,8 @@ func quick_resolve(setup: Dictionary) -> Dictionary:
 		sd *= 1.0 + 0.05 * (GameState.hero_stat(dh, "attack") + GameState.hero_stat(dh, "defense")) + 0.02 * GameState.hero_stat(dh, "power") * dh["spells"].size()
 	if setup.get("context", {}).get("type", "") == "town":
 		sd *= 1.25
-	sa *= randf_range(0.9, 1.1)
+	# (resolved outside a command, which then carries the result: a generator of its own from the world's state)
+	sa *= Dice.derived(world, ["quick battle", int(world.get("battles", 0))]).randf_range(0.9, 1.1)
 	var attacker_wins := sa > sd
 	var win_army := a_army if attacker_wins else d_army
 	var lose_army := d_army if attacker_wins else a_army
@@ -713,6 +729,7 @@ func quick_resolve(setup: Dictionary) -> Dictionary:
 func apply_battle(result: Dictionary) -> Dictionary:
 	var ctx: Dictionary = result.get("context", {})
 	var ev := {"title": "", "text": "", "levels": 0, "hero": -1}
+	world["battles"] = int(world.get("battles", 0)) + 1  # (each battle's dice differ: Dice.derived, battle_seed)
 	var att: Dictionary = world["heroes"].get(ctx.get("hero", -1), {})
 	var att_won: bool = result["winner"] == "attacker"
 	var fled: int = result.get("fled", -1)  # (the side whose hero retreated or surrendered: it keeps what it carries)
@@ -974,7 +991,7 @@ func new_day() -> Dictionary:
 					o["count"] = int(ceil(o["count"] * 1.1))
 		# (faction creatures only: the list as it always was, so the neutral ushabti never change a seeded week)
 		var ids := GameData.CREATURES.keys().filter(func(c): return GameData.CREATURES[c]["tier"] > 0 and GameData.FACTIONS.has(GameData.CREATURES[c]["faction"]))
-		info["week_creature"] = ids[randi() % ids.size()]
+		info["week_creature"] = Dice.pick(world, ids)
 		world["week_creature"] = info["week_creature"]
 		world["rumour"] = Lore.make_rumour(world)  # (the Tavern's rumour for the week, as the map stands at its start)
 	return info

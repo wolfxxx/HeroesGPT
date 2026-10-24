@@ -281,3 +281,20 @@ func _the_rest() -> void:
 	_ok(_do(rules, {"t": "level_up", "p": 0, "hero": h["uid"], "skill": pick})["ok"] and h[r["stat"]] == stat_before + 1 and int(h["pending_levels"]) == 0,
 		"the level taken with an offered skill")
 	_ok(not _do(rules, {"t": "level_up", "p": 0, "hero": h["uid"], "skill": pick})["ok"], "and only once")
+	# the Mage Guild: built with a hero visiting, it teaches at once; a visit restores spell points
+	town["built_today"] = false
+	h["spells"] = []
+	var mg := _do(rules, {"t": "build", "p": 0, "town": town["uid"], "building": "mage_guild_1"})
+	_ok(mg["ok"] and not mg["learned"].is_empty() and h["spells"] == mg["learned"], "a new Mage Guild teaches the visiting hero")
+	h["mana"] = 0
+	var tv := _do(rules, {"t": "town_visit", "p": 0, "hero": h["uid"], "town": town["uid"]})
+	_ok(tv["ok"] and h["mana"] == GameState.max_mana(h) and tv["mana"] == h["mana"], "a visit restores spell points")
+	_ok(not _do(rules, {"t": "town_visit", "p": 0, "hero": h2["uid"], "town": town["uid"]})["ok"], "not for a hero outside the town")
+	# the world's dice: kept in the world; a derived generator leaves them alone
+	var st: int = w["rng"]
+	Dice.derived(w, "a test").randi()
+	_ok(w["rng"] == st, "a derived generator does not move the world's dice")
+	var r1 := Dice.roll(w, 1, 1000000)
+	_ok(w["rng"] != st, "a roll moves them")
+	w["rng"] = st
+	_ok(Dice.roll(w, 1, 1000000) == r1, "and from the same state rolls the same")

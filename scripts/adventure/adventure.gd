@@ -987,6 +987,8 @@ func _start_battle(setup: Dictionary, involves_human: bool) -> String:
 				_defender_name(setup), world["players"][world["current_player"]]["name"]], [[_flag_icon(p), p["name"]]]).closed
 		Audio.sfx("battle_start")
 		GameState.return_scene = GameState.SCENE_ADVENTURE
+		if not setup.has("seed"):
+			setup["seed"] = rules.battle_seed()
 		GameState.start_battle(setup)
 		busy = true
 		return "battle"
@@ -1070,7 +1072,8 @@ func _handle_level_ups(hero: Dictionary) -> void:
 			else:
 				await Modal.message(self, "Level up", text).closed
 		elif roll["options"].size() > 0:
-			skill = roll["options"][randi() % roll["options"].size()]
+			var pick := Dice.derived(world, ["skill pick", hero["uid"], hero["level"]])  # (the computer's choice)
+			skill = roll["options"][pick.randi() % roll["options"].size()]
 		rules.do({"t": "level_up", "p": hero["owner"], "hero": hero["uid"], "skill": skill})
 	hud.refresh()
 
@@ -1088,9 +1091,8 @@ func open_town(uid: int, report := {}) -> void:
 ## A hero in its own town learns the Mage Guild's spells and has its spell points restored: what it gained, for the
 ## town screen to announce ({hero, learned, mana}).
 func _enter_own_town(hero: Dictionary, town: Dictionary) -> Dictionary:
-	var mana_before: int = hero["mana"]
-	var learned := rules.hero_in_town(hero, town)
-	return {"hero": hero["uid"], "learned": learned, "mana": hero["mana"] - mana_before}
+	var r := rules.do({"t": "town_visit", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})
+	return {"hero": hero["uid"], "learned": r.get("learned", []), "mana": r.get("mana", 0)}
 
 # ---------------------------------------------------------------------------------------------
 # Turns

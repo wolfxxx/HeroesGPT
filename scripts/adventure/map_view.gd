@@ -716,7 +716,7 @@ func set_hover(t: Vector2i) -> void:
 class _ArtifactGlow extends Node2D:
 	var col := Color.WHITE
 	var strong := false
-	var t := randf() * 10.0
+	var t := Dice.look().randf() * 10.0
 	func _process(d: float) -> void:
 		if strong:
 			t += d
@@ -758,7 +758,7 @@ class _HoofDust extends Node2D:
 	var _p := []
 	func _ready() -> void:
 		for i in 5:
-			_p.append([randf_range(-1, 1), randf_range(0.6, 1.2)])
+			_p.append([Dice.look().randf_range(-1, 1), Dice.look().randf_range(0.6, 1.2)])
 		var tw := create_tween()
 		tw.tween_property(self, "t", 1.0, 0.55).set_ease(Tween.EASE_OUT)
 		tw.tween_callback(queue_free)

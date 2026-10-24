@@ -231,7 +231,8 @@ direct changes on preview copies) all use them, and every hero's walk and turn e
 What a hero meets goes through `visit`, `chest`, `capture` and `battle_result` (`adventure._interact_with`,
 `_show_event`, `_post_ready`, `_start_battle`). The rest are commands too (session67): `build`, `enter_garrison` /
 `leave_garrison` / `swap_garrison`, `equip`, `split_set`, `join_set`, `give_artifact` (between heroes side by side),
-`buy_machine` (the town's own Blacksmith machine, or a factory the hero stands at; `AdvAI.buy_from_factory(hero)`
+`town_visit` (a hero in its own town learns the Mage Guild's spells and has its spell points restored; `build` of a
+Mage Guild also teaches the visiting hero and `hire` the hired one, both returning `learned`), `buy_machine` (the town's own Blacksmith machine, or a factory the hero stands at; `AdvAI.buy_from_factory(hero)`
 finds that factory, keeping the signature the frozen baselines override), `transform` and level-ups as `level_roll`
 (the rules roll and keep `hero.level_roll`) then `level_up` (one of the offered skills). The town screen, the hero
 screen (`HeroScreen._cmd`), the meeting window, the factory shop (`WarMachineShop.open(..., rules, factory)`), the
@@ -243,7 +244,27 @@ To show such a change leaves the computer's play unchanged, compare tournaments 
 every seat plays the frozen baseline policy, never `AdvAI`): `tools/adventure_tournament.tscn -- --pairs=2 --players=4
 --size=48 --start=600 --days=21` and `-- --pairs=3 --players=2 --size=36 --start=700 --days=21`, before and after,
 line for line.
-Checked by `tools/commands_test.tscn` (each command applied and refused, sent through JSON).
+Checked by `tools/commands_test.tscn` (each command applied and refused, sent through JSON) and
+`tools/replay_test.tscn` (below).
+
+## Dice and the replay test
+`scripts/core/dice.gd` (session67). The rules roll on the world's own generator, its state kept in `world["rng"]`
+(started by `WorldGen` from the map seed; a world without one starts it from its seed on first roll) and so saved with
+the game: `Dice.roll(w, a, b)`, `chance`, `index`, `pick`, or `gen(w)` ... `keep(w, r)` for a rule that rolls several
+times. Only rules carried out inside a command may roll on it: the creature of the week (`new_day`, in `end_turn`),
+the Windmill (`visit`), level rolls (`level_roll`), a Tavern hero's troops (`make_hero(id, owner, world)`, in `hire`).
+A choice made outside a command takes `Dice.derived(w, key)`, a generator seeded from the world's state and a key,
+which never moves the world's stream: the computer's Tavern and skill picks, `quick_resolve`'s luck and a played
+battle's seed (`AdvRules.battle_seed`, set by `adventure._start_battle` unless the setup has one). Both differ per
+battle through `world["battles"]` (counted in `apply_battle`). Presentation (battle animation timing and particles,
+map flourishes) uses `Dice.look()`, never the world's dice nor the global stream; `Audio` keeps its own. Map
+generation still uses `WorldGen.rng` and the seeded global stream (town names), which is repeatable. The frozen
+baseline AIs keep their global `randi()` Tavern picks; the tournament seeds the global stream for them.
+`Commands.log` / `log_world` record every command accepted on one world (a deep copy taken before it applies).
+`tools/replay_test.tscn`: computer players play two seeded maps through the real turn path (`campaign_driver`)
+with every command recorded; the commands, through `var_to_bytes`, are applied to a copy of the starting world and
+the worlds must match (set aside: the computer's notes `ai_day`/`ai_goal`/`yield`, hero `dest`/`face_left`); a
+second run of each seed must be identical. Anything that changes the game outside a command shows up there.
 
 ## Factions as data
 Everything that makes a faction is one record in `GameData.FACTIONS` (its header lists the fields): creatures and
@@ -460,6 +481,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/lore_test.tscn` — in the full suite: omens and rumours by layer, fixed for a week, some true hints naming a
   real town, nothing drawn from the shared random stream (prints a year's sample); a declassified line for every
   artifact and mine, redacted until met, revealed once in the first message.
+- `tools/replay_test.tscn` — in the full suite: two computer-played seeded maps recorded as commands, replayed on the
+  starting world and compared, and each played twice (see "Dice and the replay test").
 - `tools/commands_test.tscn` — in the full suite: recruiting in a town and at a map dwelling, hiring, trading, stack
   moves, merges, splits, swaps, troop moves and upgrades, hero steps and the turn, each applied and refused when the
   rules say no (armies not together, another player's, a hero's last stack, two tiles at once, onto a monster, past

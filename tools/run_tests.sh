@@ -5,6 +5,7 @@
 #   BATTLE VISUAL TEST: N checks, failures: 0
 #   BATTLE AI TEST: N checks, failures: 0
 #   ADVENTURE AI TEST: N checks, failures: 0
+#   REPLAY TEST: N checks, failures: 0      (recorded commands replayed on the starting world give the same world)
 #   CAMPAIGN WEEK TEST: N checks, failures: 0
 #   CAMPAIGN FLOW TEST: N checks, failures: 0
 #   ADVENTURE TOURNAMENT: self=true, score delta 0.00 +/- 0.00
@@ -36,6 +37,7 @@ echo "--faction-data"; timeout 60 $G --headless --path . res://tools/faction_dat
 echo "--lore"; timeout 60 $G --headless --path . res://tools/lore_test.tscn 2>&1 | grep -E "LORE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--pyramid"; timeout 150 $G --headless --path . res://tools/pyramid_test.tscn 2>&1 | grep -E "PYRAMID TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--commands"; timeout 60 $G --headless --path . res://tools/commands_test.tscn 2>&1 | grep -E "COMMANDS TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--replay"; timeout 300 $G --headless --path . res://tools/replay_test.tscn 2>&1 | grep -E "REPLAY TEST|SCRIPT ERROR|FAIL|differs|refused" | tail -8
 echo "--battle"; timeout 300 $G --headless --path . res://tools/battle_test.tscn 2>&1 | grep -E "BATTLE TEST|SCRIPT ERROR" | tail -4
 echo "--battle-visual"; timeout 60 $G --headless --path . res://tools/battle_visual_test.tscn 2>&1 | grep -E "BATTLE VISUAL TEST|SCRIPT ERROR|FAIL" | tail -6
 echo "--battle-ai"; timeout 60 $G --headless --path . res://tools/battle_ai_test.tscn 2>&1 | grep -E "BATTLE AI TEST|SCRIPT ERROR|FAIL" | tail -8

@@ -2,7 +2,7 @@
 
 Status: **audit** (2026-10-24, at `d17502e`). Step 1, faction data, is **done** (section 4, "Done"). Step 2, the
 command layer, is **done** for the map and towns (section 1, "Progress"; battles still to follow). Step 3, interface
-state, is **done** (section 2, "Done"). Step 4 is not started. It sizes "Phase 1: Foundations" of the plan in
+state, is **done** (section 2, "Done"). Step 4, randomness and the replay test, is **done** (section 3, "Done"). It sizes "Phase 1: Foundations" of the plan in
 HANDOFF §8: one action layer, repeatable randomness, a replay test, faction data. Line numbers are as of that commit.
 
 ## Summary
@@ -82,6 +82,14 @@ the AI's notes (`ai_day`, `ai_goal`, `yield`: the computer's own memory; on a ho
 | `battle.gd` 297, 418–419, 1447, 1674, 1814, 2097, 2590, 2627 | Animation timing and particles draw from the **global** stream, the same one the map rules use, so how long a battle animates changes later map rolls | a private presentation generator (as `Audio` already has) |
 | Saves | No generator state is saved, so a reload rolls differently | save the world generator's state |
 
+**Done (session67):** `scripts/core/dice.gd`. The world's dice (`world["rng"]`, saved) for every rule roll inside a
+command (week creature, Windmill, level rolls, a hired hero's troops); `Dice.derived` (seeded from the world's state,
+never moving it) for choices outside commands (the computer's Tavern and skill picks, `quick_resolve`'s luck, a
+played battle's seed, which the map now always passes); `Dice.look()` for battle and map presentation. Town names
+stay on the seeded global stream during map generation. The replay test (`tools/replay_test.tscn`) records every
+command of two computer-played maps, replays them on the starting world and compares: it found one rule outside the
+commands (a hero learning the Mage Guild's spells), now `town_visit`, and the `build` and `hire` results.
+Seeded games changed with this step, so the tournament references were recorded afresh (HANDOFF §2).
 **How much determinism online play needs depends on the model.** With a host that runs the game and sends results
 (recommended in HANDOFF §8), the other players never run the rules, so the game does not have to be exactly
 repeatable for online play to work. Repeatable randomness is still worth doing: reloads behave the same, the replay

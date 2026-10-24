@@ -96,6 +96,7 @@ func _generate(settings: Dictionary) -> Dictionary:
 		"tavern": [], "game_over": false,
 		"townless_limit": int(settings.get("townless_limit", 0)),  # (optional classic rule, see AdvRules.tick_townless)
 	}
+	Dice.start(world, seed_v)  # (the rules' dice from here on, saved with the world: Dice)
 
 	# ---- players & start positions -------------------------------------------------------
 	var starts := _start_positions(nplayers)
@@ -357,7 +358,7 @@ func _generate(settings: Dictionary) -> Dictionary:
 					cands.append(k)
 			hid = cands[rng.randi() % cands.size()]
 		used_heroes.append(hid)
-		var hero := GameState.make_hero(hid, i)
+		var hero := GameState.make_hero(hid, i, world)
 		hero["pos"] = town_list[i]["pos"]  # heroes start inside their town (at the gate), as in HoMM
 		world["heroes"][hero["uid"]] = hero
 		player["heroes"].append(hero["uid"])
