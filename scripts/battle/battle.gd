@@ -144,7 +144,7 @@ func _demo_setup() -> Dictionary:
 		h["knowledge"] = 4
 		h["mana"] = 40
 	var out := {"attacker_army": a["army"], "defender_army": d["army"], "attacker_hero": a, "defender_hero": d,
-		"terrain": "grass", "attacker_player": int(str(Shot.args.get("players", "0,1")).split(",")[0]),
+		"terrain": str(Shot.args.get("terrain", "grass")), "attacker_player": int(str(Shot.args.get("players", "0,1")).split(",")[0]),
 		"defender_player": int(str(Shot.args.get("players", "0,1")).split(",")[-1]), "attacker_ai": false, "defender_ai": true,
 		"context": {"type": "demo"}, "seed": int(Shot.args.get("seed", "7"))}
 	if Shot.setup.begins_with("siege"):  # Sir Aldric with all his machines before a Necropolis castle (--siege=1|2|3)
@@ -323,11 +323,11 @@ func _build_scene() -> void:
 		nl.size = nl.get_combined_minimum_size()
 		nl.position = Vector2((110 if side == 0 else 1810) - nl.size.x * 0.5, 292)
 
-## A side's colour: its player's flag colour (neutral creatures grey), for the stacks' rings, the turn queue's cards,
+## A side's colour: its player's flag colour (neutral creatures a light silver grey: a mid grey was lost on grass), for the stacks' rings, the turn queue's cards,
 ## the hero's name plate and its spell banners. As the classic, the count boxes carry no side colour (see _Badge).
 func side_color(side: int) -> Color:
 	var p: int = L.players[side]
-	return GameData.PLAYER_COLORS[p] if p >= 0 and p < GameData.PLAYER_COLORS.size() else Color(0.62, 0.6, 0.55)
+	return GameData.PLAYER_COLORS[p] if p >= 0 and p < GameData.PLAYER_COLORS.size() else Color(0.92, 0.91, 0.86)
 
 func _make_unit(st: Dictionary) -> void:
 	var c: Dictionary = GameData.CREATURES[st["id"]]

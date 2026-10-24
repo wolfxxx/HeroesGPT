@@ -16,6 +16,11 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 neutral rings (2026-10-24), committed with this HANDOFF update:** neutral stacks' grey rings were lost on grass (a mid grey
+  as bright as the grass). `battle.side_color` now gives neutrals a light silver grey (0.92, 0.91, 0.86), also on
+  their turn-queue cards; checked on grass, snow and sand (`shots/session67/rings_compare.png`: before, after,
+  snow, sand). The demo battle shot takes `--terrain=<grass|snow|sand|dirt|swamp>`. Fixes session66 playtest
+  finding 3 (the last open one there is the killed hero's level).
 - **Session67 resource pickup sound (2026-10-24), committed with this HANDOFF update:** `resource_pickup` (every resource but gold, campfires,
   the windmill) remade louder (ElevenLabs: logs and stones dropped onto a cart, a wooden thud and stone clack, a short
   chime); take 3 of three, peak -1.6 dB, low/mid/high 3.64/2.59/0.48 (the old one -16.7 dB, 0.37/0.16/0.02). Old
@@ -767,7 +772,7 @@ Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space
 scenes also read `--setup=` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (`--siege=1|2|3`,
 default 3), `town_levels`,
 `necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b --heroes=a,b` (battle heroes by id), `--players=a,b` (demo battle flag colours, -1
-neutral), `--effects=bless;curse;bless+slow` (spells on the attacker's stacks). The harness parks the
+neutral), `--terrain=snow` (demo battle ground), `--effects=bless;curse;bless+slow` (spells on the attacker's stacks). The harness parks the
 mouse before each capture (except hover and right-click shots). The window must not be headless for shots.
 
 ## 6. The round workflow
@@ -902,7 +907,6 @@ Evidence in ignored `shots/session66/play/` (`findings.md`). Two bugs were fixed
 1. **To verify against HoMM3:** a hero killed in battle comes back from the Tavern at level 1 (Lady Seraphine fell at
    level 5 and Blue rehired her at level 1). Forum posts (Celestial Heavens "Hero buy-back") suggest HoMM3 keeps a
    killed hero's experience and skills when they reappear, losing army and artifacts; no wiki page states it. Ask.
-2. Visual: neutral stacks' grey rings are faint on grass.
 
 ### Playtest findings (session57, one Necropolis campaign on Normal; not yet fixed)
 Ranked by impact. Evidence in ignored `shots/session57/play/` (`findings.md` has the details).

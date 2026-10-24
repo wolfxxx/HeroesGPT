@@ -100,7 +100,7 @@ func _run() -> void:
 	var keep: Array = battle.L.players.duplicate()
 	battle.L.players = [1, -1]
 	_check(battle.side_color(0) == GameData.PLAYER_COLORS[1], "the attacker's colour is its player's flag (Blue attacking)")
-	_check(battle.side_color(1) not in GameData.PLAYER_COLORS, "neutral creatures are grey")
+	_check(battle.side_color(1) not in GameData.PLAYER_COLORS and battle.side_color(1).get_luminance() > 0.8, "neutral creatures are a light silver (a mid grey was lost on grass)")
 	battle.L.players = keep
 	# the catapult's shot is heard: its launch, then the stone on the wall or a splash short of it
 	var cat = null
