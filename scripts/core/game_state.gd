@@ -119,10 +119,9 @@ func make_hero(hero_id: String, owner: int) -> Dictionary:
 	h["mana"] = max_mana(h)
 	return h
 
-## The war machine a hero starts with: might heroes march with a ballista, magic heroes with a first aid tent (more at
-## a smith or factory).
+## The war machine a hero of the class starts with (GameData.CLASSES; more at a smith or factory).
 func starting_machines(hero_class: String) -> Array:
-	return ["ballista"] if hero_class in ["Knight", "Death Knight"] else ["first_aid_tent"]
+	return [GameData.CLASSES[hero_class]["machine"]]
 
 ## A hero hired from a tavern: one who fled, surrendered, fell in battle or was dismissed comes back as they left
 ## (see AdvRules._kill_hero, _slay_hero and dismiss_hero), any other fresh.

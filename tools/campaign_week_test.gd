@@ -45,7 +45,7 @@ func _run() -> void:
 	for day in range(1, 8):
 		_ok(state["day"] == day and not town["built_today"], "day %d construction resets" % day)
 		var built := false
-		for id in AdvAI.BUILD_ORDER:
+		for id in AdvAI.build_order(town["faction"]):
 			if TownLogic.build(town, player, id):
 				built = true
 				break

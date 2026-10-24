@@ -3,10 +3,21 @@ class_name AdvAI
 ## Computer opponent for the adventure map: builds, recruits, hires, and sends heroes after the
 ## most valuable target it can safely take (value / distance).
 
+## What the computer builds, in order, in every town; a faction's specials go in after their "ai_after" building
+## (build_order).
 const BUILD_ORDER := ["tavern", "dwelling_1", "dwelling_2", "town_hall", "dwelling_3", "fort", "mage_guild_1",
-	"dwelling_4", "marketplace", "citadel", "blacksmith", "dwelling_5", "city_hall", "stables", "dwelling_6", "mage_guild_2",
-	"brotherhood", "necromancy_amplifier", "dwelling_7", "castle", "dwelling_1u", "dwelling_2u", "dwelling_3u", "dwelling_4u",
+	"dwelling_4", "marketplace", "citadel", "blacksmith", "dwelling_5", "city_hall", "dwelling_6", "mage_guild_2",
+	"dwelling_7", "castle", "dwelling_1u", "dwelling_2u", "dwelling_3u", "dwelling_4u",
 	"capitol", "mage_guild_3", "dwelling_5u", "dwelling_6u", "dwelling_7u", "mage_guild_4"]
+
+static func build_order(faction: String) -> Array:
+	var out := []
+	for id in BUILD_ORDER:
+		out.append(id)
+		for s in GameData.FACTIONS[faction]["specials"]:
+			if GameData.BUILDINGS[s].get("ai_after", "") == id:
+				out.append(s)
+	return out
 
 var rules: AdvRules
 var world: Dictionary
@@ -131,7 +142,7 @@ func manage_towns(player: Dictionary) -> void:
 		if threatened:
 			_recruit(town, player, 0)  # today's defense takes priority over future economic buildings
 		if not town["built_today"]:
-			for b in BUILD_ORDER:
+			for b in build_order(town["faction"]):
 				if TownLogic.has_building(town, b):
 					continue
 				var reason := TownLogic.build_block_reason(town, player, b)
@@ -156,7 +167,7 @@ func manage_towns(player: Dictionary) -> void:
 func _next_building(town: Dictionary, player: Dictionary) -> String:
 	var tomorrow := town.duplicate()
 	tomorrow["built_today"] = false
-	for id in BUILD_ORDER:
+	for id in build_order(town["faction"]):
 		if TownLogic.build_block_reason(tomorrow, player, id) in ["", "Not enough resources"]:
 			return id
 	return ""

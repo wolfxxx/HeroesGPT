@@ -299,7 +299,7 @@ func _build_scene() -> void:
 		s.scale = Vector2(sc, sc)
 		s.flip_h = side == 1
 		s.position = Vector2(110 if side == 0 else 1810, 175)
-		if hh["faction"] == "necropolis":
+		if GameData.FACTIONS[hh["faction"]].get("battle_figure_lift", false):
 			# Bring the dark armor and skeletal horse forward from the dark siege towers.
 			MapView.outline(s, 1.0)
 			s.material.set_shader_parameter("rim_strength", 0.55)

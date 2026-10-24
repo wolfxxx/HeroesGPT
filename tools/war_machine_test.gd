@@ -86,7 +86,7 @@ func _purchases() -> void:
 	# Use an army with no shooters regardless of the starting-hero composition.
 	hero["army"] = [{"id": "pikeman", "count": 10}, null, null, null, null, null, null]
 	_ok(not "ammo_cart" in ai.factory_purchases(hero, player), "AI avoids a cart without shooters")
-	_ok(GameData.SMITH_MACHINE == {"haven": "ballista", "necropolis": "first_aid_tent"}, "town smiths remain faction specific")
+	_ok(GameData.FACTIONS["haven"]["smith_machine"] == "ballista" and GameData.FACTIONS["necropolis"]["smith_machine"] == "first_aid_tent", "town smiths remain faction specific")
 
 func _maps() -> void:
 	for size in [32, 36, 48, 64]:

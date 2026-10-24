@@ -6,7 +6,8 @@ class_name Necromancy
 ## health/count caps, and two thirds as many upgraded troops when only their existing stack fits.
 
 static func calculate(hero, army: Array, fallen: Array, player_index := -1) -> Dictionary:
-	var out := {"raised": 0, "raised_id": "skeleton", "necromancy_reason": "no_skill"}
+	var raise_id: String = GameData.SKILLS["necromancy"]["raise"]["creature"]
+	var out := {"raised": 0, "raised_id": raise_id, "necromancy_reason": "no_skill"}
 	if hero == null or hero.is_empty():
 		return out
 	var level := clampi(int(hero.get("skills", {}).get("necromancy", 0)), 0, 3)
@@ -16,12 +17,13 @@ static func calculate(hero, army: Array, fallen: Array, player_index := -1) -> D
 	var owner_index: int = hero.get("owner", -1) if player_index < 0 else player_index
 	if owner_index >= 0:
 		for town in GameState.world.get("towns", {}).values():
-			if town["owner"] == owner_index and TownLogic.has_building(town, "necromancy_amplifier"):
-				percent += 10
+			if town["owner"] == owner_index:
+				percent += TownLogic.effect(town, "necromancy")  # (the Necromancy Amplifier)
 	percent = clampi(percent, 0, 100)
 	# Preserve the project's existing Mantle reward; its base creature is subject to the same health cap.
-	var base_id := "zombie" if "zombie" in GameState.hero_flags(hero, "raise") else "skeleton"
-	var upgrade_id := "plague_zombie" if base_id == "zombie" else "skeleton_warrior"
+	var flags := GameState.hero_flags(hero, "raise")  # (an artifact may raise another creature)
+	var base_id: String = flags[0] if not flags.is_empty() else raise_id
+	var upgrade_id := GameData.upgrade_of_base(base_id)
 	out["raised_id"] = base_id
 	var upgraded := false
 	if not _fits(army, base_id):

@@ -203,9 +203,23 @@ mana, weekly first-level growth). Placement by tier: `WorldGen._place_artifacts`
 `MapView._ArtifactGlow` draws the twinkle as explicit convex triangles, skipping near-invisible subpixel phases.
 This avoids triangulation of a collapsing concave star. A windowed phase sweep is in `tools/artifact_glow_test.tscn`.
 
+## Factions as data
+Everything that makes a faction is one record in `GameData.FACTIONS` (its header lists the fields): creatures and
+upgrades, native terrain, the Blacksmith's machine, its special buildings, extra building requirements, dwelling and
+town names, its two hero classes, and presentation flags (`battle_figure_lift`). `GameData.CLASSES` gives each class
+its faction, might or magic (`AdvRules.roll_level_up`) and starting machine (`GameState.starting_machines`). Special
+buildings say what they do in `"effects"`, which the rules read through `TownLogic.effect(town, key)` (Stables
+`start_day_movement`, Chapter House `siege_morale`, Amplifier `necromancy`) and `TownLogic.transform_creature` /
+`transform_stack` (the Transformer's `transform_to`; the town screen opens any such building's window). The computer's
+build order is `AdvAI.build_order(faction)`: the shared `BUILD_ORDER` with each special after its `"ai_after"`
+building. Ids keep their first names (`haven` is the Temple). Art is found by id (`town_<f>`, `layout_<f>.json`,
+`bg_siege_<f>_<n>`, `heroes/map_<class or f>`). Checked by `tools/faction_data_test.tscn` (every record complete and
+consistent; the build orders and effects as before the move). A new faction is a record, its creatures, classes,
+heroes and buildings, and its art; see `docs/FOUNDATIONS_AUDIT.md` for what remains (actions in screens, randomness).
+
 ## War machine shops
-`GameData.WAR_MACHINES` lists the three purchasable types, with prices in `CREATURES`; `SMITH_MACHINE` keeps the
-town Blacksmith faction-specific. `GameState.war_machine_reason` / `buy_war_machine` share validation and payment
+`GameData.WAR_MACHINES` lists the three purchasable types, with prices in `CREATURES`; each faction's
+`smith_machine` (in `GameData.FACTIONS`) keeps the town Blacksmith faction-specific. `GameState.war_machine_reason` / `buy_war_machine` share validation and payment
 between the Blacksmith, factory and AI, using the hero's existing `machines` array (one per type, outside the army).
 `WorldGen` places neutral `war_machine_factory` objects before other sites, trying one near each start and a wider
 fallback if needed. `_factory_access` checks a path with the proposed walls in place; placement reserves the path
@@ -220,7 +234,9 @@ save systems already use `machines`; no save schema change. Existing saves keep 
 `scripts/battle/necromancy.gd` (`Necromancy.calculate`) previews the reward against the winner's surviving army;
 it does not mutate it. Played battles supply separate lost stacks from `BattleLogic.necromancy_casualties`, including
 undead and destroyed war machines, excluding fortification towers. Instant battles supply their defeated army.
-Rates are 10/20/30%, plus worn bonuses and each owned Necromancy Amplifier, capped at 100%; count and creature-health
+Rates are 10/20/30%, plus worn bonuses and each owned town's `necromancy` building effect (the Amplifier), capped at
+100%; the raised creature is `GameData.SKILLS["necromancy"]["raise"]`, or an artifact's `raise` flag, and its upgrade
+`GameData.upgrade_of_base`; count and creature-health
 limits are applied per stack with a minimum of one. With no free slot or basic stack, an existing upgraded stack
 receives two thirds as many. The existing custom Mantle raises Zombies (or Plague Zombies by the same slot rule).
 `battle.gd._end_battle` shows the actual count/type with a portrait, or explains no room/no casualties.
@@ -363,6 +379,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/faction_data_test.tscn` — in the full suite: every faction record complete and consistent with its classes,
+  heroes and specials; the computer's build orders and the building effects as before the data move (session67).
 - `tools/retreat_test.tscn` — in the full suite: a hero retreating from a battle scene loses the army but not the
   war machines still standing (`battle._lost` leaves them out of the result window), waits in the Tavern and is
   hired again with them and the artifacts; a hero slain in battle (`AdvRules._slay_hero`) is hired again at the same

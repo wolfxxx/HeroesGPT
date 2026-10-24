@@ -16,6 +16,15 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 faction data (2026-10-24), committed with this HANDOFF update:** step 1 of `docs/FOUNDATIONS_AUDIT.md`. `GameData.FACTIONS` holds
+  each faction's whole record (smith machine, specials, extra requirements, dwelling and town names, classes,
+  `battle_figure_lift`; `SMITH_MACHINE`, `FACTION_REQUIRES`, `SPECIALS`, `DWELLING_NAMES` and
+  `TownLogic.TOWN_NAMES` are gone); new `GameData.CLASSES` (faction, might, starting machine); specials carry
+  `effects` read by `TownLogic.effect` / `transform_creature` / `transform_stack` (was `transform_to_skeletons`);
+  Necromancy's creature is `SKILLS.necromancy.raise`; `AdvAI.build_order(faction)` places specials by `ai_after`.
+  No behaviour change: a seeded 4-player tournament (maps 600-601, 21 days) is identical before and after. New
+  `tools/faction_data_test.tscn` (128 checks) in the suite. The Transformer window takes its title and creature
+  from the data (and lost its "as as many" typo); screenshot `shots/session67/setting/transformer.png`.
 - **Session67 foundations audit (2026-10-24), committed with this HANDOFF update:** `docs/FOUNDATIONS_AUDIT.md` sizes phase 1 of the
   big-picture plan. Battles are already command-shaped (only the turn driver is in `battle.gd`); about a dozen map
   and town actions are carried out in screens (hero movement in `adventure.gd`, recruiting, hiring, trading, stack

@@ -289,7 +289,7 @@ func gain_xp(hero: Dictionary, xp: int) -> int:
 
 ## Rolls a level-up: returns {"stat": String, "options": Array[skill_id]} (does not apply).
 func roll_level_up(hero: Dictionary, rng: RandomNumberGenerator = null) -> Dictionary:
-	var might: bool = hero["class"] in ["Knight", "Death Knight"]
+	var might: bool = GameData.CLASSES[hero["class"]]["might"]
 	var weights := {"attack": 35, "defense": 35, "power": 15, "knowledge": 15} if might else {"attack": 15, "defense": 15, "power": 35, "knowledge": 35}
 	var roll := rng.randi_range(1, 100) if rng else randi_range(1, 100)
 	var stat := "attack"
@@ -531,7 +531,7 @@ func battle_vs_town(att: Dictionary, town: Dictionary) -> Dictionary:
 		"siege": TownLogic.siege_level(town),
 		"siege_faction": town["faction"],
 		"defender_town": town["name"],
-		"siege_morale": 2 if TownLogic.has_building(town, "brotherhood") else 0,
+		"siege_morale": TownLogic.effect(town, "siege_morale"),
 	}
 
 ## Hero defending a town's walls: its garrison hero, else one of the owner's heroes standing in the gate (never the
@@ -729,7 +729,7 @@ func apply_battle(result: Dictionary) -> Dictionary:
 	# Reward the winning hero on either side, after the surviving army has been restored.
 	var winner: Dictionary = world["heroes"].get(ev["hero"], {})
 	if not winner.is_empty() and int(result.get("raised", 0)) > 0:
-		if GameState.add_to_army(winner["army"], result.get("raised_id", "skeleton"), result["raised"]):
+		if GameState.add_to_army(winner["army"], result.get("raised_id", GameData.SKILLS["necromancy"]["raise"]["creature"]), result["raised"]):
 			ev["raised"] = result["raised"]
 	rebuild()
 	check_eliminations()
@@ -877,10 +877,10 @@ func new_day() -> Dictionary:
 			var hh: Dictionary = world["heroes"][hid]
 			hh["max_movement"] = GameState.hero_max_movement(hh)
 			hh["movement"] = hh["max_movement"]
-			for tid in p["towns"]:  # Stables: +400 movement for a hero starting the day in the town
+			for tid in p["towns"]:  # (the Stables: more movement for a hero starting the day in the town)
 				var tt: Dictionary = world["towns"][tid]
-				if tt["pos"] == hh["pos"] and TownLogic.has_building(tt, "stables"):
-					hh["movement"] += 400
+				if tt["pos"] == hh["pos"]:
+					hh["movement"] += TownLogic.effect(tt, "start_day_movement")
 			hh["mana"] = mini(GameState.max_mana(hh), hh["mana"] + 1 + GameState.hero_stat(hh, "knowledge") / 4
 				+ GameState.hero_stat(hh, "mana_day"))
 			p["resources"]["gold"] += GameState.hero_stat(hh, "gold_day")  # (a purse or a signet)

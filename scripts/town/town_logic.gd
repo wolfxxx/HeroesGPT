@@ -9,16 +9,9 @@ class_name TownLogic
 ## player dict: {"index": int, "name": String, "color": Color, "is_ai": bool, "faction": String,
 ##               "resources": {res: int}, "heroes": Array[int uid], "towns": Array[int uid], "alive": bool}
 
-## Town names. The Temple's are Templar houses and strongholds of history (docs/SETTING.md); the same number as
-## before, so a seeded map keeps its names' places in the random sequence.
-const TOWN_NAMES := {
-	"haven": ["Rosslyn", "Gisors", "Tomar", "Acre", "Temple Bruer"],
-	"necropolis": ["Gravenmoor", "Ashenveil", "Mortholme", "Duskhaven", "Blackfen"],
-}
-
 static func make_town(faction: String, owner: int, pos: Vector2i, name := "", developed := true) -> Dictionary:
 	if name == "":
-		name = TOWN_NAMES[faction].pick_random()
+		name = GameData.FACTIONS[faction]["town_names"].pick_random()
 	var b: Array = ["village_hall"]
 	if developed:
 		b = ["town_hall", "fort", "tavern", "dwelling_1", "dwelling_2"]
@@ -103,12 +96,29 @@ static func siege_level(town: Dictionary) -> int:
 			return k[1]
 	return 0
 
-## Skeleton Transformer: a stack of living creatures becomes as many Skeletons (false if it can't).
-static func transform_to_skeletons(stack: Dictionary) -> bool:
+## What the town's buildings add up to for one effect (GameData.BUILDINGS "effects": start_day_movement,
+## siege_morale, necromancy).
+static func effect(town: Dictionary, key: String) -> int:
+	var v := 0
+	for b in town["buildings"]:
+		v += int(GameData.BUILDINGS[b].get("effects", {}).get(key, 0))
+	return v
+
+## The creature a transforming building of the town turns living creatures into ("" when it has none; the Lodge's
+## Skeleton Transformer).
+static func transform_creature(town: Dictionary) -> String:
+	for b in town["buildings"]:
+		var into: String = GameData.BUILDINGS[b].get("effects", {}).get("transform_to", "")
+		if into != "":
+			return into
+	return ""
+
+## A transforming building: a stack of living creatures becomes as many of `into` (false if it can't).
+static func transform_stack(stack: Dictionary, into: String) -> bool:
 	var c: Dictionary = GameData.CREATURES[stack["id"]]
 	if "undead" in c["abilities"] or c.get("machine", false):
 		return false
-	stack["id"] = "skeleton"
+	stack["id"] = into
 	return true
 
 ## Does the player own this building in any town (e.g. the Necromancy Amplifier)?

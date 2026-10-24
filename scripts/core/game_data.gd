@@ -14,6 +14,13 @@ const PLAYER_COLOR_NAMES := ["Red", "Blue", "Green", "Gold"]
 # ---------------------------------------------------------------------------------------------
 # Factions
 # ---------------------------------------------------------------------------------------------
+## Everything that makes a faction itself, in one record (docs/FOUNDATIONS_AUDIT.md): a new faction is this record,
+## its creatures, classes, heroes and buildings' data, and art under its id. Ids stay as first named (`haven` is the
+## Temple, `necropolis` the Lodge; docs/SETTING.md).
+##   creatures / upgrades: tiers 1-7; terrain: native terrain; smith_machine: the war machine its Blacksmith forges;
+##   specials: its own buildings (the Town Hall's second row); requires: extra prerequisites in its towns;
+##   dwelling_names, town_names; classes: [might, magic] (see CLASSES); battle_figure_lift: its battle hero figures
+##   are brightened with a rim light (dark figures before dark siege towers).
 const FACTIONS := {
 	"haven": {
 		"name": "Temple",
@@ -21,6 +28,14 @@ const FACTIONS := {
 		"creatures": ["pikeman", "archer", "griffin", "swordsman", "monk", "cavalier", "angel"],
 		"upgrades": ["halberdier", "marksman", "royal_griffin", "crusader", "zealot", "champion", "archangel"],
 		"terrain": "grass",
+		"smith_machine": "ballista",
+		"specials": ["stables", "brotherhood"],
+		"requires": {"dwelling_6": ["stables"]},  # (the Stables before the cavalry, as the classic Castle)
+		"dwelling_names": ["Guardhouse", "Archers' Tower", "Griffin Tower", "Barracks", "Monastery", "Training Grounds",
+			"Portal of Glory"],
+		# Templar houses and strongholds of history; five, as before, so a seeded map keeps its names' places
+		"town_names": ["Rosslyn", "Gisors", "Tomar", "Acre", "Temple Bruer"],
+		"classes": ["Knight", "Cleric"],
 	},
 	"necropolis": {
 		"name": "Lodge",
@@ -28,7 +43,24 @@ const FACTIONS := {
 		"creatures": ["skeleton", "zombie", "ghost", "vampire", "lich", "dread_knight", "bone_dragon"],
 		"upgrades": ["skeleton_warrior", "plague_zombie", "wraith", "vampire_lord", "arch_lich", "doom_rider", "ghost_dragon"],
 		"terrain": "dirt",
+		"smith_machine": "first_aid_tent",
+		"specials": ["necromancy_amplifier", "skeleton_transformer"],
+		"requires": {},
+		"dwelling_names": ["Cursed Temple", "Graveyard", "Tomb of Souls", "Estate", "Mausoleum", "Hall of Darkness",
+			"Dragon Vault"],
+		"town_names": ["Gravenmoor", "Ashenveil", "Mortholme", "Duskhaven", "Blackfen"],
+		"classes": ["Death Knight", "Necromancer"],
+		"battle_figure_lift": true,
 	},
+}
+
+## Hero classes: their faction, might (Attack and Defense favoured at level-up) or magic, and the war machine a new
+## hero of the class marches with (might a ballista, magic a first aid tent; more at a smith or factory).
+const CLASSES := {
+	"Knight": {"faction": "haven", "might": true, "machine": "ballista"},
+	"Cleric": {"faction": "haven", "might": false, "machine": "first_aid_tent"},
+	"Death Knight": {"faction": "necropolis", "might": true, "machine": "ballista"},
+	"Necromancer": {"faction": "necropolis", "might": false, "machine": "first_aid_tent"},
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -145,8 +177,6 @@ const CREATURES := {
 
 ## War machines a hero can own (bought at a Blacksmith); the catapult comes with every hero laying siege.
 const WAR_MACHINES := ["ballista", "first_aid_tent", "ammo_cart"]
-## The one war machine each town's Blacksmith forges (as the classic towns: Castle a Ballista, Necropolis a tent).
-const SMITH_MACHINE := {"haven": "ballista", "necropolis": "first_aid_tent"}
 const MACHINE_TEXT := {
 	"ballista": "Shoots an enemy stack every round, guided by the hero's Attack.",
 	"first_aid_tent": "Heals the top creature of a wounded friendly stack every round.",
@@ -201,7 +231,7 @@ const SKILLS := {
 	"archery": {"name": "Archery", "desc": "+15% ranged damage per level."},
 	"offense": {"name": "Offense", "desc": "+10% melee damage per level."},
 	"armorer": {"name": "Armorer", "desc": "-7% damage taken per level."},
-	"necromancy": {"name": "Necromancy", "desc": "After victory, raise slain enemies as Skeletons: Basic 10%, Advanced 20%, Expert 30%. Requires army space or a Skeleton stack; a full army with Skeleton Warriors receives two thirds as many Warriors."},
+	"necromancy": {"name": "Necromancy", "raise": {"creature": "skeleton"}, "desc": "After victory, raise slain enemies as Skeletons: Basic 10%, Advanced 20%, Expert 30%. Requires army space or a Skeleton stack; a full army with Skeleton Warriors receives two thirds as many Warriors."},
 	"logistics": {"name": "Logistics", "desc": "+10% movement per level."},
 	"luck": {"name": "Luck", "desc": "+1 luck per level."},
 	"sorcery": {"name": "Sorcery", "desc": "+10% spell damage per level."},
@@ -247,11 +277,18 @@ const BUILDINGS := {
 	"mage_guild_3": {"name": "Mage Guild Lv3", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 4, "sulfur": 4, "crystal": 4, "gems": 4}, "requires": ["mage_guild_2"], "replaces": "mage_guild_2", "desc": "Teaches level 3 spells."},
 	"mage_guild_4": {"name": "Mage Guild Lv4", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 6, "sulfur": 6, "crystal": 6, "gems": 6}, "requires": ["mage_guild_3"], "replaces": "mage_guild_3", "desc": "Teaches level 4 spells."},
 	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in a Temple, a First Aid Tent in a Lodge."},
-	# faction special buildings ("faction": only that faction's towns can build them)
-	"stables": {"name": "Stables", "faction": "haven", "cost": {"gold": 2000, "wood": 10}, "requires": [], "desc": "Heroes who start the day in this town get +400 movement points."},
-	"brotherhood": {"name": "Chapter House", "faction": "haven", "cost": {"gold": 500, "wood": 5}, "requires": ["tavern"], "desc": "+2 morale for the defenders when the town is besieged."},
-	"necromancy_amplifier": {"name": "Necromancy Amplifier", "faction": "necropolis", "cost": {"gold": 1000}, "requires": ["mage_guild_1"], "desc": "All your heroes raise 10% more Skeletons with Necromancy."},
-	"skeleton_transformer": {"name": "Skeleton Transformer", "faction": "necropolis", "cost": {"gold": 1000}, "requires": ["dwelling_1"], "desc": "Turns a visiting hero's living creatures into Skeletons."},
+	# faction special buildings ("faction": only that faction's towns can build them). "effects" are what they do, read
+	# by the rules (TownLogic.effect): start_day_movement (a hero starting the day in the town), siege_morale (the
+	# town's defenders), necromancy (+% raised by all the owner's heroes), transform_to (turns a visiting hero's
+	# living creatures into that creature). "ai_after": the computer builds it right after that building.
+	"stables": {"name": "Stables", "faction": "haven", "cost": {"gold": 2000, "wood": 10}, "requires": [],
+		"effects": {"start_day_movement": 400}, "ai_after": "city_hall", "desc": "Heroes who start the day in this town get +400 movement points."},
+	"brotherhood": {"name": "Chapter House", "faction": "haven", "cost": {"gold": 500, "wood": 5}, "requires": ["tavern"],
+		"effects": {"siege_morale": 2}, "ai_after": "mage_guild_2", "desc": "+2 morale for the defenders when the town is besieged."},
+	"necromancy_amplifier": {"name": "Necromancy Amplifier", "faction": "necropolis", "cost": {"gold": 1000}, "requires": ["mage_guild_1"],
+		"effects": {"necromancy": 10}, "ai_after": "mage_guild_2", "desc": "All your heroes raise 10% more Skeletons with Necromancy."},
+	"skeleton_transformer": {"name": "Skeleton Transformer", "faction": "necropolis", "cost": {"gold": 1000}, "requires": ["dwelling_1"],
+		"effects": {"transform_to": "skeleton"}, "desc": "Turns a visiting hero's living creatures into Skeletons."},
 	"dwelling_1": {"name": "Dwelling I", "cost": {"gold": 1000, "ore": 5}, "dwelling_tier": 1, "requires": ["fort"]},
 	"dwelling_2": {"name": "Dwelling II", "cost": {"gold": 1000, "wood": 5, "ore": 5}, "dwelling_tier": 2, "requires": ["dwelling_1"]},
 	"dwelling_3": {"name": "Dwelling III", "cost": {"gold": 1500, "wood": 5, "ore": 5}, "dwelling_tier": 3, "requires": ["dwelling_1"]},
@@ -269,20 +306,9 @@ const BUILDINGS := {
 	"dwelling_7u": {"name": "Upg. Dwelling VII", "cost": {"gold": 20000, "ore": 10, "mercury": 10, "gems": 10}, "dwelling_tier": 7, "requires": ["dwelling_7", "mage_guild_3"], "replaces": "dwelling_7"},
 }
 
-## Requirements only one faction has (its specials in the chain, as the Stables before the Haven's cavalry).
-const FACTION_REQUIRES := {"haven": {"dwelling_6": ["stables"]}}
-
 ## Everything a building needs in a town of this faction.
 static func requires(faction: String, id: String) -> Array:
-	return BUILDINGS[id]["requires"] + FACTION_REQUIRES.get(faction, {}).get(id, [])
-
-## Each faction's special buildings (in the Town Hall's second row).
-const SPECIALS := {"haven": ["stables", "brotherhood"], "necropolis": ["necromancy_amplifier", "skeleton_transformer"]}
-
-const DWELLING_NAMES := {
-	"haven": ["Guardhouse", "Archers' Tower", "Griffin Tower", "Barracks", "Monastery", "Training Grounds", "Portal of Glory"],
-	"necropolis": ["Cursed Temple", "Graveyard", "Tomb of Souls", "Estate", "Mausoleum", "Hall of Darkness", "Dragon Vault"],
-}
+	return BUILDINGS[id]["requires"] + FACTIONS[faction].get("requires", {}).get(id, [])
 
 # ---------------------------------------------------------------------------------------------
 # Artifacts
@@ -458,7 +484,7 @@ static func faction_creature(faction: String, tier: int) -> String:
 	return FACTIONS[faction]["creatures"][tier - 1]
 
 static func dwelling_name(faction: String, tier: int, upgraded := false) -> String:
-	return ("Upg. " if upgraded else "") + DWELLING_NAMES[faction][tier - 1]
+	return ("Upg. " if upgraded else "") + FACTIONS[faction]["dwelling_names"][tier - 1]
 
 ## The upgraded creature of a base one ("" when it has none: already upgraded, or not a faction creature).
 static func upgrade_of_base(cid: String) -> String:

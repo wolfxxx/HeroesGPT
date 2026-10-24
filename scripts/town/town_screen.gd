@@ -73,7 +73,7 @@ func _resolve_state() -> void:
 			var t: Dictionary = world["towns"][uid]
 			t["buildings"] = ["city_hall", "castle", "tavern", "marketplace", "mage_guild_2", "blacksmith",
 				"dwelling_1u", "dwelling_2u", "dwelling_3u", "dwelling_4", "dwelling_5", "dwelling_6u", "dwelling_7"]
-			t["buildings"].append_array(GameData.SPECIALS[t["faction"]])
+			t["buildings"].append_array(GameData.FACTIONS[t["faction"]]["specials"])
 			if Shot.setup.contains("max"):  # (with the Capitol)
 				t["buildings"][0] = "capitol"
 			TownLogic.learn_guild_spells(t)
@@ -541,8 +541,7 @@ func _set_hover(id: String) -> void:
 
 const CLICK_HINT := {"hall": "Click to build.", "fort": "Click to see all dwellings.", "tavern": "Click to hire a hero.",
 	"marketplace": "Click to trade resources.", "mage_guild": "Click to see the spells.",
-	"blacksmith": "Click to buy the town's war machine for a visiting hero.",
-	"skeleton_transformer": "Click to turn a visiting hero's creatures into Skeletons."}
+	"blacksmith": "Click to buy the town's war machine for a visiting hero."}
 
 ## Hover panel for a building: what it does; until built its requirements, cost and status; in the town view
 ## (`in_town`) what clicking it does.
@@ -566,7 +565,9 @@ func _building_info(id: String, in_town := false) -> Control:
 		v = HoverInfo.box(GameData.building_name(town["faction"], id))
 		HoverInfo.line(v, b.get("desc", ""))
 		if built and in_town:
-			HoverInfo.line(v, CLICK_HINT.get(TownLayout.slot_of(id), ""), UI.GOLD, 18)
+			var into: String = b.get("effects", {}).get("transform_to", "")
+			HoverInfo.line(v, CLICK_HINT.get(TownLayout.slot_of(id), "") if into == "" else
+				"Click to turn a visiting hero's creatures into %s." % GameData.CREATURES[into]["plural"], UI.GOLD, 18)
 	if not built:
 		for req in GameData.requires(town["faction"], id):
 			var ok := TownLogic.has_building(town, req)
@@ -586,9 +587,9 @@ func _open_building(id: String) -> void:
 		await _recruit_tier(b["dwelling_tier"])
 	elif id in ["village_hall", "town_hall", "city_hall", "capitol"]:
 		await _open_build()
-	elif id == "skeleton_transformer":
-		await _open_transformer()
-	elif id in ["stables", "brotherhood", "necromancy_amplifier"]:
+	elif b.get("effects", {}).has("transform_to"):
+		await _open_transformer(id)
+	elif b.has("faction"):  # (a faction special that works on its own: what it does)
 		await Modal.message(self, GameData.BUILDINGS[id]["name"], GameData.BUILDINGS[id]["desc"]).closed
 	elif id in ["fort", "citadel", "castle"]:
 		await _open_recruit_all()
@@ -639,7 +640,7 @@ func _hall_rows() -> Array:
 	return [
 		[["village_hall", "town_hall", "city_hall", "capitol"], ["fort", "citadel", "castle"], ["tavern"], ["marketplace"],
 			["blacksmith"]],
-		[["mage_guild_1", "mage_guild_2", "mage_guild_3", "mage_guild_4"]] + GameData.SPECIALS[town["faction"]].map(
+		[["mage_guild_1", "mage_guild_2", "mage_guild_3", "mage_guild_4"]] + GameData.FACTIONS[town["faction"]]["specials"].map(
 			func(s): return [s]),
 		[dw.call(1), dw.call(2), dw.call(3), dw.call(4)],
 		[dw.call(5), dw.call(6), dw.call(7)],
@@ -1004,10 +1005,11 @@ func _open_guild() -> void:
 	await m.closed
 
 ## The Skeleton Transformer: each living stack of the visiting hero (or the garrison) can be turned into Skeletons.
-func _open_transformer() -> void:
+func _open_transformer(id: String) -> void:
+	var into: String = GameData.BUILDINGS[id]["effects"]["transform_to"]
 	while true:
-		var m := Modal.custom(self, "Skeleton Transformer", 1100)
-		m.body.add_child(UI.label("Living creatures thrown in come out as as many Skeletons.", 20))
+		var m := Modal.custom(self, GameData.BUILDINGS[id]["name"], 1100)
+		m.body.add_child(UI.label("Living creatures thrown in come out as the same number of %s." % GameData.CREATURES[into]["plural"], 20))
 		var row := HFlowContainer.new()
 		row.add_theme_constant_override("h_separation", 14)
 		row.add_theme_constant_override("v_separation", 10)
@@ -1036,14 +1038,14 @@ func _open_transformer() -> void:
 		var r = await m.closed
 		if not r is Dictionary:
 			break
-		if TownLogic.transform_to_skeletons(r):
+		if TownLogic.transform_stack(r, into):
 			Audio.sfx("magic_hit", -4)
 		refresh()
 
 ## The Blacksmith sells the town's own war machine to a visiting hero, who can field one of each kind (as the classic
 ## towns: the Castle's smith forges ballistas, the Necropolis's first aid tents).
 func _open_smith() -> void:
-	var id: String = GameData.SMITH_MACHINE.get(town["faction"], "ballista")
+	var id: String = GameData.FACTIONS[town["faction"]]["smith_machine"]
 	var c: Dictionary = GameData.CREATURES[id]
 	var m := Modal.custom(self, "Blacksmith", 560)
 	var v := VBoxContainer.new()

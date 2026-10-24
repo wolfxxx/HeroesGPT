@@ -1,6 +1,7 @@
 # Foundations audit: what stands between the game and several factions played online
 
-Status: **audit** (2026-10-24, at `d17502e`), nothing changed yet. It sizes "Phase 1: Foundations" of the plan in
+Status: **audit** (2026-10-24, at `d17502e`). Step 1, faction data, is **done** (section 4, "Done"); steps 2-4 are
+not started. It sizes "Phase 1: Foundations" of the plan in
 HANDOFF §8: one action layer, repeatable randomness, a replay test, faction data. Line numbers are as of that commit.
 
 ## Summary
@@ -97,6 +98,13 @@ positions) into one presentation table keyed by faction with a default.
 
 **Asset paths keyed by faction id** (`town_<f>`, `layout_<f>.json`, `bg_siege_<f>_<n>`, `heroes/map_<f>`,
 `battle_<f>`) are already data-driven: a new faction adds files under its id. Keep that.
+
+**Done (session67):** the faction tables are one `FACTIONS` record each, `CLASSES` replaces the class lists, the
+specials' effects are building data read by `TownLogic.effect`, Necromancy's creature comes from the skill's data, and
+the computer's build order is derived per faction. `battle.gd`'s Lodge figure brightening is a faction flag. Left as
+presentation keyed by id (fine): `battle.gd` `ARCHER_SPOTS`, `town_layout.gd` positions, `army_strip.gd` portrait
+crops, per-creature sounds. Verified unchanged: a seeded four-player computer tournament (2 maps, 21 days, 244
+battles) gives identical results before and after, and `tools/faction_data_test.tscn` checks the old build orders.
 
 **Ids vs. names:** the setting renamed what players see; ids (`haven`, `necropolis`, `pikeman`...) stay. New
 factions should get ids that match their names from the start (`eridu`).
