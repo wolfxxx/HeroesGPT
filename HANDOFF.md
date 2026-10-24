@@ -16,6 +16,16 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Eridu proposal (2026-10-24), committed with this HANDOFF update:** the user's idea of an alien faction (a crash-landed
+  ship as the castle, strange creatures, magic that is science), a deliberate deviation from HoMM3 they raised
+  themselves, themed on the Sumerian / Nibiru ancient-astronaut lore they chose (their notes:
+  `C:/Users/PC/Documents/factionname.pdf`, outside the repo). `docs/ERIDU_PROPOSAL.md`: the Anunnaki of Eridu,
+  a town built over Alalu's crashed ship in the marshes; 7 tiers of mythic creatures (Lulu, Igigi, Scorpion Men,
+  Sharur, Apkallu, Lamassu, Anzu) with first-pass stats and 7 new abilities; Lugal / Keeper heroes (Alalu,
+  Ninurta, Enki, Ninhursag); Shaping as its Necromancy; House of the Me and Dur-An-Ki; artifacts and spells
+  unchanged (the Ziggurat teaches the same spells); the look rules (Mesopotamian first, star-science as a glow;
+  the Forge lesson); costs, balance plan and 8 questions. A first draft called it "Starfall"; the user disliked
+  the name. Awaiting the user's answers; nothing built.
 - **Session67 dismissed heroes (2026-10-24), committed with this HANDOFF update:** a hero dismissed from the hero screen no longer comes
   back from the Tavern fresh. `AdvRules.dismiss_hero` (both dismiss buttons) keeps them in `tavern_keep` with
   everything but the army: level, experience, skills, spells, artifacts and war machines (rehired: a starting army).
@@ -841,6 +851,21 @@ Trend: overall holds at 9.4; battle improved from 9.1 to 9.3 in round 47. Remain
 strategic AI are more substantial next steps than further small dialog polish.
 
 ## 8. What's next
+
+### The user's big-picture goal (session67): several interesting factions, played online
+Proposed path, discussed with the user (not yet approved as a plan):
+1. **Foundations:** every player and computer action through one command layer in the rules (screens only send
+   commands; today e.g. the town screen recruits and builds directly); all rule randomness through a seeded
+   generator saved with the world (about a dozen global `randi`/`randf` calls remain in rules, hero creation and
+   towns); a replay test (record a game's commands, replay from the seed, compare the world); faction data (about 60
+   "haven"/"necropolis" checks in 9 scripts move into each faction's definition).
+2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
+   after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
+3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
+   idea, an alien faction themed on Sumerian myth, is in `docs/ERIDU_PROPOSAL.md` (awaiting answers).
+4. **Hardening:** relay or dedicated server, lobby, fog filtered per player, version checks, turn timers.
+Decisions open with the user: which HoMM3 factions and in what order, how players will connect, and whether to keep
+HoMM3's one-after-another turns.
 
 ### Proposed next session after `555fedc` — not started
 
