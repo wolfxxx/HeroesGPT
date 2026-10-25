@@ -16,6 +16,18 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Temple backdrop back (2026-10-25), committed with this HANDOFF update:** the user: "this didnt solve anything it just took the
+  nice background away. the rights side tower still looks weird without a roof". The Templar backdrop's distant
+  castle, hills and sky are back: `tools/art/town_bg_blend.py` keeps the repaint above row 400 and the original
+  ground below row 450 (blended between, behind the Fort's walls), so the buildings still stand on the plaza; the
+  original lamp post at the right is taken whole. The user: "mix2_rich looks amazing and correct", but in the early
+  town the Fort's end tower was "cut off almost against the window ... part of the right side missing": its body
+  ended in a straight line right of its windows (the render's cut, the Mage Guild hides that side). It is now a
+  whole round tower, a quarter wider with its right side curving away, its rings round and its roof centred
+  (`fort_tower_paint.py widen` / `widen_ingest`: the repaint decides the tower right of column 968, matched to the
+  old wall by a small search; take 1 of two kept). Screenshots `shots/session67/tower/mix2_rich.png`,
+  `whole_demo.png`, `whole_demo_zoom.png`, `guild_cover.png` (with the Mage Guild built, the Fort tower's roof shows
+  behind it, as before).
 - **Session67 Temple fort tower (2026-10-25), committed with this HANDOFF update:** the user circled the tower at the right end of the
   Temple's Fort wall ("that tower does not look correct"). Cause: the Templar repaint had redrawn the backdrop
   (`town/haven_bg.png`) with its plaza about 110 px lower and a whole castle painted in the distance, so the Fort's
@@ -1542,7 +1554,8 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 - Town backdrops (session67): an image-model repaint of `town/<faction>_bg.png` can move the ground (the Temple's
   plaza went 110 px lower and a castle appeared), and every building sprite is placed for the old ground. After any
   backdrop change, look at the town screen early (`--setup=demo`) and fully built (`--setup=rich`), not the
-  backdrop alone.
+  backdrop alone. Keep what the user liked in a repaint (the Temple's distant castle) and fix only the ground
+  (`tools/art/town_bg_blend.py`): restoring the whole original took away a backdrop the user liked.
 - Browser version (session67): only the cursor over the page is known (edge scrolling must not use screen
   positions; past the page's edge it goes on toward the edge the cursor left by, as the user asked); a room code may start with a digit; ENet does not work in a browser (room codes only). A new
   workers.dev subdomain took a few minutes before its certificate worked. The browser drive used for checks is
