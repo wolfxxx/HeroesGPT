@@ -189,6 +189,12 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - `ui/frame_portrait.png` — ornate gold frame 160x160 (transparent centre).
 - `ui/main_menu_bg.png` — 1920x1080 epic key art.
 - `ui/logo.png` — game title logo "Heroes of the Shattered Crown", transparent.
+- `ui/icon.png` — 256x256 game icon (session67): the logo's broken crown on a dark rounded square with a gold rim
+  (`project.godot` `config/icon`: the window icon and the browser version's favicon). Made from `ui/logo.png` with
+  PIL (crown cropped at 652..852 x 6..102, its soft shadow cut away at alpha 170, brightened 1.25x).
+- `ui/splash.png` — 1280x720 loading screen (session67, `boot_splash/image`, the browser version's loading page):
+  `ui/main_menu_bg.png` at half brightness, a darker band below, the logo 720 wide ending at y 606 (above the
+  browser loading bar at about y 638).
 - `ui/cursor_*.png` — 32x32: normal, move, attack, shoot, horse, spell, blocked.
 - `ui/parchment.png` — parchment texture for dialogs.
 - `ui/hex.png`, `ui/hex_hover.png` optional.

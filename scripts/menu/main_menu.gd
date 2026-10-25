@@ -41,6 +41,8 @@ var _sent_choice := {}       # joined: its own town, hero and bonus as last sent
 var _push_due := false       # host: the lobby goes out at the end of the frame
 var _begin_btn: Button
 var _back_btn: Button
+var _room_badge: PanelContainer  # the lobby's room code, large, beside the title (for telling the others)
+var _room_code: Label
 
 # Torch flames in the painted backdrop (1920x1080 space): lamp posts, then wall and tower torches.
 const TORCHES := [[308, 606, 1.0], [613, 601, 1.0], [1302, 593, 1.0], [471, 473, 0.7], [480, 346, 0.7], [699, 471, 0.7],
@@ -418,6 +420,24 @@ Play on: heroes carry on without a town for as long as they last.
 	brow.add_child(start)
 	_back_btn = back
 	_begin_btn = start
+	_room_badge = PanelContainer.new()
+	_room_badge.position = Vector2(80, 48)
+	_room_badge.custom_minimum_size = Vector2(380, 0)
+	_room_badge.visible = false
+	add_child(_room_badge)
+	var rb := VBoxContainer.new()
+	rb.add_theme_constant_override("separation", 0)
+	_room_badge.add_child(rb)
+	var rl := UI.label("Room code", 22, Color(0.85, 0.78, 0.6))
+	rl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rb.add_child(rl)
+	_room_code = UI.label("", 72, UI.GOLD, true)
+	_room_code.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rb.add_child(_room_code)
+	var rh := UI.label("", 17, UI.TEXT)
+	rh.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rh.set_meta("hint", true)
+	rb.add_child(rh)
 
 	if not _settings.has("opponents"):
 		_settings["opponents"] = 1
@@ -902,6 +922,7 @@ func _close_setup() -> void:
 		Net.leave()
 		_refresh_seats()
 	_setup_panel.visible = false
+	_room_badge.visible = false
 	_menu_box.get_meta("panel").visible = true
 	_place_logo(LOGO_MENU)
 	_menu_band.visible = true
@@ -1190,6 +1211,7 @@ func _cycle_ai_town(i: int) -> void:
 ## After any change on the setup screen (_refresh_scenario): online, the host sends the lobby out; a joined computer
 ## sends its own choices to the host and keeps what is not its own out of reach.
 func _lobby_after_change() -> void:
+	_show_room_code()
 	if not _online:
 		return
 	_lock_for_guest()
@@ -1206,6 +1228,15 @@ func _lobby_after_change() -> void:
 	elif Net.is_host and not _push_due:
 		_push_due = true
 		_lobby_push.call_deferred()
+
+## The room code, large beside the title, while the lobby is open (the host tells it to others; so may anyone in it).
+func _show_room_code() -> void:
+	if _room_badge == null:
+		return
+	_room_badge.visible = _online and Net.room != "" and _setup_panel.visible
+	_room_code.text = Net.room
+	var hint: Label = _room_badge.get_child(0).get_child(2)
+	hint.text = "Others: Multiplayer, type it, Join" if not _guest else "Others can join with it too"
 
 ## Host: the colours held are settled (Net.lobby_assign), the lobby goes to everyone in it, and is shown here.
 func _lobby_push() -> void:

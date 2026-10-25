@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 room code and icon (2026-10-25), committed with this HANDOFF update:** the user found the room code gone once the host was in
+  the lobby, and did not like the Godot favicon. The code now shows large beside the title in the lobby, on the
+  host's and the joined screens (`main_menu._room_badge`). New game icon `assets/ui/icon.png` (the logo's broken
+  crown; window icon and favicon) and loading screen `assets/ui/splash.png` (the browser's loading page showed the
+  Godot logo too), set in `project.godot`. Checked in Chrome on the web build (`shots/session67/lobby/n1.png`,
+  `n2.png`, `splash.png`); lobby and hot-seat tests pass.
 - **Session67 the lobby (2026-10-25), committed with this HANDOFF update:** the user found setting up online odd ("the joining computers
   just see joining and cannot see if theres any success before the host launches") and asked for a lobby where
   everyone sees who joined and picks a faction, with computer players or neutral castles. Their answers: HoMM3's

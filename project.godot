@@ -7,6 +7,9 @@ config/name="Heroes of the Shattered Crown"
 config/description="A turn-based fantasy strategy game in the spirit of Heroes of Might and Magic."
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://assets/ui/icon.png"
+boot_splash/bg_color=Color(0.03, 0.02, 0.01, 1)
+boot_splash/image="res://assets/ui/splash.png"
 
 [autoload]
 

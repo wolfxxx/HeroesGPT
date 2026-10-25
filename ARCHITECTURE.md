@@ -298,7 +298,8 @@ leads); a free open colour taken with a click (`{"take"}`, `Net.lobby_take`); ev
 (`_lock_for_guest`). The players row online (`_lobby_seat_buttons`): per colour who plays it and its town; the host
 clicks through Open (a person who joins) / Computer / Empty (random maps only, as HoMM3: settings `seat_empty`, the
 colour's player is out from the start, `empty`, and its town neutral, `WorldGen._neutral_town`) and through a
-computer's town (`seat_ai_faction`, "" Random). Begin: `Net.lobby_begin`, then each joined machine is seated as the
+computer's town (`seat_ai_faction`, "" Random). The room code shows large beside the title while the lobby is open
+(`_room_badge`, `_show_room_code`). Begin: `Net.lobby_begin`, then each joined machine is seated as the
 colour it held (`_greeted`). Offline the New Game screen is as before (those two settings are dropped). `Net.mine(p)`: this machine's player, and on the host the computer players.
 Map screen (`adventure.gd`): `Net.rules` is its rules (remote commands keep its tile cache right); a remote command
 marks the map to redraw next frame (`_net_dirty`, `_net_redraw`); a remote `end_turn` gives the day's news and
