@@ -157,13 +157,16 @@ func immune(side: int, spell: String) -> bool:
 	return spell in GameState.hero_flags(h, "immune_spells") \
 		or (sp.has("damage") and sp["school"] in GameState.hero_flags(h, "immune_school"))
 
-## Whether this stack is spared by the spell: its side's protection (above), or, for a mind spell (Blind, Berserk), a
-## creature without a mind to bend (the undead, the ushabti as HoMM3's golems, war machines).
+## Whether this stack is spared by the spell: its side's protection (above); a creature whose hide turns spells up to
+## a level (HoMM3's dragons: friendly spells too); or, for a mind spell (Blind, Berserk), a creature without a mind to
+## bend (the undead, the ushabti as HoMM3's golems, Giants and Titans, war machines).
 func stack_immune(s: Dictionary, spell: String) -> bool:
 	if immune(s["side"], spell):
 		return true
+	if int(GameData.SPELLS[spell]["level"]) <= int(cdata(s).get("spell_immunity", 0)):
+		return true
 	if GameData.SPELLS[spell].get("mind", false):
-		return has_ab(s, "undead") or has_ab(s, "golem") or s.get("machine", false)
+		return has_ab(s, "undead") or has_ab(s, "golem") or has_ab(s, "mind_immune") or s.get("machine", false)
 	return false
 
 func has_ab(s: Dictionary, ab: String) -> bool:
@@ -327,6 +330,9 @@ static func to_cube(h: Vector2i) -> Vector3i:
 	var x := h.x - (h.y - (h.y & 1)) / 2
 	var z := h.y
 	return Vector3i(x, -x - z, z)
+
+static func from_cube(c: Vector3i) -> Vector2i:
+	return Vector2i(c.x + (c.z - (c.z & 1)) / 2, c.z)
 
 static func distance(a: Vector2i, b: Vector2i) -> int:
 	var ca := to_cube(a)
@@ -603,13 +609,15 @@ func _mult(a: Dictionary, d: Dictionary, ranged: bool, moved: int) -> float:
 			bonus *= 0.5
 	else:
 		bonus += 0.10 * hero_skill(a["side"], "offense")
-		if cdata(a)["shots"] > 0:
-			bonus *= 0.5  # shooters are poor in melee
+		if cdata(a)["shots"] > 0 and not has_ab(a, "no_melee_penalty"):
+			bonus *= 0.5  # shooters are poor in melee (not the Titans)
 		if has_ab(a, "jousting") and not has_ab(d, "anti_cavalry"):
 			bonus += 0.05 * moved
 		if d["effects"].has("shield"):
 			bonus *= 0.85
 	if has_ab(a, "hates_undead") and has_ab(d, "undead"):
+		bonus *= 1.5
+	if d["id"] in cdata(a).get("hates", []):  # (Titans and Black Dragons)
 		bonus *= 1.5
 	bonus *= 1.0 - 0.07 * hero_skill(d["side"], "armorer")
 	return m * bonus
@@ -852,7 +860,43 @@ func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation
 		d["effects"]["curse"] = 3
 	if not d["alive"]:
 		ev.append({"t": "death", "s": d})
+	if not ranged and has_ab(a, "breath"):
+		ev += _breathe(a, d, moved)
 	return ev
+
+## A dragon's breath (HoMM3): its strike, a retaliation too, also burns the stack in the hex just behind the one it
+## struck, on the same line, friend or foe; that stack does not strike back.
+func _breathe(a: Dictionary, d: Dictionary, moved: int) -> Array:
+	var o = breath_victim(a, d)
+	if o == null:
+		return []
+	var dmg := _roll_damage(a, o, false, moved)
+	var oname := _name(o)
+	var killed := apply_damage(o, dmg)
+	log_lines.append("The breath burns %s for %d damage.%s" % [oname, dmg,
+		(" %d %s." % [killed, "perishes" if killed == 1 else "perish"]) if killed > 0 else ""])
+	var ev := [{"t": "breath", "a": a, "d": o, "dmg": dmg, "killed": killed, "log": log_lines.size()}]
+	if not o["alive"]:
+		ev.append({"t": "death", "s": o})
+	return ev
+
+## The stack a breath reaches past `d`: one hex on along the line from the attacker's touching hex through the hex it
+## struck (two, through a large target's other half); null when that hex is empty or off the field. `head`: where the
+## attacker would stand (the AI weighing a strike), else where it stands.
+func breath_victim(a: Dictionary, d: Dictionary, head = null) -> Variant:
+	for ac in cells(a, head):
+		for dc in cells(d):
+			if distance(ac, dc) != 1:
+				continue
+			var step := to_cube(dc) - to_cube(ac)
+			var h := from_cube(to_cube(dc) + step)
+			if h in cells(d):
+				h = from_cube(to_cube(h) + step)
+			if not in_bounds(h):
+				return null
+			var o = stack_at(h)
+			return o if o != null and o != a and o != d else null
+	return null
 
 ## A stack that loses its turn to a spell: "blind" (it stands until struck or the spell ends), else "".
 func spell_lost_turn(s: Dictionary) -> String:

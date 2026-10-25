@@ -131,6 +131,8 @@ static func _run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _artifact(rules, player, cmd)
 		"buy_machine":
 			return _buy_machine(rules, player, cmd)
+		"hill_fort":
+			return _hill_fort(rules, player, cmd)
 		"transform":
 			return _transform(rules, player, cmd)
 		"level_roll":
@@ -231,6 +233,26 @@ static func _buy_machine(rules: AdvRules, player: Dictionary, cmd: Dictionary) -
 	var why := GameState.war_machine_reason(hero, player, id)
 	if why != "" or not GameState.buy_war_machine(hero, player, id):
 		return _no(why if why != "" else "Cannot buy that.")
+	return {"ok": true, "reason": ""}
+
+## A stack of the hero's army upgraded at the Hill Fort it stands at, at the town price.
+static func _hill_fort(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var hero := _hero_of(rules, player, cmd)
+	var o: Dictionary = rules.world["objects"].get(int(cmd.get("object", -1)), {})
+	var si := int(cmd.get("si", -1))
+	if hero.is_empty() or o.is_empty() or o["type"] != "hill_fort" or o["pos"] != hero["pos"]:
+		return _no("No Hill Fort here.")
+	if si < 0 or si > 6 or hero["army"][si] == null:
+		return _no("No such stack.")
+	var st: Dictionary = hero["army"][si]
+	var up := GameData.upgrade_of_base(st["id"])
+	if up == "":
+		return _no("That stack has no upgrade.")
+	var cost := TownLogic.upgrade_cost(st["id"], up, st["count"])
+	if not TownLogic.can_afford(player, cost):
+		return _no("Not enough resources.")
+	TownLogic.pay(player, cost)
+	st["id"] = up
 	return {"ok": true, "reason": ""}
 
 static func _transform(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:

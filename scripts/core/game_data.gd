@@ -73,7 +73,10 @@ const CLASSES := {
 # Creatures.  speed = hexes per turn, init = initiative ordering (higher acts first).
 # shots > 0 => ranged.  growth = weekly growth. cost = resource dictionary.
 # abilities: flying, ranged, no_retaliation, double_strike, undead, no_melee_penalty,
-#            jousting, life_drain, breath, unlimited_retaliation, regenerate, fear, two_hex
+#            jousting, life_drain, breath, unlimited_retaliation, regenerate, fear, two_hex, mind_immune
+# hates: creature ids it deals +50% damage to (HoMM3's Titans and Black Dragons). spell_immunity: the highest spell
+# level that cannot touch it, its own side's spells too (HoMM3's Red Dragons 3, Black Dragons 5: every spell).
+# fig_scale: its battle figure taller than its tier's (HoMM3's Giants and Titans tower over men).
 # ---------------------------------------------------------------------------------------------
 const CREATURES := {
 	# ---------------- HAVEN ----------------
@@ -149,6 +152,15 @@ const CREATURES := {
 	"mummy": {"name": "Mummy", "plural": "Mummies", "faction": "neutral", "tier": 3, "dwelling": "Tomb of Curses",
 		"attack": 7, "defense": 7, "dmg": [3, 5], "hp": 30, "speed": 5, "growth": 7, "shots": 0,
 		"cost": {"gold": 300}, "abilities": ["undead", "curse_strike"], "ai_value": 270},
+	# HoMM3's Tower and Dungeon top creatures, met on the map before their towns (the Illuminated, Agartha:
+	# docs/SETTING.md) are built: Giants and Red Dragons recruited at their map dwellings, Titans and Black Dragons
+	# in the wild or upgraded at a Hill Fort.
+	"giant": {"name": "Giant", "plural": "Giants", "faction": "neutral", "tier": 7, "dwelling": "Cloud Temple",
+		"attack": 19, "defense": 16, "dmg": [40, 60], "hp": 150, "speed": 7, "growth": 1, "shots": 0,
+		"cost": {"gold": 2000, "gems": 1}, "abilities": ["mind_immune"], "fig_scale": 1.25, "ai_value": 3718},
+	"red_dragon": {"name": "Red Dragon", "plural": "Red Dragons", "faction": "neutral", "tier": 7, "dwelling": "Dragon Cave",
+		"attack": 19, "defense": 19, "dmg": [40, 50], "hp": 180, "speed": 9, "growth": 1, "shots": 0,
+		"cost": {"gold": 2500, "sulfur": 1}, "abilities": ["flying", "breath", "two_hex"], "spell_immunity": 3, "ai_value": 4702},
 	# ---------------- UPGRADES (from an upgraded dwelling; "upgrade_of" names the base creature) ----------------
 	"halberdier": {"name": "Halberdier", "plural": "Halberdiers", "faction": "haven", "tier": 1, "upgrade_of": "pikeman",
 		"attack": 6, "defense": 5, "dmg": [2, 3], "hp": 10, "speed": 5, "growth": 14, "shots": 0,
@@ -192,6 +204,14 @@ const CREATURES := {
 	"ghost_dragon": {"name": "Ghost Dragon", "plural": "Ghost Dragons", "faction": "necropolis", "tier": 7, "upgrade_of": "bone_dragon",
 		"attack": 19, "defense": 17, "dmg": [25, 50], "hp": 200, "speed": 14, "growth": 1, "shots": 0,
 		"cost": {"gold": 3000, "mercury": 1}, "abilities": ["undead", "flying", "fear", "two_hex"], "ai_value": 4696},
+	"titan": {"name": "Titan", "plural": "Titans", "faction": "neutral", "tier": 7, "upgrade_of": "giant",
+		"attack": 24, "defense": 24, "dmg": [40, 60], "hp": 300, "speed": 11, "growth": 1, "shots": 24,
+		"cost": {"gold": 5000, "gems": 2}, "abilities": ["ranged", "no_melee_penalty", "mind_immune"], "hates": ["black_dragon"], "fig_scale": 1.25,
+		"ai_value": 7500},
+	"black_dragon": {"name": "Black Dragon", "plural": "Black Dragons", "faction": "neutral", "tier": 7, "upgrade_of": "red_dragon",
+		"attack": 25, "defense": 25, "dmg": [40, 50], "hp": 300, "speed": 15, "growth": 1, "shots": 0,
+		"cost": {"gold": 4000, "sulfur": 2}, "abilities": ["flying", "breath", "two_hex"], "hates": ["titan"], "spell_immunity": 5,
+		"ai_value": 8721},
 }
 
 ## War machines a hero can own (bought at a Blacksmith); the catapult comes with every hero laying siege.
@@ -212,6 +232,8 @@ const ABILITY_TEXT := {
 	"death_blow": "Chance for double damage", "fear": "Causes fear", "two_hex": "Large creature",
 	"golem": "Golem: spells hurt it far less",
 	"curse_strike": "Curses what it strikes (25%)",
+	"breath": "Breath: strikes the stack behind too", "no_melee_penalty": "No melee penalty",
+	"mind_immune": "Immune to mind spells",
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -526,12 +548,29 @@ static func faction_creature(faction: String, tier: int) -> String:
 static func dwelling_name(faction: String, tier: int, upgraded := false) -> String:
 	return ("Upg. " if upgraded else "") + FACTIONS[faction]["dwelling_names"][tier - 1]
 
-## The upgraded creature of a base one ("" when it has none: already upgraded, or not a faction creature).
+## The upgraded creature of a base one ("" when it has none: already upgraded, or no upgrade exists).
 static func upgrade_of_base(cid: String) -> String:
 	var c: Dictionary = CREATURES.get(cid, {})
-	if c.is_empty() or c.has("upgrade_of") or not FACTIONS.has(c.get("faction", "")):
+	if c.is_empty() or c.has("upgrade_of"):
 		return ""
-	return FACTIONS[c["faction"]].get("upgrades", [])[c["tier"] - 1]
+	if FACTIONS.has(c.get("faction", "")):
+		return FACTIONS[c["faction"]].get("upgrades", [])[c["tier"] - 1]
+	for u in CREATURES:  # (a neutral with an upgrade: the Giant's Titan, the Red Dragon's Black Dragon)
+		if CREATURES[u].get("upgrade_of", "") == cid:
+			return u
+	return ""
+
+## A creature's words for the hover panels: its abilities, then what it hates and the spells it shrugs off.
+static func ability_words(cid: String) -> Array:
+	var c: Dictionary = CREATURES.get(cid, {})
+	var out: Array = c.get("abilities", []).map(func(a): return ABILITY_TEXT.get(a, a))
+	for h in c.get("hates", []):
+		out.append("Hates %s (+50%% dmg)" % CREATURES[h]["plural"])
+	if c.get("spell_immunity", 0) >= 5:
+		out.append("Immune to all spells")
+	elif c.get("spell_immunity", 0) > 0:
+		out.append("Immune to spells of level 1-%d" % c["spell_immunity"])
+	return out
 
 ## The base creature of an upgraded one (itself for a base creature): sounds and attack effects follow it.
 static func base_of(cid: String) -> String:

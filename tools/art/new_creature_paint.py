@@ -1,8 +1,10 @@
 """New creatures painted by an image model over an existing creature's idle figure and portrait (its pose, size and
 framing), as upgrade_paint.py does for upgrades but as a different being.
-python tools/art/new_creature_paint.py prep           ->  imagegen/batch36/in/nc__<id>.png, ncport__<id>.png + new.json
+python tools/art/new_creature_paint.py prep [ids]     ->  imagegen/batch36/in/nc__<id>.png, ncport__<id>.png + new.json
 python tools/art/new_creature_paint.py paint [ids]    ->  imagegen/batch36/out/...
-python tools/art/new_creature_paint.py ingest         ->  assets/creatures/<id>.png (+ anchors.json), portraits/<id>.png
+python tools/art/new_creature_paint.py ingest [ids]   ->  assets/creatures/<id>.png (+ anchors.json), portraits/<id>.png
+(ids: only those; none: every one. An upgrade painted over a new creature (the Titan over the Giant) is prepped
+after its base is ingested.)
 Then the poses and move cycles come from the usual tools, which paint only what is missing:
 python tools/art/pose_paint.py prep <ids>; python tools/art/vertex_paint.py --batch imagegen/batch6; pose_paint ingest
 python tools/art/cycle_paint.py prep <ids>; python tools/art/vertex_paint.py --batch imagegen/batch8; cycle_paint ingest
@@ -29,6 +31,20 @@ NEW = {
               "yellowed, age-stained linen bandages with loose torn strips trailing, a faded painted gold collar and a "
               "scarab amulet on its chest, dark empty eye sockets with a faint green glow, reaching forward with "
               "bandaged hands, shambling"),
+    # session67: HoMM3's Tower and Dungeon top creatures (the upgrades painted over their new base, as upgrade_paint)
+    "giant": ("zealot", "a Giant: a towering, broad-shouldered bearded man of enormous strength, his skin weathered, in "
+              "a short belted tunic of rough undyed wool, bare muscular arms with heavy gold armbands, a plain gold "
+              "circlet on his brow, leather sandals, his arms held out with big clenched fists where the figure's hands "
+              "are, no glow, no magic"),
+    "titan": ("giant", "a Titan: a colossal warrior-god in gleaming gold-and-white plate armour over a white tunic, a "
+              "crested gold Greek helmet, a short white cloak, the same build and stance as the giant, crackling blue-"
+              "white lightning gathered in both hands where the figure's fists are, small sparks around them"),
+    "red_dragon": ("bone_dragon", "a Red Dragon: a living dragon with gleaming crimson-red scales, a paler golden belly, "
+                   "large leathery red wings with dark ribs, curved ivory horns, glowing amber eyes and a wisp of smoke "
+                   "curling from its jaws, standing in the same pose, all flesh and scales, no bones showing"),
+    "black_dragon": ("red_dragon", "a Black Dragon: a huge living dragon with glossy jet-black scales with a dark "
+                     "violet sheen, black leathery wings, black horns with red tips, burning red eyes and faint red "
+                     "embers between its teeth, standing in the same pose"),
 }
 IDLE = ("This is a battle unit sprite from a fantasy strategy game. Redraw it as a DIFFERENT creature in exactly the same "
         "side view facing right, the same pose, the same size in the frame, standing on the same ground line at the same "
@@ -41,10 +57,13 @@ PORT = ("This is a creature portrait from a fantasy strategy game (the unit port
         "no frame, no signature.")
 
 
-def prep():
+def prep(ids=None):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
-    info = {}
+    pj = f"{BATCH}/in/new.json"
+    info = json.load(open(pj)) if ids and os.path.exists(pj) else {}
     for nid, (base, _) in NEW.items():
+        if ids and nid not in ids:
+            continue
         canvas, origin, s, r = up.idle_canvas(base)
         canvas.convert("RGB").save(f"{BATCH}/in/nc__{nid}.png")
         info[nid] = {"base": base, "origin": origin, "scale": s, "ratio": r}
@@ -72,10 +91,12 @@ def paint(ids):
                 print("FAILED", name, flush=True)
 
 
-def ingest():
+def ingest(ids=None):
     info = json.load(open(f"{BATCH}/in/new.json"))
     anchors = json.load(open(f"{D}/anchors.json"))
     for nid, d in info.items():
+        if ids and nid not in ids:
+            continue
         src = f"{BATCH}/out/nc__{nid}.png"
         if os.path.exists(src):
             up.ingest_figure(src, f"{BATCH}/in/nc__{nid}.png", d["base"], d["scale"], nid, anchors, grow=1.15)
@@ -86,4 +107,4 @@ def ingest():
 
 
 if __name__ == "__main__":
-    {"prep": lambda: prep(), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest()}[sys.argv[1]]()
+    {"prep": lambda: prep(sys.argv[2:]), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest(sys.argv[2:])}[sys.argv[1]]()

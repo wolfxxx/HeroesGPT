@@ -952,7 +952,7 @@ static func recruit_dialog(owner_node: Node, cid: String, available: int, player
 		stats.add_child(UI.icon(Assets.tex("icons/%s.png" % row_d[0]), Vector2(30, 30)))
 		stats.add_child(UI.label("%s %s" % [row_d[1], row_d[2]], 19))
 	v.add_child(UI.label("Speed %d%s" % [c["speed"], ("   Shots %d" % c["shots"]) if c["shots"] > 0 else ""], 19))
-	var ab: Array = c["abilities"].map(func(x): return GameData.ABILITY_TEXT.get(x, x))
+	var ab: Array = GameData.ability_words(cid)
 	if ab.size() > 0:
 		var al := UI.label(", ".join(ab), 17, Color(0.85, 0.8, 0.65))
 		al.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

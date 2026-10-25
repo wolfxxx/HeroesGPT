@@ -44,6 +44,13 @@ CREATURE_NOTES = {
                   "bending like flesh; it keeps its nemes headdress and painted face exactly.",
     "mummy": "An ancient Egyptian mummy: it keeps its linen bandages, gold collar and scarab amulet exactly, and moves "
              "with a slow, stiff shamble.",
+    "giant": "A giant in a rough wool tunic with gold armbands and a gold circlet; it fights bare-handed, no weapon.",
+    "titan": "A titan in gold-and-white plate armour and a crested gold helmet: it keeps its armour, helmet and cloak "
+             "exactly; its weapon is lightning from its hands.",
+    "red_dragon": "A living red dragon of crimson scales, golden belly and leathery red wings: no bones show. When "
+                  "lying dead: limp and sprawled, its head flat on the ground, eyes closed, jaws slack, wings crumpled.",
+    "black_dragon": "A living black dragon of glossy jet-black scales, black wings, red-tipped horns and red eyes. When "
+                    "lying dead: limp and sprawled, its head flat on the ground, eyes closed, jaws slack, wings crumpled.",
     "diamond_golem": "It is a living statue of clear glowing rock crystal: it moves stiffly and heavily, like a statue, "
                      "never bending like flesh; it keeps its headdress, gold inlay and shield exactly.",
     "zombie": "Make it a medieval fantasy zombie: dress it in torn, rotting peasant rags and a ragged tunic (no modern "
@@ -110,6 +117,10 @@ POSE_NOTES = {  # how each creature attacks
     "gold_golem": "For the attack: swinging the bronze khopesh down in a heavy, stiff stroke to the right.",
     "diamond_golem": "For the attack: swinging the gold khopesh down in a heavy, stiff stroke to the right.",
     "mummy": "For the attack: lunging forward and clawing to the right with both bandaged hands.",
+    "giant": "For the attack: swinging a huge clenched fist in a crushing downward blow to the right.",
+    "titan": "For the attack: hurling a crackling bolt of blue-white lightning from its outstretched right hand to the right.",
+    "red_dragon": "For the attack: rearing up with wings spread, breathing a roaring gout of fire forward to the right.",
+    "black_dragon": "For the attack: rearing up with wings spread, breathing a roaring gout of fire forward to the right.",
     "archer": "For the attack: drawing the bow and loosing an arrow to the right.",
     "monk": "For the attack: thrusting both hands forward, casting a bolt of holy light.",
     "lich": "For the attack: raising the staff and hurling a green necrotic bolt from its hand.",

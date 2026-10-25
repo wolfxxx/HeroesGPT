@@ -16,6 +16,28 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Titans and Black Dragons (2026-10-25), committed with this HANDOFF update:** the user ("so lets keep going") chose HoMM3's way
+  with the Hill Fort and all the abilities. Four neutral creatures with HoMM3's numbers, met on the map before their
+  towns (the Illuminated, Agartha) exist: **Giant** (19/16, 40-60, 150 hp, speed 7; immune to mind spells) and
+  **Titan** (24/24, 40-60, 300 hp, speed 11, 24 lightning shots, no melee penalty, immune to mind spells, hates Black
+  Dragons), **Red Dragon** (19/19, 40-50, 180 hp, speed 9, flying, breath; immune to spells of levels 1-3) and **Black
+  Dragon** (25/25, 300 hp, speed 15, flying, breath, immune to all spells, hates Titans). Breath: a dragon's strike
+  (a retaliation too) also burns the stack in the hex behind the one struck, on the same line, friend or foe, which
+  does not strike back (`BattleLogic._breathe`, `breath_victim`, `from_cube`). Spell immunity covers friendly spells
+  too, as HoMM3's. On the map: the **Hill Fort** on every map (upgrades any stack that has an upgrade, at the town's
+  price: the cost difference; `scripts/ui/hill_fort.gd`, command `hill_fort`, `AdvAI.hill_fort_upgrades`); on medium
+  and larger maps the Giants' **Cloud Temple** and the Red Dragons' **Dragon Cave** (two of the guarded neutral
+  dwellings of town creatures become them, where they stand: a big guarded building found no free spot that late)
+  and a wild stack each of **Titans** and **Black Dragons** far from the towns. All of it placed last, with its own
+  generator, so the rest of a seeded map is unchanged. Not certain of HoMM3's exact Hill Fort price (its versions
+  differ); the town's upgrade price is used. Art: four figures and portraits (`new_creature_paint.py`, now taking
+  ids; the Titan painted over the Giant, the Black Dragon over the Red), their poses, walk and wing cycles, a lightning
+  missile for the Titan (`battle._Projectile` "lightning"), the three map sites (`map_object_paint.py`, now taking
+  names). Giants and Titans stand 1.25 times their tier's height in battle (`fig_scale`). Checked: new
+  `tools/titan_dragon_test.tscn` (72 checks, in the suite), screenshots in ignored `shots/session67/titans/`
+  (`c_sheet.png` the battle, `hf.png` the Hill Fort dialog, `map_sheet.png` / `map_sheet2.png` the sites). New
+  screenshot setups: battle `--armies=id:n,...;id:n,...`, map `--setup=titans` (prints the sites; `--hill_fort` opens
+  the fort for the first hero).
 - **Session67 spell batch (2026-10-25), committed with this HANDOFF update:** the user asked how to make the factions more interesting
   ("titans, black dragons and the chain lightning spell"); the plan offered: spells first, then Titans and Black
   Dragons as creatures, then their towns (the Illuminated, Agartha). They chose "start with the spell batch". Five of
@@ -1487,6 +1509,12 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Titans and Black Dragons (session67):** data `GameData.CREATURES` (`giant`, `titan`, `red_dragon`,
+  `black_dragon`; keys `hates`, `spell_immunity`, `fig_scale`, abilities `breath`, `no_melee_penalty`, `mind_immune`),
+  `GameData.ability_words` (the hover panels), `upgrade_of_base` (neutral upgrades); rules in `BattleLogic`
+  (`stack_immune`, `_mult`, `_strike` / `_breathe` / `breath_victim`); the map in `WorldGen` (the "titans and dragons"
+  block after the monsters, the dwellings turned before `available` is set), the Hill Fort in `scripts/ui/hill_fort.gd`,
+  `Commands._hill_fort`, `AdvRules.visit`, `AdvAI.hill_fort_upgrades` / `upgrade_at_hill_fort`; `tools/titan_dragon_test.tscn`.
 - **Spells (session67 batch):** data `GameData.SPELLS` (`mind`, `chain`, target `all`), rules in `BattleLogic`
   (`stack_immune`, `chain_targets`, `cast`, `spell_lost_turn`, `berserk_action`, `_wake`), the screen in `battle.gd`
   (`_next` Blind, `_turn` Berserk, `_anim_spell` and `_Arc`), the AI in `BattleAI.decide_spell`, the guild's fifth
@@ -1575,6 +1603,11 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- New creatures' art (session67): `pose_paint.py ingest` and `cycle_paint.py ingest` re-cut every creature with an
+  output (they rewrote the Bone Dragon's poses and moves): restore the others from git and merge only the new
+  anchors into `creatures/anchors.json`. A map site with an anchor is drawn at a fixed scale (`MapView._sprite`), so
+  its size is the painting's (`map_object_paint.GROW`), not the width passed in. A large guarded building placed
+  last on a medium map rarely finds a free spot: convert an existing one instead.
 - Town backdrops (session67): an image-model repaint of `town/<faction>_bg.png` can move the ground (the Temple's
   plaza went 110 px lower and a castle appeared), and every building sprite is placed for the old ground. After any
   backdrop change, look at the town screen early (`--setup=demo`) and fully built (`--setup=rich`), not the

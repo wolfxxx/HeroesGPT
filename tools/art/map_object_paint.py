@@ -2,9 +2,10 @@
 Magic as a stone circle, the Watchtower as an observatory. The existing sprite is the reference for viewpoint, size and
 light; the new object is painted on magenta, keyed out, fitted into the old figure's box standing on its foot point,
 and given a synthetic cast shadow, on the old sprite's canvas (so the map places and sizes it as before).
-python tools/art/map_object_paint.py prep           ->  imagegen/batch34/in/<name>.png (old figure on magenta)
-python tools/art/map_object_paint.py paint [names]  ->  imagegen/batch34/out/<name>.png
-python tools/art/map_object_paint.py ingest         ->  assets/map/<name>.png (old ones in ignored shots/session67/art_old)"""
+python tools/art/map_object_paint.py prep [names]    ->  imagegen/batch34/in/<name>.png (old figure on magenta)
+python tools/art/map_object_paint.py paint [names]   ->  imagegen/batch34/out/<name>.png
+python tools/art/map_object_paint.py ingest [names]  ->  assets/map/<name>.png (old ones in ignored shots/session67/art_old)
+(names: only those; none: every one)"""
 import os, sys, json
 import numpy as np
 from PIL import Image
@@ -25,14 +26,25 @@ OBJECTS = {
     "dwelling_mummy": "the Tomb of Curses: an ancient Egyptian rock-cut tomb entrance in a weathered sandstone outcrop, a "
                       "dark doorway framed by carved pillars and painted hieroglyphs, a winged scarab relief above, "
                       "torn linen strips at the threshold and a faint green glow inside",
+    # session67: HoMM3's Giant and Red Dragon dwellings and its Hill Fort (the Illuminated's and Agartha's beings)
+    "dwelling_giant": "the Cloud Temple: a small temple of white marble columns with a gilded dome on top of a steep "
+                      "rocky crag, wreathed in soft white clouds, a broad stair of giant-sized steps climbing to its door",
+    "dwelling_red_dragon": "the Dragon Cave: a great dark cave mouth in a hill of black volcanic rock, a deep red glow and "
+                           "a wisp of smoke from inside, scorched ground, scattered gold coins and old bones at the "
+                           "threshold",
+    "hill_fort": "the Hill Fort: a sturdy little fort on a grassy hilltop, a squat round stone keep with a slate roof "
+                 "and a red-and-gold pennant, a wooden palisade around it with an open gate facing the viewer, a "
+                 "smithy's anvil and a weapon rack in the yard",
     "watchtower": "a small round stone observatory tower of an astrologer, with a domed copper roof opened by a slit, "
                   "a long brass telescope pointing out of the slit at the sky, a little wooden door at its foot",
 }
 # how much larger than a fit into the old figure's box (a low stone circle in place of a tall domed shrine read as
 # much smaller on the map; so did a squat observatory in place of a watchtower on long legs)
-GROW = {"shrine": 1.4, "watchtower": 1.6, "pyramid": 2.2, "dwelling_mummy": 1.2}
+GROW = {"shrine": 1.4, "watchtower": 1.6, "pyramid": 2.2, "dwelling_mummy": 1.2, "dwelling_giant": 2.3,
+        "dwelling_red_dragon": 1.5, "hill_fort": 2.2}
 # a new object painted over another one's old sprite (its view, size and light): the Pyramid over the domed shrine
-REFS = {"pyramid": "shrine", "dwelling_mummy": "dwelling_neutral"}
+REFS = {"pyramid": "shrine", "dwelling_mummy": "dwelling_neutral", "dwelling_giant": "dwelling_neutral",
+        "dwelling_red_dragon": "dwelling_neutral", "hill_fort": "dwelling_neutral"}
 PROMPT = ("The image shows an object of the adventure map of a hand-painted fantasy strategy game, seen from a 3/4 "
           "top-down view, on a flat magenta backdrop. Repaint it as {what}. Keep the same viewpoint, the same size and "
           "place in the image, standing on the same spot, the same hand-painted style and palette, lighting from the "
@@ -57,9 +69,11 @@ def _scale(c):
     return min(W * 0.6 / c.width, H * 0.6 / c.height)
 
 
-def prep():
+def prep(names=None):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
     for name in OBJECTS:
+        if names and name not in names:
+            continue
         if not os.path.exists(_ref(name)):
             Image.open(f"{D}/{REFS.get(name, name)}.png").save(_ref(name))
         c = _fig(name)
@@ -87,8 +101,10 @@ def paint(names):
             print("FAILED", name, flush=True)
 
 
-def ingest():
+def ingest(names=None):
     for name in OBJECTS:
+        if names and name not in names:
+            continue
         p = f"{BATCH}/out/{name}.png"
         if not os.path.exists(p):
             continue
@@ -123,4 +139,4 @@ def ingest():
 
 
 if __name__ == "__main__":
-    {"prep": lambda: prep(), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest()}[sys.argv[1]]()
+    {"prep": lambda: prep(sys.argv[2:]), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest(sys.argv[2:])}[sys.argv[1]]()

@@ -59,6 +59,21 @@ func _ready() -> void:
 			towns[0]["buildings"].append_array(["citadel", "castle"])
 			towns[1]["buildings"].erase("fort")
 			for t in towns.slice(0, 3): print("TOWN %s at %s level %d" % [t["name"], t["pos"], TownLogic.siege_level(t)])
+		if Shot.setup == "titans":  # (shot: where the Hill Fort, Cloud Temple, Dragon Cave and wild stacks are)
+			var w := GameState.world
+			for o in w["objects"].values():
+				if o["type"] == "hill_fort" or o.get("creature", "") in ["giant", "red_dragon", "titan", "black_dragon"]:
+					print("SITE %s %s at %s" % [o["type"], o.get("creature", ""), o["pos"]])
+			if Shot.args.has("hill_fort"):  # (the first hero at the fort, with troops to upgrade and the means)
+				var p0: Dictionary = w["players"][0]
+				var h: Dictionary = w["heroes"][p0["heroes"][0]]
+				for o in w["objects"].values():
+					if o["type"] == "hill_fort":
+						h["pos"] = o["pos"]
+				h["army"] = [{"id": "giant", "count": 3}, {"id": "red_dragon", "count": 2}, {"id": "pikeman", "count": 25},
+					{"id": "archer", "count": 12}, null, null, null]
+				p0["resources"]["gold"] = 30000
+				p0["resources"]["gems"] = 10
 		if Shot.setup == "all_spells":
 			for h in GameState.world["heroes"].values():  # a seasoned hero: spells, skills and some gear
 				h["spells"] = GameData.SPELLS.keys()
@@ -123,6 +138,11 @@ func _post_ready() -> void:
 		Net.world_ready()
 	if Shot.active:
 		_shot_view()
+		if Shot.setup == "titans" and Shot.args.has("hill_fort"):
+			var hf := selected_hero()
+			for o in world["objects"].values():
+				if o["type"] == "hill_fort" and o["pos"] == hf.get("pos", Vector2i(-1, -1)):
+					HillFort.open(self, hf, rules.player_of(hf), func(): hud.refresh(), rules, o["uid"])
 	if not GameState.battle_result.is_empty():
 		var result := GameState.battle_result
 		GameState.battle_result = {}
@@ -668,6 +688,15 @@ func _tile_info_base(t: Vector2i, detailed := false):
 			HoverInfo.line(v, "Unclaimed: visit to claim it." if o["owner"] < 0 else "Owned by %s." % world["players"][o["owner"]]["name"],
 				Color(0.8, 0.75, 0.65))
 			return v
+		"hill_fort":
+			var v := HoverInfo.box("Hill Fort")
+			HoverInfo.line(v, "Upgrades the visiting hero's troops, at the usual upgrade price.")
+			var ups := HillFort.upgradable(hero) if not hero.is_empty() else []
+			for e in ups:
+				HoverInfo.line(v, "%s to %s" % [GameData.CREATURES[e[1]]["plural"], GameData.CREATURES[e[2]]["plural"]], UI.GOLD, 18)
+			if not hero.is_empty() and ups.is_empty():
+				HoverInfo.line(v, "Nothing in %s's army to upgrade." % hero["name"], Color(0.8, 0.75, 0.65), 18)
+			return v
 		"war_machine_factory":
 			var v := HoverInfo.box("War Machine Factory")
 			HoverInfo.line(v, "Buy war machines for the visiting hero.")
@@ -1132,6 +1161,11 @@ func _show_event(hero: Dictionary, ev: Dictionary, human: bool) -> void:
 			await WarMachineShop.open(self, hero, rules.player_of(hero), func(): hud.refresh(), rules, ev["factory"])
 		else:
 			ai.buy_from_factory(hero)
+	elif ev.has("hill_fort"):
+		if human:
+			await HillFort.open(self, hero, rules.player_of(hero), func(): hud.refresh(), rules, ev["hill_fort"])
+		else:
+			ai.upgrade_at_hill_fort(hero, ev["hill_fort"])
 	elif ev.has("dwelling"):
 		if human:
 			await hud.open_dwelling(hero, world["objects"][ev["dwelling"]])

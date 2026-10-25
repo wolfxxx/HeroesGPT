@@ -489,6 +489,9 @@ func visit(hero: Dictionary, o: Dictionary) -> Dictionary:
 		"war_machine_factory":
 			ev["title"] = "War Machine Factory"
 			ev["factory"] = o["uid"]
+		"hill_fort":
+			ev["title"] = "Hill Fort"
+			ev["hill_fort"] = o["uid"]
 		"dwelling":
 			ev["title"] = GameData.CREATURES[o["creature"]]["plural"]
 			ev["dwelling"] = o["uid"]

@@ -52,6 +52,7 @@ echo "--battle-morale"; timeout 200 $G --headless --path . res://tools/battle_mo
 echo "--battle-visual"; timeout 60 $G --headless --path . res://tools/battle_visual_test.tscn 2>&1 | grep -E "BATTLE VISUAL TEST|SCRIPT ERROR|FAIL" | tail -6
 echo "--battle-ai"; timeout 60 $G --headless --path . res://tools/battle_ai_test.tscn 2>&1 | grep -E "BATTLE AI TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--spell-batch"; timeout 120 $G --headless --path . res://tools/spell_batch_test.tscn 2>&1 | grep -E "SPELL BATCH TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--titan-dragon"; timeout 200 $G --headless --path . res://tools/titan_dragon_test.tscn 2>&1 | grep -E "TITAN DRAGON TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--adventure-ai"; timeout 60 $G --headless --path . res://tools/adventure_ai_test.tscn 2>&1 | grep -E "ADVENTURE AI TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--campaign-week"; timeout 60 $G --headless --path . res://tools/campaign_week_test.tscn 2>&1 | grep -E "CAMPAIGN WEEK TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--campaign-flow"; timeout 180 $G --headless --path . res://tools/campaign_flow_test.tscn 2>&1 | grep -E "CAMPAIGN FLOW TEST|SCRIPT ERROR|FAIL" | tail -8

@@ -105,7 +105,7 @@ static func creature(cid: String, count := -1, title := "") -> VBoxContainer:
 		g.add_child(UI.label(str(row[1]), 18))
 	h.add_child(g)
 	v.add_child(h)
-	var ab: Array = c["abilities"].map(func(a): return GameData.ABILITY_TEXT.get(a, a))
+	var ab: Array = GameData.ability_words(cid)
 	if ab.size() > 0:
 		line(v, ", ".join(ab), Color(0.75, 0.85, 1.0), 18)
 	var cr := HBoxContainer.new()

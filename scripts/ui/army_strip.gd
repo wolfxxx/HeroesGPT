@@ -188,7 +188,7 @@ static func show_creature_info(owner_node: Node, cid: String, count: int, button
 		g.add_child(UI.label(str(row[1]), 21))
 	h.add_child(g)
 	m.body.add_child(h)
-	var ab: Array = c["abilities"].map(func(a): return GameData.ABILITY_TEXT.get(a, a))
+	var ab: Array = GameData.ability_words(cid)
 	if ab.size() > 0:
 		m.add_text(", ".join(ab), 20)
 	m.set_meta("buttons", m.add_buttons(buttons))

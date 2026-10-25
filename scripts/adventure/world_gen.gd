@@ -28,7 +28,7 @@ static func town_footprint() -> Array:
 
 static func footprint_for(type: String) -> Array:
 	match type:
-		"mine", "dwelling", "shrine", "windmill", "watchtower", "learning_stone", "war_machine_factory", "pyramid":
+		"mine", "dwelling", "shrine", "windmill", "watchtower", "learning_stone", "war_machine_factory", "pyramid", "hill_fort":
 			return FOOT_BUILDING
 	return []
 
@@ -303,11 +303,41 @@ func _generate(settings: Dictionary) -> Dictionary:
 		_place_obj({"type": "dwelling", "creature": GameData.faction_creature(f, rng.randi_range(2, 5)), "available": 0}, Vector2i(w / 2, h / 2), 0, n, reach, true, 9)
 	for k in int(round(22 * area_scale)):
 		_place_obj({"type": "monster"}, Vector2i(w / 2, h / 2), 0, n, reach, false, 7)
+	# HoMM3's Hill Fort (upgrades any creature that has an upgrade) on every map; on medium and larger ones a wild
+	# stack each of Titans and Black Dragons far from the towns (and, below, the Giants' and Red Dragons' dwellings).
+	# Last of all and with a generator of their own (the main one restored after), so every other object of a seeded
+	# map stays where it was.
+	var main_rng := rng.state
+	rng.seed = hash([seed_v, "titans and dragons"])
+	if _place_obj({"type": "hill_fort"}, Vector2i(w / 2, h / 2), 0, n, reach, false, 8).is_empty():
+		_place_obj({"type": "hill_fort"}, Vector2i(w / 2, h / 2), 0, n, reach, false, 4)  # (a crowded small map)
+	if area_scale >= 1.0:
+		for cid in ["titan", "black_dragon"]:  # (nearer the towns when no spot that far is free)
+			for dist in [12, 8]:
+				if not _place_obj({"type": "monster", "creature": cid, "strength_bonus": 1.5}, Vector2i(w / 2, h / 2), 0, n, reach, false, dist).is_empty():
+					break
+	rng.state = main_rng
 
 	_town_list = town_list
 	var lost := _ensure_access(town_list[0]["pos"] + Vector2i(0, 1))
 	if lost > 0:
 		print("WorldGen: %d unreachable object(s) removed (seed %d)" % [lost, seed_v])
+	# the Giants' Cloud Temple and the Red Dragons' Dragon Cave (medium and larger maps): two of the guarded neutral
+	# dwellings of town creatures become them, where they stand (a big guarded building finds no free spot this late)
+	if area_scale >= 1.0:
+		var main_rng2 := rng.state
+		rng.seed = hash([seed_v, "giant and dragon dwellings"])
+		var all: Array = world["objects"].values().filter(func(o): return _town_creature_dwelling(o, 0.0))
+		var picks: Array = all.filter(func(o): return _town_creature_dwelling(o, 9.0))
+		all.sort_custom(func(a, b): return a["uid"] < b["uid"])
+		picks.sort_custom(func(a, b): return a["uid"] < b["uid"])
+		for cid in ["giant", "red_dragon"]:
+			if picks.is_empty():  # (not two far enough from the towns: a nearer one)
+				picks = all.filter(func(o): return GameData.FACTIONS.has(GameData.CREATURES[o["creature"]]["faction"]))
+			if picks.is_empty():
+				break
+			picks.pop_at(rng.randi() % picks.size())["creature"] = cid
+		rng.state = main_rng2
 	for o in world["objects"].values():
 		if o["type"] == "dwelling":
 			o["available"] = GameData.CREATURES[o["creature"]]["growth"]
@@ -863,8 +893,19 @@ func _guard(o: Dictionary, strength := 1.6) -> void:
 			covered[q] = m["uid"]
 			return
 
+## A guarded neutral dwelling of a town creature, at least `far` tiles from every town (it may become a Cloud Temple
+## or a Dragon Cave).
+func _town_creature_dwelling(o: Dictionary, far: float) -> bool:
+	if o["type"] != "dwelling" or not GameData.FACTIONS.has(GameData.CREATURES[o["creature"]]["faction"]):
+		return false
+	for t in _town_positions():
+		if Vector2(t).distance_to(Vector2(o["pos"])) < far:
+			return false
+	return true
+
 func _fill_monster(o: Dictionary) -> void:
 	var p: Vector2i = o["pos"]
+	var fixed: String = o.get("creature", "")  # (a creature chosen beforehand: the wild Titans and Black Dragons)
 	var d := 1e9
 	for s in _town_positions():
 		d = minf(d, Vector2(s).distance_to(Vector2(p)))
@@ -879,7 +920,7 @@ func _fill_monster(o: Dictionary) -> void:
 		# (faction creatures only: the neutral ushabti guard pyramids, and seeded maps keep their monsters)
 		if t >= tier_lo and t <= tier_hi and GameData.FACTIONS.has(GameData.CREATURES[cid]["faction"]):
 			cands.append(cid)
-	var cid: String = cands[rng.randi() % cands.size()]
+	var cid: String = fixed if fixed != "" else cands[rng.randi() % cands.size()]
 	o["creature"] = cid
 	o["count"] = maxi(1, int(power / float(GameData.CREATURES[cid]["ai_value"]) * rng.randf_range(0.8, 1.2)))
 	o["flip"] = rng.randf() < 0.5

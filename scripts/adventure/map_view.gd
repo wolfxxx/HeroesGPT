@@ -429,6 +429,8 @@ func _object_node(o: Dictionary) -> Node2D:
 			n.add_child(_sprite("map/obelisk.png", Vector2.ZERO, 1.8 * TILE))
 		"pyramid":
 			n.add_child(_sprite("map/pyramid.png", Vector2.ZERO, 3.0 * TILE))
+		"hill_fort":
+			n.add_child(_sprite("map/hill_fort.png", Vector2.ZERO, 2.8 * TILE))
 		"dwelling":
 			# (a neutral creature's own dwelling, the Mummies' Tomb of Curses; else the shared one)
 			var dp := "map/dwelling_%s.png" % o["creature"]

@@ -394,6 +394,29 @@ func factory_purchases(hero: Dictionary, player: Dictionary) -> Array:
 			budget -= cost
 	return purchases
 
+## The stacks the computer upgrades at a Hill Fort, best gain first, while it keeps 1000 gold in hand.
+func hill_fort_upgrades(hero: Dictionary, player: Dictionary) -> Array:
+	var res: Dictionary = player["resources"].duplicate()
+	res["gold"] = int(res.get("gold", 0)) - 1000
+	var cands := []
+	for e in HillFort.upgradable(hero):
+		var st: Dictionary = hero["army"][e[0]]
+		cands.append([e[0], (GameData.CREATURES[e[2]]["ai_value"] - GameData.CREATURES[e[1]]["ai_value"]) * st["count"],
+			TownLogic.upgrade_cost(e[1], e[2], st["count"])])
+	cands.sort_custom(func(a, b): return a[1] > b[1])
+	var out := []
+	for c in cands:
+		if TownLogic.can_afford({"resources": res}, c[2]):
+			for r in c[2]:
+				res[r] = res.get(r, 0) - c[2][r]
+			out.append(c[0])
+	return out
+
+func upgrade_at_hill_fort(hero: Dictionary, fort: int) -> void:
+	var player := rules.player_of(hero)
+	for si in hill_fort_upgrades(hero, player):
+		rules.do({"t": "hill_fort", "p": player["index"], "hero": hero["uid"], "object": fort, "si": si})
+
 func buy_from_factory(hero: Dictionary) -> void:
 	var player := rules.player_of(hero)
 	var factory := -1  # (the factory the hero stands at: purchases are commands made there)
@@ -743,6 +766,12 @@ func _object_value(hero: Dictionary, player: Dictionary, o: Dictionary, me: floa
 			return 3500.0 if gs <= 0.0 or me > gs * 1.6 else 0.0
 		"war_machine_factory":
 			return 1400.0 if not factory_purchases(hero, player).is_empty() else 0.0
+		"hill_fort":
+			var gain := 0.0
+			for si in hill_fort_upgrades(hero, player):
+				var st: Dictionary = hero["army"][si]
+				gain += (GameData.CREATURES[GameData.upgrade_of_base(st["id"])]["ai_value"] - GameData.CREATURES[st["id"]]["ai_value"]) * st["count"]
+			return 0.0 if gain <= 0.0 else 800.0 + gain * 0.3
 		"monster":
 			var ms := float(GameData.CREATURES[o["creature"]]["ai_value"] * o["count"])
 			if me > ms * 1.6:

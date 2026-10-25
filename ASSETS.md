@@ -14,6 +14,10 @@ Side-view full-body battle sprite, **facing RIGHT**, transparent background, fee
 ~512px tall canvas (square 512x512, 2-hex creatures 768x512). Ids: see `GameData.CREATURES`:
 pikeman archer griffin swordsman monk cavalier angel skeleton zombie ghost vampire lich dread_knight bone_dragon
 Also `creatures/portraits/<id>.png` — 128x128 bust/head close-up with painted background (used in recruit/army slots).
+The Giant and Red Dragon (session67) were painted the same way over the Zealot and the Bone Dragon, then the Titan over
+the Giant and the Black Dragon over the Red Dragon (`new_creature_paint.py prep|paint|ingest <ids>`), with poses
+(`vertex_paint.POSE_NOTES` / `CREATURE_NOTES`; the dragons' first deaths had open eyes and were repainted limp) and
+walk / wing cycles (`cycle_paint.KIND`).
 The neutral ushabti (`gold_golem`, `diamond_golem`, the Pyramid's guards) and the Mummy (`mummy`, over the Zombie)
 were painted over the Swordsman's figure
 and portrait by `tools/art/new_creature_paint.py` (`prep`, `paint`, `ingest`; imagegen/batch36; it shares
@@ -93,6 +97,9 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   painted the same way over the old domed shrine (`REFS`), 2.2 times its size; the canvas grows to fit and its foot
   point is written to `map/anchors.json`. `map/dwelling_mummy.png` (the Tomb of Curses) likewise over the neutral
   dwelling; `MapView` draws a dwelling as `map/dwelling_<creature>.png` when there is one, else `dwelling_neutral`.
+  `map/dwelling_giant.png` (the Cloud Temple), `map/dwelling_red_dragon.png` (the Dragon Cave) and `map/hill_fort.png`
+  (session67) likewise over the neutral dwelling (`map_object_paint.py prep|paint|ingest <names>`; GROW 2.3, 1.5, 2.2:
+  an anchored site is drawn at a fixed scale, so its painted size is its size on the map).
 - `map/war_machine_factory.png` — neutral workshop with ballista, medical supplies and ammo wagon. Built-in
   OpenAI imagegen, native 1536x1024 RGBA copied unmodified; exact prompt in `tools/art/war_machine_factory_prompt.md`.
   No Blender anchor: `MapView._object_node` scales it to 3.2 tiles wide and offsets the transparent bottom margin

@@ -61,6 +61,7 @@ const ENTRIES := {
 	"site:campfire": "The fire is still warm. The footprints lead in, and not out.",
 	"site:chest": "The lock was opened from the inside.",
 	"site:war_machine_factory": "The engineers here build to drawings older than the craft of building.",
+	"site:hill_fort": "The garrison drills men into something more. The muster rolls never list the same names twice.",
 	"site:gold_mine": "The Anunnaki came for gold. Some of these shafts were here before any king.",
 	"site:sawmill": "The timber is marked with a sign the woodsmen cannot read and will not explain.",
 	"site:ore_mine": "The miners stopped digging the lowest gallery. Something down there was digging back.",

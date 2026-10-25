@@ -123,6 +123,10 @@
 0.4412,
 0.694
 ],
+"dwelling_giant.png": [
+0.3787,
+0.9521
+],
 "dwelling_mummy.png": [
 0.4988,
 0.9167
@@ -130,6 +134,10 @@
 "dwelling_neutral.png": [
 0.5,
 1.1625
+],
+"dwelling_red_dragon.png": [
+0.4548,
+0.9291
 ],
 "flowers_1.png": [
 0.5,
@@ -146,6 +154,10 @@
 "gold_mine.png": [
 0.5,
 0.8195
+],
+"hill_fort.png": [
+0.4153,
+0.9501
 ],
 "mountain_1.png": [
 0.5,

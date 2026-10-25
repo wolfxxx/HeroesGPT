@@ -74,6 +74,12 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 				# systematically discarded one living creature and encouraged costly attacks.
 				tmp["count"] = maxi(1, ceili((L.total_hp(e) - dmg) / float(L.max_hp(e))))
 				score -= RETALIATION * _value_of_damage(L, s, _avg(L.damage_range(tmp, s, false)))
+			# a dragon's breath also burns the stack behind: good on an enemy, bad on our own
+			if L.has_ab(s, "breath"):
+				var bv = L.breath_victim(s, e, h)
+				if bv != null:
+					var burn := _value_of_damage(L, bv, _avg(L.damage_range(s, bv, false, moved)))
+					score += burn if bv["side"] != s["side"] else -1.2 * burn
 			# prefer staying put when already adjacent
 			if h == s["hex"]:
 				score += 5.0
@@ -280,7 +286,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 			"all_living":
 				var v := 0.0
 				for s in L.alive_stacks():
-					if not L.has_ab(s, "undead") and not L.immune(s["side"], sp):
+					if not L.has_ab(s, "undead") and not L.stack_immune(s, sp):
 						var val := _value_of_damage(L, s, L.spell_damage_to(side, sp, s))
 						v += val if s["side"] != side else -1.0 * val
 				if v > bv:

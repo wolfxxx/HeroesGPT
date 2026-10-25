@@ -179,6 +179,46 @@
 88,
 227
 ],
+"black_dragon.png": [
+512,
+577,
+513
+],
+"black_dragon_attack.png": [
+766,
+511,
+772
+],
+"black_dragon_dead.png": [
+833,
+332,
+835
+],
+"black_dragon_hit.png": [
+559,
+530,
+559
+],
+"black_dragon_move0.png": [
+623,
+648,
+629
+],
+"black_dragon_move1.png": [
+956,
+410,
+960
+],
+"black_dragon_move2.png": [
+495,
+526,
+497
+],
+"black_dragon_move3.png": [
+612,
+641,
+617
+],
 "bone_dragon.png": [
 372,
 541,
@@ -559,6 +599,46 @@
 281,
 136
 ],
+"giant.png": [
+157,
+304,
+157
+],
+"giant_attack.png": [
+234,
+233,
+236
+],
+"giant_dead.png": [
+297,
+118,
+298
+],
+"giant_hit.png": [
+152,
+292,
+141
+],
+"giant_move0.png": [
+174,
+296,
+163
+],
+"giant_move1.png": [
+130,
+306,
+131
+],
+"giant_move2.png": [
+158,
+300,
+160
+],
+"giant_move3.png": [
+121,
+308,
+122
+],
 "gold_golem.png": [
 116,
 346,
@@ -919,6 +999,46 @@
 263,
 146
 ],
+"red_dragon.png": [
+473,
+535,
+474
+],
+"red_dragon_attack.png": [
+624,
+462,
+624
+],
+"red_dragon_dead.png": [
+672,
+401,
+673
+],
+"red_dragon_hit.png": [
+555,
+487,
+557
+],
+"red_dragon_move0.png": [
+520,
+584,
+523
+],
+"red_dragon_move1.png": [
+858,
+417,
+860
+],
+"red_dragon_move2.png": [
+445,
+526,
+446
+],
+"red_dragon_move3.png": [
+472,
+538,
+473
+],
 "royal_griffin.png": [
 494,
 258,
@@ -1078,6 +1198,46 @@
 135,
 326,
 137
+],
+"titan.png": [
+161,
+297,
+161
+],
+"titan_attack.png": [
+270,
+258,
+270
+],
+"titan_dead.png": [
+275,
+139,
+276
+],
+"titan_hit.png": [
+203,
+264,
+204
+],
+"titan_move0.png": [
+195,
+281,
+185
+],
+"titan_move1.png": [
+159,
+306,
+160
+],
+"titan_move2.png": [
+188,
+292,
+189
+],
+"titan_move3.png": [
+160,
+299,
+162
 ],
 "vampire.png": [
 288,

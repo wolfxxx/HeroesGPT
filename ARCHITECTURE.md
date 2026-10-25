@@ -581,6 +581,12 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/titan_dragon_test.tscn` — in the full suite: the Giant, Titan, Red and Black Dragon's HoMM3 numbers and
+  upgrades, the hover words, Titans' full melee and the mutual hatred, mind immunity, the dragons' spell immunity
+  (Armageddon, Fireball, their own side's Bless), breath on the stack behind (enemy, own, diagonal, nothing behind),
+  their figures, poses and cycles; on generated maps one Hill Fort, Cloud Temple, Dragon Cave, Titan and Black
+  Dragon stack on a medium map and only the Hill Fort on a small one; the Hill Fort command (where, what, the price,
+  a faction creature too, not without the resource) and the computer's use of it.
 - `tools/spell_batch_test.tscn` — in the full suite: the session67 spells on fixed layouts: their HoMM3 levels, schools
   and costs and pictures; Chain Lightning's order (the nearest each jump, ours too) and halving; Armageddon on every
   creature and no machine; Implosion's damage; Blind (mind: not the undead or ushabti; the lost turn; struck, it
@@ -650,7 +656,8 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 Godot_v4.7.2-stable_win64_console.exe --path . -- --shot=shots/x.png --scene=res://scenes/battle.tscn --delay=3
 ```
 Options: `--shots=N --interval=S`, `--click=x,y;x,y` (`r` prefix = right click), `--keys=Space;Enter`, `--hover=x,y`,
-`--setup=<name>` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (with `--siege=1|2|3`),
+`--setup=<name>` (`demo`, `rich`, `new_game`, `all_spells`, `titans` (map: prints where the Hill Fort and the
+Titans' and dragons' sites are; `--hill_fort` opens the fort for the first hero), `upgraded`, `siege`, `siege_haven` (with `--siege=1|2|3`),
 `town_levels` (adventure: the first town a Castle, the second a village), `necro_rich`,
 `necro_max`, `x`); adventure also `--seed --faction --reveal --cam=x,y --zoom`, battle `--broken=a,b` (breached walls),
 `--battered=a,b` (walls hit once), `--heroes=attacker,defender` (battle heroes by id), `--players=a,b` (the demo

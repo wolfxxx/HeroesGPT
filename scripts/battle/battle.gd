@@ -155,6 +155,15 @@ func _demo_setup() -> Dictionary:
 		h["power"] = 3
 		h["knowledge"] = 4
 		h["mana"] = 40
+	# --armies=titan:4,giant:6;black_dragon:2,red_dragon:3 (attacker;defender): any creatures, for screenshots
+	var sides := str(Shot.args.get("armies", "")).split(";", false)
+	for k in mini(2, sides.size()):
+		var army: Array = [null, null, null, null, null, null, null]
+		var parts := sides[k].split(",", false)
+		for i in mini(7, parts.size()):
+			var kv := parts[i].split(":")
+			army[i] = {"id": kv[0], "count": int(kv[1]) if kv.size() > 1 else 1}
+		[a, d][k]["army"] = army
 	var out := {"attacker_army": a["army"], "defender_army": d["army"], "attacker_hero": a, "defender_hero": d,
 		"terrain": str(Shot.args.get("terrain", "grass")), "attacker_player": int(str(Shot.args.get("players", "0,1")).split(",")[0]),
 		"defender_player": int(str(Shot.args.get("players", "0,1")).split(",")[-1]), "attacker_ai": false, "defender_ai": true,
@@ -365,7 +374,7 @@ func _make_unit(st: Dictionary) -> void:
 		var fig := fig_size(st["id"])
 		var sc := 0.5
 		if fig.y > 0:
-			sc = FIG_H[c["tier"]] / fig.y
+			sc = FIG_H[c["tier"]] * float(c.get("fig_scale", 1.0)) / fig.y  # (a giant towers over the rest)
 			# (but never below 85% of its tier's height: an archangel stays a big figure)
 			sc = maxf(minf(sc, HEX_W * VIS_MAX_W[1 if wide else 0] / fig_vis_w(st["id"])), sc * 0.85)
 		s.scale = Vector2.ONE * sc
@@ -1095,7 +1104,7 @@ func _stack_info(st: Dictionary) -> Control:
 	if why.size() > 0:
 		HoverInfo.line(v, "\n".join(why), Color(0.85, 0.82, 0.72), 17)
 	# (shooting is told above, with its rule)
-	var ab: Array = c["abilities"].filter(func(a): return a != "ranged").map(func(a): return GameData.ABILITY_TEXT.get(a, a))
+	var ab: Array = GameData.ability_words(st["id"]).filter(func(a): return a != GameData.ABILITY_TEXT["ranged"])
 	if ab.size() > 0:
 		HoverInfo.line(v, ", ".join(ab), Color(0.75, 0.85, 1.0), 17)
 	if st["retaliations"] <= 0:
@@ -1373,6 +1382,17 @@ func _play(events: Array) -> void:
 				await _anim_attack(ev)
 			"spell":
 				await _anim_spell(ev)
+			"breath":  # (a dragon's breath past its target: fire on the stack behind)
+				var o: Dictionary = ev["d"]
+				Audio.sfx("fireball", -6)
+				_play_fx("fire", _unit(o).position + Vector2(0, -60), Vector2.ONE * 0.8, 0.6, 0.9)
+				_flush_log(ev)
+				_hit_flash(o)
+				_damage_text(o, "-%d" % ev["dmg"], ev["killed"], false, 0.0)
+				_refresh_badge(o)
+				if not o["alive"]:
+					_anim_death(o)
+				await get_tree().create_timer(0.4).timeout
 			"catapult":
 				await _anim_catapult(ev)
 			"death":
@@ -1474,17 +1494,17 @@ func _anim_attack(ev: Dictionary) -> void:
 	if ev["ranged"]:
 		_pose(a, "attack", 0.55)
 		var proj := _Projectile.new()
-		proj.kind = "magic" if GameData.base_of(a["id"]) in ["monk", "lich"] else "arrow"
+		proj.kind = "magic" if GameData.base_of(a["id"]) in ["monk", "lich"] else ("lightning" if a["id"] == "titan" else "arrow")
 		proj.from = na.position + Vector2(0, -_top(a) * 0.6)
 		proj.to = nd.position + Vector2(0, -60)
 		_fx.add_child(proj)
 		# (the ballista's heavy bolt its own deep thunk, not the archers' bow string)
-		Audio.sfx("magic_arrow" if proj.kind == "magic" else ("ballista_shot" if a["id"] == "ballista" else "arrow_shot"), -2)
+		Audio.sfx({"magic": "magic_arrow", "lightning": "lightning"}.get(proj.kind, "ballista_shot" if a["id"] == "ballista" else "arrow_shot"), -2)
 		var tw := spr.create_tween()  # recoil
 		tw.tween_property(spr, "position", home - dir * 10, 0.08).set_ease(Tween.EASE_OUT)
 		tw.tween_property(spr, "position", home, 0.25).set_trans(Tween.TRANS_SINE)
 		await proj.fly(0.28)
-		Audio.sfx("magic_hit" if proj.kind == "magic" else "arrow_hit", -2)
+		Audio.sfx("magic_hit" if proj.kind in ["magic", "lightning"] else "arrow_hit", -2)
 	else:
 		# wind-up: draw back and lean away
 		var lean := signf(dir.x) if dir.x != 0.0 else 1.0
@@ -2638,6 +2658,19 @@ class _Projectile extends Node2D:
 	func _process(_d: float) -> void:
 		queue_redraw()
 	func _draw() -> void:
+		if kind == "lightning":  # (the Titan's bolt: a jagged line from its hand, reaching the target)
+			var end := from.lerp(to, minf(1.0, t * 1.6))
+			var side := (to - from).orthogonal().normalized()
+			var pts := PackedVector2Array()
+			for i in 11:
+				var f := i / 10.0
+				var jag := 0.0 if i == 0 or i == 10 else sin(i * 7.3 + t * 40.0) * 14.0
+				pts.append(from.lerp(end, f) + side * jag)
+			var al := 1.0 if t < 0.7 else (1.0 - t) / 0.3
+			draw_polyline(pts, Color(0.45, 0.65, 1.0, 0.3 * al), 16.0)
+			draw_polyline(pts, Color(0.75, 0.88, 1.0, 0.8 * al), 6.0)
+			draw_polyline(pts, Color(1, 1, 1, al), 2.5)
+			return
 		var p := from.lerp(to, t) + Vector2(0, -sin(t * PI) * 60.0 * (1.0 if kind == "arrow" else 0.3))
 		if kind == "arrow":
 			var dir := (to - from).normalized().rotated(-cos(t * PI) * 0.35 * signf(to.x - from.x))
