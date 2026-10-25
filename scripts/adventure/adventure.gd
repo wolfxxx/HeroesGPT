@@ -29,6 +29,7 @@ var _pending_click := Vector2i(-1, -1)  # clicked while the hero was still movin
 var _net_dirty := false  # online: another machine's command changed the world; redrawn once in the next frame
 const DRAG_START := 10.0
 var _mouse_in := true  # the cursor is over the window (in a browser: the page)
+var _left_at := Vector2.INF  # in a browser, the cursor gone off the page: just past the edge it left by
 const EDGE := 14.0           # edge-scroll band (screen pixels), also just outside the window
 var _cam_target := Vector2.ZERO
 var _follow := -1            # the walking hero the camera rides along with (its sprite, not its tile)
@@ -282,15 +283,19 @@ func _process(delta: float) -> void:
 
 ## Edge scrolling, measured on the screen: the cursor at a window edge, or anywhere past it, scrolls that way
 ## (while the window has the focus).
-## In a browser only the cursor over the page is known: there it scrolls at the page's edges, and not once it has left.
+## In a browser only the cursor over the page is known: there it scrolls at the page's edges, and once it has left, on
+## the way it left (until it comes back), as past the window's edge on the desktop.
 func _edge_scroll() -> Vector2:
 	var m := Vector2(DisplayServer.mouse_get_position() - DisplayServer.window_get_position())
 	var ws := Vector2(DisplayServer.window_get_size())
 	var edge := EDGE
 	if OS.has_feature("web"):
-		if not _mouse_in or _mouse.x < 0:
+		if _mouse_in and _mouse.x >= 0:
+			m = _mouse
+		elif not _mouse_in and _left_at.is_finite():
+			m = _left_at
+		else:
 			return Vector2.ZERO
-		m = _mouse
 		edge = EDGE * get_viewport().get_visible_rect().size.x / maxf(1.0, ws.x)
 		ws = get_viewport().get_visible_rect().size
 	var v := Vector2.ZERO
@@ -352,10 +357,28 @@ func _input(e: InputEvent) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_MOUSE_EXIT:
+		_left_at = _past_edge(_mouse)
 		_mouse = Vector2(-1, -1)
 		_mouse_in = false
 	elif what == NOTIFICATION_WM_MOUSE_ENTER:
 		_mouse_in = true
+		_left_at = Vector2.INF
+
+## Where the cursor went on leaving the page from `m` (its last place on it): just past the nearest edge, or past
+## both at a corner.
+func _past_edge(m: Vector2) -> Vector2:
+	var size := get_viewport().get_visible_rect().size
+	if m.x < 0 or m.y < 0:
+		return Vector2.INF
+	var near := 0.06 * size.y  # (how close to a second edge counts as a corner)
+	var gaps := [m.x, size.x - m.x, m.y, size.y - m.y]
+	var least: float = gaps.min()
+	var out := m
+	if m.x == least or m.x < near: out.x = -1.0
+	elif size.x - m.x == least or size.x - m.x < near: out.x = size.x + 1.0
+	if m.y == least or m.y < near: out.y = -1.0
+	elif size.y - m.y == least or size.y - m.y < near: out.y = size.y + 1.0
+	return out
 
 func _unhandled_input(e: InputEvent) -> void:
 	if _modal_open():

@@ -325,8 +325,9 @@ joined machines talk to the host only and the host passes messages between them 
 60 KB pieces. Everything above it (rpcs, `Net`) is the same for both ways of connecting.
 Browser version (session67): `export_presets.cfg` "Web" (single-threaded, so it needs no special page headers;
 `tools/`, `docs/`, `relay/` left out), built and published by `.github/workflows/pages.yml` on every push to main to
-https://wolfxxx.github.io/HeroesGPT/. In a browser: no Quit buttons, no hosting by address, edge scrolling only while
-the cursor is over the page (`adventure._edge_scroll`, `_mouse_in`); saves live in the browser's storage.
+https://wolfxxx.github.io/HeroesGPT/. In a browser: no Quit buttons, no hosting by address, edge scrolling from where
+the cursor is over the page, and once it has left, on toward the edge it left by until it comes back
+(`adventure._edge_scroll`, `_mouse_in`, `_left_at`, `_past_edge`), as past the window's edge on the desktop; saves live in the browser's storage.
 Not yet: joining a saved online game, a lobby, fog filtered per player (each
 machine holds the whole world), turn timers, reconnecting a dropped player to their seat by name.
 Checked by `tools/net_test.tscn` (two processes: a joined player walks, computer players move on the host, a spoiled
