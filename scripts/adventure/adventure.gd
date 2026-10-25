@@ -1221,7 +1221,7 @@ func open_town(uid: int, report := {}) -> void:
 ## town screen to announce ({hero, learned, mana}).
 func _enter_own_town(hero: Dictionary, town: Dictionary) -> Dictionary:
 	var r := rules.do({"t": "town_visit", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})
-	return {"hero": hero["uid"], "learned": r.get("learned", []), "mana": r.get("mana", 0)}
+	return {"hero": hero["uid"], "learned": r.get("learned", []), "mana": r.get("mana", 0), "knowledge": r.get("knowledge", 0)}
 
 # ---------------------------------------------------------------------------------------------
 # Turns

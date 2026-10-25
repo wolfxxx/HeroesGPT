@@ -25,6 +25,9 @@ CLASSES = {
     "death_knight": ("necropolis", "a Death Knight: a hulking warrior in heavy black spiked plate armour with a horned "
                      "helm and glowing green eye slits, a tattered dark cape, holding a huge two-handed jagged black "
                      "sword upright in the right hand (NO staff, NO robes, NO hood)"),
+    # session67: the Illuminated: their faction figure (an Alchemist, battle_tower.png) and the Wizard
+    "tower": ("haven", "an Alchemist of a secret order: a scholar-warrior in a long midnight-blue coat with gold trim over a light breastplate, a wide-brimmed dark hat, a leather bandolier of glowing glass flasks across the chest, holding the reins in the left hand and a short brass-tipped rod in the right hand resting on the thigh, sitting naturally in the saddle (NO lance, NO spear, NO helmet)"),
+    "wizard": ("haven", "a Wizard: a bearded sage in flowing white-and-gold robes under a deep blue hooded mantle, holding upright a tall staff topped with a glowing pale-blue crystal in the right hand, the reins in the left (NO lance, NO armour, NO helmet)"),
 }
 PROMPT = ("The image shows a mounted hero beside a battlefield in a hand-painted fantasy strategy game, seen from the "
           "side, on a flat magenta backdrop. Repaint ONLY the rider as {who}. Keep the horse EXACTLY as it is (same "
@@ -52,9 +55,11 @@ def _frame(size):
     return s, int((W - size[0] * s) / 2), int((H - size[1] * s) / 2)
 
 
-def prep():
+def prep(names=None):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
     for cls, (fac, _) in CLASSES.items():
+        if names and cls not in names:
+            continue
         fig, _ = _split(fac)
         s, x, y = _frame(fig.size)
         canvas = Image.new("RGBA", (W, H), MAGENTA + (255,))
@@ -78,8 +83,10 @@ def paint(names):
             print("FAILED", cls, flush=True)
 
 
-def ingest():
+def ingest(names=None):
     for cls, (fac, _) in CLASSES.items():
+        if names and cls not in names:
+            continue
         p = f"{BATCH}/out/{cls}.png"
         if not os.path.exists(p):
             continue
@@ -98,4 +105,4 @@ def ingest():
 
 
 if __name__ == "__main__":
-    {"prep": lambda: prep(), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest()}[sys.argv[1]]()
+    {"prep": lambda: prep(sys.argv[2:]), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest(sys.argv[2:])}[sys.argv[1]]()

@@ -58,6 +58,26 @@ const FACTIONS := {
 		"classes": ["Death Knight", "Necromancer"],
 		"battle_figure_lift": true,
 	},
+	"tower": {
+		# (HoMM3's Tower as the Illuminated: alchemists, Rosicrucians and the Bavarian order of 1776, hidden sages who
+		# make life in flasks and stone; docs/ILLUMINATED.md)
+		"name": "The Illuminated",
+		"short": "Illuminated",
+		"desc": "Hidden sages of the alchemists' art.",
+		"creatures": ["homunculus", "gargoyle", "stone_golem", "magus", "genie", "naga", "giant"],
+		"upgrades": ["master_homunculus", "obsidian_gargoyle", "iron_golem", "arch_magus", "master_genie", "naga_queen", "titan"],
+		"terrain": "snow",
+		"smith_machine": "ammo_cart",
+		"specials": ["library", "wall_of_knowledge"],
+		"requires": {"dwelling_4": ["mage_guild_1"]},  # (the Mage Tower after the Mage Guild, as the classic Tower)
+		"mage_guild_levels": 5,
+		"dwelling_names": ["Workshop", "Parapet", "Golem Factory", "Mage Tower", "Altar of Wishes", "Golden Pavilion",
+			"Cloud Temple"],
+		# where the alchemists and the order worked: the Bavarian order's university town, Rudolf II's Prague of the
+		# golem, the Rosicrucian manifestos' Kassel and Tübingen, Tycho Brahe's island observatory
+		"town_names": ["Ingolstadt", "Prague", "Kassel", "Tübingen", "Uraniborg"],
+		"classes": ["Alchemist", "Wizard"],
+	},
 }
 
 ## Hero classes: their faction, might (Attack and Defense favoured at level-up) or magic, and the war machine a new
@@ -67,13 +87,17 @@ const CLASSES := {
 	"Cleric": {"faction": "haven", "might": false, "machine": "first_aid_tent"},
 	"Death Knight": {"faction": "necropolis", "might": true, "machine": "ballista"},
 	"Necromancer": {"faction": "necropolis", "might": false, "machine": "first_aid_tent"},
+	"Alchemist": {"faction": "tower", "might": true, "machine": "ballista"},
+	"Wizard": {"faction": "tower", "might": false, "machine": "first_aid_tent"},
 }
 
 # ---------------------------------------------------------------------------------------------
 # Creatures.  speed = hexes per turn, init = initiative ordering (higher acts first).
 # shots > 0 => ranged.  growth = weekly growth. cost = resource dictionary.
 # abilities: flying, ranged, no_retaliation, double_strike, undead, no_melee_penalty,
-#            jousting, life_drain, breath, unlimited_retaliation, regenerate, fear, two_hex, mind_immune
+#            jousting, life_drain, breath, unlimited_retaliation, regenerate, fear, two_hex, mind_immune,
+#            unliving (HoMM3's non-living: no morale, mind spells, life drain, disease or Death Ripple),
+#            no_wall_penalty, spell_cost_down (its hero's spells cost 2 less), genie_spells (casts helpful spells)
 # hates: creature ids it deals +50% damage to (HoMM3's Titans and Black Dragons). spell_immunity: the highest spell
 # level that cannot touch it, its own side's spells too (HoMM3's Red Dragons 3, Black Dragons 5: every spell).
 # fig_scale: its battle figure taller than its tier's (HoMM3's Giants and Titans tower over men).
@@ -152,10 +176,29 @@ const CREATURES := {
 	"mummy": {"name": "Mummy", "plural": "Mummies", "faction": "neutral", "tier": 3, "dwelling": "Tomb of Curses",
 		"attack": 7, "defense": 7, "dmg": [3, 5], "hp": 30, "speed": 5, "growth": 7, "shots": 0,
 		"cost": {"gold": 300}, "abilities": ["undead", "curse_strike"], "ai_value": 270},
-	# HoMM3's Tower and Dungeon top creatures, met on the map before their towns (the Illuminated, Agartha:
-	# docs/SETTING.md) are built: Giants and Red Dragons recruited at their map dwellings, Titans and Black Dragons
-	# in the wild or upgraded at a Hill Fort.
-	"giant": {"name": "Giant", "plural": "Giants", "faction": "neutral", "tier": 7, "dwelling": "Cloud Temple",
+	# ---------------- THE ILLUMINATED (HoMM3's Tower) ----------------
+	"homunculus": {"name": "Homunculus", "plural": "Homunculi", "faction": "tower", "tier": 1,
+		"attack": 3, "defense": 3, "dmg": [1, 2], "hp": 4, "speed": 4, "growth": 16, "shots": 0,
+		"cost": {"gold": 30}, "abilities": [], "ai_value": 44},
+	"gargoyle": {"name": "Gargoyle", "plural": "Gargoyles", "faction": "tower", "tier": 2,
+		"attack": 6, "defense": 6, "dmg": [2, 3], "hp": 16, "speed": 6, "growth": 9, "shots": 0,
+		"cost": {"gold": 130}, "abilities": ["flying", "unliving"], "ai_value": 165},
+	"stone_golem": {"name": "Stone Golem", "plural": "Stone Golems", "faction": "tower", "tier": 3,
+		"attack": 7, "defense": 10, "dmg": [4, 5], "hp": 30, "speed": 3, "growth": 6, "shots": 0,
+		"cost": {"gold": 150}, "abilities": ["golem", "unliving"], "spell_resist": 50, "ai_value": 250},
+	"magus": {"name": "Magus", "plural": "Magi", "faction": "tower", "tier": 4,
+		"attack": 11, "defense": 8, "dmg": [7, 9], "hp": 25, "speed": 5, "growth": 5, "shots": 24,
+		"cost": {"gold": 350}, "abilities": ["ranged", "no_wall_penalty", "spell_cost_down"], "ai_value": 570},
+	"genie": {"name": "Genie", "plural": "Genies", "faction": "tower", "tier": 5,
+		"attack": 12, "defense": 12, "dmg": [13, 16], "hp": 40, "speed": 7, "growth": 3, "shots": 0,
+		"cost": {"gold": 550}, "abilities": ["flying"], "ai_value": 884},
+	"naga": {"name": "Naga", "plural": "Nagas", "faction": "tower", "tier": 6,
+		"attack": 16, "defense": 13, "dmg": [20, 20], "hp": 110, "speed": 5, "growth": 2, "shots": 0,
+		"cost": {"gold": 1100}, "abilities": ["no_retaliation", "two_hex"], "ai_value": 2016},
+	# HoMM3's Tower and Dungeon top creatures. Giants and Titans are the Illuminated's seventh tier, and are met on the
+	# map too (the Cloud Temple, wild Titans); Red and Black Dragons wait for their town (Agartha, docs/SETTING.md):
+	# Red Dragons recruited at their map dwellings, Black Dragons in the wild or upgraded at a Hill Fort.
+	"giant": {"name": "Giant", "plural": "Giants", "faction": "tower", "tier": 7, "dwelling": "Cloud Temple",
 		"attack": 19, "defense": 16, "dmg": [40, 60], "hp": 150, "speed": 7, "growth": 1, "shots": 0,
 		"cost": {"gold": 2000, "gems": 1}, "abilities": ["mind_immune"], "fig_scale": 1.25, "ai_value": 3718},
 	"red_dragon": {"name": "Red Dragon", "plural": "Red Dragons", "faction": "neutral", "tier": 7, "dwelling": "Dragon Cave",
@@ -204,7 +247,25 @@ const CREATURES := {
 	"ghost_dragon": {"name": "Ghost Dragon", "plural": "Ghost Dragons", "faction": "necropolis", "tier": 7, "upgrade_of": "bone_dragon",
 		"attack": 19, "defense": 17, "dmg": [25, 50], "hp": 200, "speed": 14, "growth": 1, "shots": 0,
 		"cost": {"gold": 3000, "mercury": 1}, "abilities": ["undead", "flying", "fear", "two_hex"], "ai_value": 4696},
-	"titan": {"name": "Titan", "plural": "Titans", "faction": "neutral", "tier": 7, "upgrade_of": "giant",
+	"master_homunculus": {"name": "Master Homunculus", "plural": "Master Homunculi", "faction": "tower", "tier": 1, "upgrade_of": "homunculus",
+		"attack": 4, "defense": 4, "dmg": [1, 2], "hp": 4, "speed": 5, "growth": 16, "shots": 8,
+		"cost": {"gold": 40}, "abilities": ["ranged"], "ai_value": 66},
+	"obsidian_gargoyle": {"name": "Obsidian Gargoyle", "plural": "Obsidian Gargoyles", "faction": "tower", "tier": 2, "upgrade_of": "gargoyle",
+		"attack": 7, "defense": 7, "dmg": [2, 3], "hp": 16, "speed": 9, "growth": 9, "shots": 0,
+		"cost": {"gold": 160}, "abilities": ["flying", "unliving"], "ai_value": 201},
+	"iron_golem": {"name": "Iron Golem", "plural": "Iron Golems", "faction": "tower", "tier": 3, "upgrade_of": "stone_golem",
+		"attack": 9, "defense": 10, "dmg": [4, 5], "hp": 35, "speed": 5, "growth": 6, "shots": 0,
+		"cost": {"gold": 200}, "abilities": ["golem", "unliving"], "spell_resist": 75, "ai_value": 412},
+	"arch_magus": {"name": "Arch Magus", "plural": "Arch Magi", "faction": "tower", "tier": 4, "upgrade_of": "magus",
+		"attack": 12, "defense": 9, "dmg": [7, 9], "hp": 30, "speed": 7, "growth": 5, "shots": 24,
+		"cost": {"gold": 450}, "abilities": ["ranged", "no_wall_penalty", "spell_cost_down"], "ai_value": 680},
+	"master_genie": {"name": "Master Genie", "plural": "Master Genies", "faction": "tower", "tier": 5, "upgrade_of": "genie",
+		"attack": 12, "defense": 12, "dmg": [13, 16], "hp": 40, "speed": 11, "growth": 3, "shots": 0,
+		"cost": {"gold": 600}, "abilities": ["flying", "genie_spells"], "ai_value": 942},
+	"naga_queen": {"name": "Naga Queen", "plural": "Naga Queens", "faction": "tower", "tier": 6, "upgrade_of": "naga",
+		"attack": 16, "defense": 13, "dmg": [30, 30], "hp": 110, "speed": 7, "growth": 2, "shots": 0,
+		"cost": {"gold": 1600}, "abilities": ["no_retaliation", "two_hex"], "ai_value": 2840},
+	"titan": {"name": "Titan", "plural": "Titans", "faction": "tower", "tier": 7, "upgrade_of": "giant",
 		"attack": 24, "defense": 24, "dmg": [40, 60], "hp": 300, "speed": 11, "growth": 1, "shots": 24,
 		"cost": {"gold": 5000, "gems": 2}, "abilities": ["ranged", "no_melee_penalty", "mind_immune"], "hates": ["black_dragon"], "fig_scale": 1.25,
 		"ai_value": 7500},
@@ -234,6 +295,9 @@ const ABILITY_TEXT := {
 	"curse_strike": "Curses what it strikes (25%)",
 	"breath": "Breath: strikes the stack behind too", "no_melee_penalty": "No melee penalty",
 	"mind_immune": "Immune to mind spells",
+	"unliving": "Not alive: no morale, immune to mind spells",
+	"no_wall_penalty": "No wall penalty when shooting", "spell_cost_down": "Its hero's spells cost 2 less",
+	"genie_spells": "Casts a random helpful spell on an ally (3 a battle)",
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -266,6 +330,26 @@ const HEROES := {
 		"attack": 1, "defense": 1, "power": 2, "knowledge": 2, "specialty": "Wisdom", "skills": {"necromancy": 1, "wisdom": 1}, "spells": ["haste", "weakness"]},
 	"edward_kelley": {"name": "Edward Kelley", "faction": "necropolis", "class": "Necromancer",
 		"attack": 0, "defense": 1, "power": 3, "knowledge": 2, "specialty": "Luck", "skills": {"necromancy": 1, "luck": 1}, "spells": ["curse", "magic_arrow"]},
+	# the Illuminated, all from legend (docs/ILLUMINATED.md): the alchemist who made the Stone and his wife, the
+	# physician-alchemist, the brotherhood's founder, the order's founder, the count of a hundred names
+	"nicolas_flamel": {"name": "Nicolas Flamel", "faction": "tower", "class": "Alchemist",
+		"attack": 1, "defense": 1, "power": 2, "knowledge": 2, "specialty": "Wisdom", "skills": {"wisdom": 1},
+		"spells": ["stone_skin"]},
+	"perenelle_flamel": {"name": "Perenelle Flamel", "faction": "tower", "class": "Alchemist",
+		"attack": 1, "defense": 2, "power": 1, "knowledge": 2, "specialty": "Armorer", "skills": {"armorer": 1},
+		"spells": ["shield"]},
+	"paracelsus": {"name": "Paracelsus", "faction": "tower", "class": "Alchemist",
+		"attack": 2, "defense": 1, "power": 1, "knowledge": 2, "specialty": "Archery", "skills": {"archery": 1},
+		"spells": ["cure"]},
+	"christian_rosenkreuz": {"name": "Christian Rosenkreuz", "faction": "tower", "class": "Wizard",
+		"attack": 0, "defense": 0, "power": 2, "knowledge": 4, "specialty": "Wisdom", "skills": {"wisdom": 1},
+		"spells": ["magic_arrow", "haste"]},
+	"adam_weishaupt": {"name": "Adam Weishaupt", "faction": "tower", "class": "Wizard",
+		"attack": 0, "defense": 1, "power": 3, "knowledge": 2, "specialty": "Sorcery", "skills": {"wisdom": 1, "sorcery": 1},
+		"spells": ["magic_arrow", "slow"]},
+	"cagliostro": {"name": "Cagliostro", "faction": "tower", "class": "Wizard",
+		"attack": 1, "defense": 0, "power": 2, "knowledge": 3, "specialty": "Luck", "skills": {"wisdom": 1, "luck": 1},
+		"spells": ["bless", "curse"]},
 }
 
 const SKILLS := {
@@ -328,11 +412,12 @@ const BUILDINGS := {
 	"mage_guild_3": {"name": "Mage Guild Lv3", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 4, "sulfur": 4, "crystal": 4, "gems": 4}, "requires": ["mage_guild_2"], "replaces": "mage_guild_2", "desc": "Teaches level 3 spells."},
 	"mage_guild_4": {"name": "Mage Guild Lv4", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 6, "sulfur": 6, "crystal": 6, "gems": 6}, "requires": ["mage_guild_3"], "replaces": "mage_guild_3", "desc": "Teaches level 4 spells."},
 	"mage_guild_5": {"name": "Mage Guild Lv5", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 10, "sulfur": 10, "crystal": 10, "gems": 10}, "requires": ["mage_guild_4"], "replaces": "mage_guild_4", "desc": "Teaches level 5 spells."},
-	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's."},
+	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's, an Ammo Cart in the Illuminated's."},
 	# faction special buildings ("faction": only that faction's towns can build them). "effects" are what they do, read
 	# by the rules (TownLogic.effect): start_day_movement (a hero starting the day in the town), siege_morale (the
 	# town's defenders), necromancy (+% raised by all the owner's heroes), transform_to (turns a visiting hero's
-	# living creatures into that creature). "ai_after": the computer builds it right after that building.
+	# living creatures into that creature), guild_spells (more spells per Mage Guild level), visit_knowledge (+Knowledge
+	# once to each visiting hero). "ai_after": the computer builds it right after that building.
 	"stables": {"name": "Stables", "faction": "haven", "cost": {"gold": 2000, "wood": 10}, "requires": [],
 		"effects": {"start_day_movement": 400}, "ai_after": "city_hall", "desc": "Heroes who start the day in this town get +400 movement points."},
 	"brotherhood": {"name": "Chapter House", "faction": "haven", "cost": {"gold": 500, "wood": 5}, "requires": ["tavern"],
@@ -341,6 +426,12 @@ const BUILDINGS := {
 		"effects": {"necromancy": 10}, "ai_after": "mage_guild_2", "desc": "All your heroes raise 10% more Skeletons with Necromancy."},
 	"skeleton_transformer": {"name": "Skeleton Transformer", "faction": "necropolis", "cost": {"gold": 1000}, "requires": ["dwelling_1"],
 		"effects": {"transform_to": "skeleton"}, "desc": "Turns a visiting hero's living creatures into Skeletons."},
+	"library": {"name": "Library", "faction": "tower", "cost": {"gold": 1500, "wood": 5, "ore": 5, "mercury": 5, "sulfur": 5, "crystal": 5, "gems": 5},
+		"requires": ["mage_guild_1"], "effects": {"guild_spells": 1}, "ai_after": "mage_guild_2",
+		"desc": "The Mage Guild teaches one more spell of every level."},
+	"wall_of_knowledge": {"name": "Wall of Knowledge", "faction": "tower", "cost": {"gold": 1000, "ore": 5}, "requires": ["mage_guild_1"],
+		"effects": {"visit_knowledge": 1}, "ai_after": "mage_guild_1",
+		"desc": "+1 Knowledge, once, to each hero who visits the town."},
 	"dwelling_1": {"name": "Dwelling I", "cost": {"gold": 1000, "ore": 5}, "dwelling_tier": 1, "requires": ["fort"]},
 	"dwelling_2": {"name": "Dwelling II", "cost": {"gold": 1000, "wood": 5, "ore": 5}, "dwelling_tier": 2, "requires": ["dwelling_1"]},
 	"dwelling_3": {"name": "Dwelling III", "cost": {"gold": 1500, "wood": 5, "ore": 5}, "dwelling_tier": 3, "requires": ["dwelling_1"]},

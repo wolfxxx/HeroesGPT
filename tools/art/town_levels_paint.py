@@ -16,13 +16,15 @@ sys.path.insert(0, os.path.dirname(__file__))
 from pose_paint import key_out, drop_specks
 
 BATCH = "imagegen/batch29"
-FACTIONS = ["haven", "necropolis"]
+FACTIONS = ["haven", "necropolis", "tower"]
 MAGENTA = (255, 0, 255)
 W, H = 1920, 1080  # (16:9, as the model returns it)
 
 STYLE_OF = {"haven": "white limestone with blue slate roofs and gold trim, blue-and-gold banners",
             "necropolis": "black basalt and dark slate with bone ornaments, violet banners and green ghost-light in the "
-                          "windows"}
+                          "windows",
+            "tower": "white marble with gold domes and trim, deep blue conical roofs and blue banners, light snow on the "
+                     "roofs and a snowy rock base"}
 LEVEL = {
     "village": ("a small unwalled VILLAGE: NO castle wall, NO towers and NO battlements at all; a modest town hall with "
                 "a pitched roof at the centre back, a few small houses and a tavern around a little cobbled square, and "
@@ -58,9 +60,11 @@ def _frame(fac):
     return s, (W - w) // 2, (H - h) // 2, w, h
 
 
-def prep():
+def prep(only=None):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
     for fac in FACTIONS:
+        if only and fac not in only:
+            continue
         s, x, y, w, h = _frame(fac)
         canvas = Image.new("RGBA", (W, H), MAGENTA + (255,))
         canvas.alpha_composite(_solid(fac).resize((w, h), Image.LANCZOS), (x, y))
@@ -101,9 +105,11 @@ def _cast(alpha):
     return np.asarray(sh, np.float32) / 255 * 0.45
 
 
-def ingest():
+def ingest(only=None):
     anchors = json.load(open("assets/map/anchors.json"))
     for fac in FACTIONS:
+        if only and fac not in only:
+            continue
         old = Image.open(f"assets/map/town_{fac}.png")
         for lvl in LEVEL:
             p = f"{BATCH}/out/{lvl}_{fac}.png"
@@ -135,9 +141,9 @@ def ingest():
 
 if __name__ == "__main__":
     cmd = sys.argv[1]
-    if cmd == "prep":
-        prep()
+    if cmd == "prep":  # (prep [factions], paint [level_faction names], ingest [factions])
+        prep(sys.argv[2:])
     elif cmd == "paint":
         paint(sys.argv[2:])
     else:
-        ingest()
+        ingest(sys.argv[2:])

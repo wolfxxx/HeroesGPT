@@ -45,6 +45,38 @@ NEW = {
     "black_dragon": ("red_dragon", "a Black Dragon: a huge living dragon with glossy jet-black scales with a dark "
                      "violet sheen, black leathery wings, black horns with red tips, burning red eyes and faint red "
                      "embers between its teeth, standing in the same pose"),
+    # session67: the Illuminated (HoMM3's Tower), the alchemists' order: white, midnight blue and gold
+    "homunculus": ("skeleton", "a Homunculus: a small wizened artificial man the size of a child, grown by alchemists in a "
+                   "glass flask, pale waxy skin, a bald head, large dark eyes, a ragged leather apron, dragging a heavy "
+                   "iron ball on a chain in one hand"),
+    "master_homunculus": ("homunculus", "a Master Homunculus: the same small pale artificial man, now in a stitched "
+                          "alchemist's leather coat with brass goggles pushed up on his bald head and a bandolier of "
+                          "glowing green glass flasks across his chest, holding one flask ready to throw"),
+    "gargoyle": ("vampire", "a Gargoyle: a winged grotesque of weathered grey cathedral stone come to life, horned, with a "
+                 "snarling face, clawed hands and feet and stony bat wings, crouched ready to spring"),
+    "obsidian_gargoyle": ("gargoyle", "an Obsidian Gargoyle: the same winged stone grotesque carved from glossy black "
+                          "volcanic glass with sharp chipped edges and a faint violet sheen, its eyes glowing violet"),
+    "stone_golem": ("swordsman", "a Stone Golem: the golem of old Prague, a huge heavy man-shaped figure of grey clay and "
+                    "stone, crudely shaped, with a broad chest, thick arms ending in big stone fists, empty dark eyes and "
+                    "a small glowing sigil on its forehead, no armour, no weapon"),
+    "iron_golem": ("stone_golem", "an Iron Golem: the same massive man-shaped figure forged of riveted dark iron plates, "
+                   "furnace-orange glowing eyes, a glowing sigil on its forehead, big iron fists, no weapon"),
+    "magus": ("monk", "a Magus: a sage of a secret alchemists' order in a long hooded midnight-blue robe trimmed with "
+              "gold, a grey beard, a gold clasp shaped like an eye in a triangle on his cloak, holding a staff topped "
+              "with a glowing pale-blue crystal, the other hand raised with a soft blue glow"),
+    "arch_magus": ("magus", "an Arch Magus: a grander sage in flowing white-and-gold robes under a deep blue mantle, a gold "
+                   "circlet on his brow, a long white beard, holding a tall staff topped with a radiant crystal sphere"),
+    "genie": ("ghost", "a Genie: a djinn bound by King Solomon's ring, a muscular blue-skinned spirit with a white turban "
+              "and a gold armlet, bare-chested, his body tapering below the waist into a swirl of pale-blue smoke, "
+              "floating, fists clenched"),
+    "master_genie": ("genie", "a Master Genie: a greater djinn with deep violet skin, a jeweled gold turban with a white "
+                     "plume, gold bracers and a crimson sash, his lower body a swirl of violet smoke, floating, one hand "
+                     "raised holding a small glowing golden orb"),
+    "naga": ("cavalier", "a Naga: a serpent woman, her upper body a stern warrior woman in a gold breastplate and a gold "
+             "helm, with six arms each holding a curved sword, her lower body a long coiled green-scaled snake tail "
+             "lying along the ground behind her, upright and poised to strike"),
+    "naga_queen": ("naga", "a Naga Queen: the same six-armed serpent warrior woman, crowned with a tall gold crown, in "
+                   "jewelled gold armour, her six curved swords gleaming, her long snake tail emerald and gold"),
 }
 IDLE = ("This is a battle unit sprite from a fantasy strategy game. Redraw it as a DIFFERENT creature in exactly the same "
         "side view facing right, the same pose, the same size in the frame, standing on the same ground line at the same "

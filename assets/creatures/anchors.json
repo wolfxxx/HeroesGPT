@@ -71,6 +71,38 @@
 0.3137,
 0.9584
 ],
+"arch_magus.png": [
+0.3065,
+0.9087
+],
+"arch_magus_attack.png": [
+0.2991,
+0.8929
+],
+"arch_magus_dead.png": [
+0.4069,
+0.8629
+],
+"arch_magus_hit.png": [
+0.4072,
+0.8943
+],
+"arch_magus_move0.png": [
+0.336,
+0.9455
+],
+"arch_magus_move1.png": [
+0.3114,
+0.944
+],
+"arch_magus_move2.png": [
+0.3176,
+0.9459
+],
+"arch_magus_move3.png": [
+0.3168,
+0.9453
+],
 "archangel.png": [
 0.3956,
 0.9429
@@ -415,6 +447,70 @@
 0.4551,
 0.9187
 ],
+"gargoyle.png": [
+0.5751,
+0.9342
+],
+"gargoyle_attack.png": [
+0.517,
+0.9315
+],
+"gargoyle_dead.png": [
+0.4331,
+0.9073
+],
+"gargoyle_hit.png": [
+0.6244,
+0.9324
+],
+"gargoyle_move0.png": [
+0.788,
+0.8867
+],
+"gargoyle_move1.png": [
+0.6524,
+0.9816
+],
+"gargoyle_move2.png": [
+0.7668,
+1.0294
+],
+"gargoyle_move3.png": [
+0.7304,
+0.9492
+],
+"genie.png": [
+0.4076,
+0.9284
+],
+"genie_attack.png": [
+0.3613,
+0.9196
+],
+"genie_dead.png": [
+0.3771,
+0.8717
+],
+"genie_hit.png": [
+0.3998,
+0.9238
+],
+"genie_move0.png": [
+0.6482,
+1.094
+],
+"genie_move1.png": [
+0.5459,
+0.9198
+],
+"genie_move2.png": [
+0.6835,
+1.0754
+],
+"genie_move3.png": [
+0.5577,
+0.9445
+],
 "ghost.png": [
 0.5,
 0.901
@@ -607,6 +703,70 @@
 0.3437,
 0.9573
 ],
+"homunculus.png": [
+0.2819,
+0.9302
+],
+"homunculus_attack.png": [
+0.2283,
+0.9263
+],
+"homunculus_dead.png": [
+0.4787,
+0.8671
+],
+"homunculus_hit.png": [
+0.5442,
+0.9257
+],
+"homunculus_move0.png": [
+0.2639,
+0.9585
+],
+"homunculus_move1.png": [
+0.2558,
+0.9579
+],
+"homunculus_move2.png": [
+0.2692,
+0.9586
+],
+"homunculus_move3.png": [
+0.2548,
+0.957
+],
+"iron_golem.png": [
+0.358,
+0.9245
+],
+"iron_golem_attack.png": [
+0.4201,
+0.9118
+],
+"iron_golem_dead.png": [
+0.4421,
+0.9066
+],
+"iron_golem_hit.png": [
+0.268,
+0.9264
+],
+"iron_golem_move0.png": [
+0.3372,
+0.9542
+],
+"iron_golem_move1.png": [
+0.3602,
+0.9522
+],
+"iron_golem_move2.png": [
+0.3517,
+0.9542
+],
+"iron_golem_move3.png": [
+0.3534,
+0.9551
+],
 "lich.png": [
 0.5,
 0.8995
@@ -639,6 +799,38 @@
 0.3745,
 0.9583
 ],
+"magus.png": [
+0.2692,
+0.9134
+],
+"magus_attack.png": [
+0.3078,
+0.8938
+],
+"magus_dead.png": [
+0.4302,
+0.8588
+],
+"magus_hit.png": [
+0.304,
+0.9155
+],
+"magus_move0.png": [
+0.3067,
+0.9474
+],
+"magus_move1.png": [
+0.2861,
+0.948
+],
+"magus_move2.png": [
+0.3117,
+0.9489
+],
+"magus_move3.png": [
+0.281,
+0.9491
+],
 "marksman.png": [
 0.3032,
 0.9149
@@ -670,6 +862,70 @@
 "marksman_move3.png": [
 0.2925,
 0.9498
+],
+"master_genie.png": [
+0.3864,
+0.9346
+],
+"master_genie_attack.png": [
+0.3636,
+0.9236
+],
+"master_genie_dead.png": [
+0.496,
+0.8814
+],
+"master_genie_hit.png": [
+0.3919,
+0.9392
+],
+"master_genie_move0.png": [
+0.6648,
+1.0383
+],
+"master_genie_move1.png": [
+0.5872,
+1.0238
+],
+"master_genie_move2.png": [
+0.586,
+1.0514
+],
+"master_genie_move3.png": [
+0.522,
+0.9045
+],
+"master_homunculus.png": [
+0.2981,
+0.932
+],
+"master_homunculus_attack.png": [
+0.2683,
+0.9255
+],
+"master_homunculus_dead.png": [
+0.4413,
+0.8829
+],
+"master_homunculus_hit.png": [
+0.2931,
+0.9337
+],
+"master_homunculus_move0.png": [
+0.2908,
+0.9559
+],
+"master_homunculus_move1.png": [
+0.2596,
+0.9586
+],
+"master_homunculus_move2.png": [
+0.2913,
+0.9597
+],
+"master_homunculus_move3.png": [
+0.2663,
+0.9576
 ],
 "monk.png": [
 0.5,
@@ -734,6 +990,102 @@
 "mummy_move3.png": [
 0.2842,
 0.9586
+],
+"naga.png": [
+0.3888,
+0.9502
+],
+"naga_attack.png": [
+0.3329,
+0.9506
+],
+"naga_dead.png": [
+0.3997,
+0.9084
+],
+"naga_hit.png": [
+0.3891,
+0.9502
+],
+"naga_move0.png": [
+0.3875,
+0.9684
+],
+"naga_move1.png": [
+0.3449,
+0.9719
+],
+"naga_move2.png": [
+0.3767,
+0.9702
+],
+"naga_move3.png": [
+0.3854,
+0.9726
+],
+"naga_queen.png": [
+0.3882,
+0.9531
+],
+"naga_queen_attack.png": [
+0.421,
+0.9499
+],
+"naga_queen_dead.png": [
+0.4473,
+0.922
+],
+"naga_queen_hit.png": [
+0.3903,
+0.956
+],
+"naga_queen_move0.png": [
+0.4267,
+0.9729
+],
+"naga_queen_move1.png": [
+0.3279,
+0.974
+],
+"naga_queen_move2.png": [
+0.347,
+0.9761
+],
+"naga_queen_move3.png": [
+0.3984,
+0.9711
+],
+"obsidian_gargoyle.png": [
+0.5797,
+0.9388
+],
+"obsidian_gargoyle_attack.png": [
+0.5079,
+0.9342
+],
+"obsidian_gargoyle_dead.png": [
+0.432,
+0.9256
+],
+"obsidian_gargoyle_hit.png": [
+0.5897,
+0.9357
+],
+"obsidian_gargoyle_move0.png": [
+0.8118,
+0.8493
+],
+"obsidian_gargoyle_move1.png": [
+0.6324,
+0.9963
+],
+"obsidian_gargoyle_move2.png": [
+0.7527,
+1.0832
+],
+"obsidian_gargoyle_move3.png": [
+0.6822,
+0.9375
 ],
 "pikeman.png": [
 0.5,
@@ -926,6 +1278,38 @@
 "skeleton_warrior_move3.png": [
 0.2573,
 0.9511
+],
+"stone_golem.png": [
+0.3488,
+0.9238
+],
+"stone_golem_attack.png": [
+0.3596,
+0.9073
+],
+"stone_golem_dead.png": [
+0.4484,
+0.891
+],
+"stone_golem_hit.png": [
+0.35,
+0.9226
+],
+"stone_golem_move0.png": [
+0.3387,
+0.9527
+],
+"stone_golem_move1.png": [
+0.3346,
+0.9498
+],
+"stone_golem_move2.png": [
+0.3619,
+0.9525
+],
+"stone_golem_move3.png": [
+0.3445,
+0.9527
 ],
 "swordsman.png": [
 0.5,

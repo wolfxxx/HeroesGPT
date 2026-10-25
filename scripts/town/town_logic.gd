@@ -150,7 +150,7 @@ static func build(town: Dictionary, player: Dictionary, id: String) -> bool:
 		var tier: int = b["dwelling_tier"]
 		var cid := GameData.faction_creature(town["faction"], tier)
 		town["available"][tier - 1] += GameData.CREATURES[cid]["growth"]
-	if id.begins_with("mage_guild"):
+	if id.begins_with("mage_guild") or b.get("effects", {}).has("guild_spells"):  # (the Library adds to the guild)
 		learn_guild_spells(town)
 	return true
 
@@ -163,7 +163,7 @@ static func learn_guild_spells(town: Dictionary) -> void:
 		for s in GameData.SPELLS:
 			if GameData.SPELLS[s]["level"] == l and not s in town["mage_spells"]:
 				pool.append(s)
-		var want := 4 if l == 1 else 3
+		var want := (4 if l == 1 else 3) + effect(town, "guild_spells")  # (the Illuminated's Library: one more)
 		var have := 0
 		for s in town["mage_spells"]:
 			if GameData.SPELLS[s]["level"] == l:

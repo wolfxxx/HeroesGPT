@@ -581,6 +581,11 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/illuminated_test.tscn` — in the full suite: the Illuminated's record, HoMM3 numbers and heroes; the
+  unliving (morale, Death Ripple, mind spells, Necromancy, the Golems' spell resistance); the Magi's spell discount
+  and no wall penalty; Master Genies (three casts, allies only, a new spell each, the same on two machines, the
+  computer's use); the Library, the Wall of Knowledge, the Mage Tower's prerequisite, the computer's build order, a
+  new game as the Illuminated; and every picture, frame, layout entry and the music the faction needs.
 - `tools/titan_dragon_test.tscn` — in the full suite: the Giant, Titan, Red and Black Dragon's HoMM3 numbers and
   upgrades, the hover words, Titans' full melee and the mutual hatred, mind immunity, the dragons' spell immunity
   (Armageddon, Fireball, their own side's Bless), breath on the stack behind (enemy, own, diagonal, nothing behind),

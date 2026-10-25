@@ -17,7 +17,8 @@ BATCH = "imagegen/batch8"
 D = "assets/creatures"
 CELL_W, CELL_H = 1376, 768
 KIND = {"griffin": "fly", "angel": "fly", "vampire": "fly", "bone_dragon": "fly", "ghost": "glide",
-        "cavalier": "gallop", "dread_knight": "gallop", "red_dragon": "fly", "black_dragon": "fly"}  # everything else walks
+        "cavalier": "gallop", "dread_knight": "gallop", "red_dragon": "fly", "black_dragon": "fly",
+        "gargoyle": "fly", "obsidian_gargoyle": "fly", "genie": "glide", "master_genie": "glide"}  # everything else walks
 
 def kind(cid):
     from upgrade_paint import UPGRADES  # (an upgraded creature moves like its base one)

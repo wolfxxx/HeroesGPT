@@ -89,6 +89,46 @@
 332,
 210
 ],
+"arch_magus.png": [
+171,
+226,
+173
+],
+"arch_magus_attack.png": [
+303,
+187,
+304
+],
+"arch_magus_dead.png": [
+295,
+138,
+296
+],
+"arch_magus_hit.png": [
+216,
+190,
+216
+],
+"arch_magus_move0.png": [
+173,
+229,
+174
+],
+"arch_magus_move1.png": [
+169,
+239,
+171
+],
+"arch_magus_move2.png": [
+169,
+230,
+171
+],
+"arch_magus_move3.png": [
+173,
+228,
+175
+],
 "archangel.png": [
 419,
 381,
@@ -519,6 +559,86 @@
 99,
 164
 ],
+"gargoyle.png": [
+283,
+328,
+284
+],
+"gargoyle_attack.png": [
+376,
+299,
+376
+],
+"gargoyle_dead.png": [
+345,
+222,
+323
+],
+"gargoyle_hit.png": [
+299,
+317,
+300
+],
+"gargoyle_move0.png": [
+297,
+360,
+299
+],
+"gargoyle_move1.png": [
+440,
+269,
+441
+],
+"gargoyle_move2.png": [
+228,
+309,
+229
+],
+"gargoyle_move3.png": [
+290,
+333,
+290
+],
+"genie.png": [
+181,
+295,
+183
+],
+"genie_attack.png": [
+312,
+249,
+314
+],
+"genie_dead.png": [
+336,
+150,
+336
+],
+"genie_hit.png": [
+170,
+278,
+170
+],
+"genie_move0.png": [
+318,
+254,
+242
+],
+"genie_move1.png": [
+169,
+314,
+170
+],
+"genie_move2.png": [
+330,
+252,
+333
+],
+"genie_move3.png": [
+183,
+301,
+185
+],
 "ghost.png": [
 133,
 275,
@@ -759,6 +879,86 @@
 293,
 175
 ],
+"homunculus.png": [
+196,
+307,
+195
+],
+"homunculus_attack.png": [
+280,
+275,
+272
+],
+"homunculus_dead.png": [
+341,
+136,
+342
+],
+"homunculus_hit.png": [
+286,
+286,
+283
+],
+"homunculus_move0.png": [
+199,
+308,
+181
+],
+"homunculus_move1.png": [
+193,
+327,
+190
+],
+"homunculus_move2.png": [
+205,
+309,
+184
+],
+"homunculus_move3.png": [
+192,
+321,
+190
+],
+"iron_golem.png": [
+206,
+281,
+207
+],
+"iron_golem_attack.png": [
+298,
+235,
+297
+],
+"iron_golem_dead.png": [
+336,
+220,
+336
+],
+"iron_golem_hit.png": [
+260,
+289,
+256
+],
+"iron_golem_move0.png": [
+221,
+277,
+222
+],
+"iron_golem_move1.png": [
+195,
+286,
+195
+],
+"iron_golem_move2.png": [
+216,
+277,
+216
+],
+"iron_golem_move3.png": [
+206,
+283,
+207
+],
 "lich.png": [
 199,
 287,
@@ -799,6 +999,46 @@
 307,
 195
 ],
+"magus.png": [
+163,
+240,
+164
+],
+"magus_attack.png": [
+285,
+189,
+286
+],
+"magus_dead.png": [
+271,
+133,
+271
+],
+"magus_hit.png": [
+168,
+247,
+170
+],
+"magus_move0.png": [
+170,
+237,
+171
+],
+"magus_move1.png": [
+169,
+242,
+171
+],
+"magus_move2.png": [
+162,
+245,
+163
+],
+"magus_move3.png": [
+157,
+247,
+158
+],
 "marksman.png": [
 207,
 245,
@@ -838,6 +1078,86 @@
 208,
 251,
 209
+],
+"master_genie.png": [
+195,
+330,
+195
+],
+"master_genie_attack.png": [
+342,
+277,
+343
+],
+"master_genie_dead.png": [
+419,
+157,
+421
+],
+"master_genie_hit.png": [
+209,
+341,
+211
+],
+"master_genie_move0.png": [
+352,
+297,
+356
+],
+"master_genie_move1.png": [
+291,
+309,
+292
+],
+"master_genie_move2.png": [
+294,
+291,
+295
+],
+"master_genie_move3.png": [
+208,
+359,
+210
+],
+"master_homunculus.png": [
+153,
+315,
+153
+],
+"master_homunculus_attack.png": [
+256,
+285,
+252
+],
+"master_homunculus_dead.png": [
+297,
+168,
+298
+],
+"master_homunculus_hit.png": [
+191,
+325,
+168
+],
+"master_homunculus_move0.png": [
+173,
+311,
+166
+],
+"master_homunculus_move1.png": [
+136,
+333,
+137
+],
+"master_homunculus_move2.png": [
+172,
+319,
+146
+],
+"master_homunculus_move3.png": [
+138,
+324,
+139
 ],
 "monk.png": [
 142,
@@ -918,6 +1238,126 @@
 201,
 310,
 195
+],
+"naga.png": [
+371,
+445,
+373
+],
+"naga_attack.png": [
+425,
+449,
+428
+],
+"naga_dead.png": [
+685,
+225,
+686
+],
+"naga_hit.png": [
+370,
+445,
+370
+],
+"naga_move0.png": [
+373,
+445,
+374
+],
+"naga_move1.png": [
+551,
+436,
+546
+],
+"naga_move2.png": [
+589,
+473,
+592
+],
+"naga_move3.png": [
+373,
+445,
+374
+],
+"naga_queen.png": [
+395,
+475,
+396
+],
+"naga_queen_attack.png": [
+480,
+442,
+481
+],
+"naga_queen_dead.png": [
+685,
+257,
+686
+],
+"naga_queen_hit.png": [
+404,
+486,
+405
+],
+"naga_queen_move0.png": [
+478,
+487,
+481
+],
+"naga_queen_move1.png": [
+417,
+507,
+420
+],
+"naga_queen_move2.png": [
+457,
+515,
+457
+],
+"naga_queen_move3.png": [
+408,
+490,
+409
+],
+"obsidian_gargoyle.png": [
+306,
+353,
+307
+],
+"obsidian_gargoyle_attack.png": [
+417,
+328,
+417
+],
+"obsidian_gargoyle_dead.png": [
+357,
+272,
+358
+],
+"obsidian_gargoyle_hit.png": [
+308,
+336,
+308
+],
+"obsidian_gargoyle_move0.png": [
+306,
+427,
+308
+],
+"obsidian_gargoyle_move1.png": [
+518,
+283,
+519
+],
+"obsidian_gargoyle_move2.png": [
+271,
+301,
+273
+],
+"obsidian_gargoyle_move3.png": [
+427,
+312,
+430
 ],
 "pikeman.png": [
 158,
@@ -1158,6 +1598,46 @@
 154,
 275,
 155
+],
+"stone_golem.png": [
+194,
+265,
+195
+],
+"stone_golem_attack.png": [
+259,
+222,
+261
+],
+"stone_golem_dead.png": [
+329,
+175,
+329
+],
+"stone_golem_hit.png": [
+194,
+272,
+194
+],
+"stone_golem_move0.png": [
+181,
+267,
+183
+],
+"stone_golem_move1.png": [
+184,
+270,
+186
+],
+"stone_golem_move2.png": [
+208,
+266,
+209
+],
+"stone_golem_move3.png": [
+188,
+267,
+189
 ],
 "swordsman.png": [
 111,

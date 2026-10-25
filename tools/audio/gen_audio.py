@@ -64,6 +64,7 @@ MUSIC = {
     "adventure_dirt": "Mysterious adventurous orchestral exploration music for a fantasy strategy game, oboe and low strings, curious wandering mood through wild lands, no vocals",
     "town_haven": "Noble medieval castle town theme, harpsichord, lute, recorder and strings, warm and proud, Renaissance fantasy, no vocals",
     "town_necropolis": "Dark gothic necropolis town theme, pipe organ, low choir hums, bells and eerie strings, ominous undead fantasy kingdom, no vocals",
+    "town_tower": "Mysterious, wondrous town theme of a hidden order of alchemists high in snowy mountains, celesta, harp, glass harmonica, soft strings and a distant choir of high voices, arcane and luminous, curious and serene, Renaissance fantasy, no vocals with words",
     "battle": "Intense epic orchestral battle music for a turn-based fantasy strategy game, driving war drums, aggressive brass and strings, heroic and urgent, no vocals",
     "victory": "Short triumphant orchestral victory fanfare, brass and timpani, heroic resolution, fantasy game",
     "defeat": "Short somber orchestral defeat theme, slow mournful strings and low horn, fantasy game",

@@ -29,6 +29,9 @@ CLASSES = {
     "necromancer": ("necropolis", "a Necromancer: a gaunt robed sorcerer in a hooded tattered black and deep purple "
                     "robe, a pale skull-like face in the hood, holding upright a long dark staff topped with a skull "
                     "and a faint green glow (NO lance, NO spear, NO plate armour, NO helmet)"),
+    # session67: the Illuminated: their faction figure (an Alchemist, map_tower*.png) and the Wizard
+    "tower": ("haven", "an Alchemist of a secret order: a scholar-warrior in a long midnight-blue coat with gold trim over a light breastplate, a wide-brimmed dark hat, a leather bandolier of glowing glass flasks across the chest, holding the reins in the left hand and a short brass-tipped rod in the right hand resting on the thigh, sitting naturally in the saddle (NO lance, NO spear, NO helmet)"),
+    "wizard": ("haven", "a Wizard: a bearded sage in flowing white-and-gold robes under a deep blue hooded mantle, holding upright a tall staff topped with a glowing pale-blue crystal in the right hand, the reins in the left (NO lance, NO armour, NO helmet)"),
 }
 PROMPT = ("The image shows the same mounted hero six times, standing and galloping, as small figures for the adventure "
           "map of a hand-painted fantasy strategy game, seen from a 3/4 top-down view, on a flat magenta backdrop. "
@@ -57,10 +60,12 @@ def _feet(alpha):
     return float(xs[low].mean()), float(ys.max())
 
 
-def prep():
+def prep(names=None):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
     info = {}
     for cls, (fac, _) in CLASSES.items():
+        if names and cls not in names:
+            continue
         figs = [_fig(f"{D}/map_{fac}{c}.png") for c in CELLS]
         crops = [f.crop(f.getbbox()) for f in figs]
         s = min(min(CELL_W * 0.7 / c.width, CELL_H * 0.78 / c.height) for c in crops)
@@ -90,7 +95,7 @@ def paint(names):
             print("FAILED", cls, flush=True)
 
 
-def ingest():
+def ingest(names=None):
     info = json.load(open(f"{BATCH}/in/classes.json"))
     anchors = json.load(open(f"{D}/anchors.json"))
     for cls, d in info.items():
@@ -137,4 +142,4 @@ def ingest():
 
 
 if __name__ == "__main__":
-    {"prep": lambda: prep(), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest()}[sys.argv[1]]()
+    {"prep": lambda: prep(sys.argv[2:]), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest(sys.argv[2:])}[sys.argv[1]]()

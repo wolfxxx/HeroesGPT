@@ -6,7 +6,11 @@ python tools/art/siege_levels_paint.py breach [names...]  ->  imagegen/batch28/o
 python tools/art/siege_levels_paint.py retop              ->  the Castle's lower tower gets a battlement top (then breach
                                                               breach_castle_<faction>_5/6 again, then ingest)
 python tools/art/siege_levels_paint.py damage [names...]  ->  imagegen/batch28/out/dmg_<level>_<faction>_<seg>.png (hit once)
-python tools/art/siege_levels_paint.py ingest             ->  assets/battle/bg_siege_<faction>_<level>.png,
+python tools/art/siege_levels_paint.py restyle <faction>  ->  imagegen/batch28/out/castle_<faction>.png: a new faction's
+                                                              Castle repainted over another's finished one (RESTYLE_FROM),
+                                                              every wall in place; then paint citadel_/fort_<faction>,
+                                                              breach and damage <names>, archer <faction>, ingest <faction>
+python tools/art/siege_levels_paint.py ingest [factions]  ->  assets/battle/bg_siege_<faction>_<level>.png,
                                                               assets/battle/siege_<faction>_<level>_{ruin,dmg}_<seg>.png,
                                                               assets/battle/siege.json ("<faction>_<level>": positions)
 Levels: 1 fort, 2 citadel, 3 castle.
@@ -24,7 +28,14 @@ from PIL import Image, ImageDraw, ImageFilter
 sys.path.insert(0, os.path.dirname(__file__))
 
 BATCH = "imagegen/batch28"
-FACTIONS = ["haven", "necropolis"]
+FACTIONS = ["haven", "necropolis", "tower"]
+# a faction whose siege is the restyle of another's finished Castle (the Illuminated: the Temple's white walls)
+RESTYLE_FROM = {"tower": "haven"}
+RESTYLE = {"tower": ("the stronghold of the Illuminated, a hidden order of alchemists high in snowy mountains: the walls, "
+                     "towers, gatehouse and keep of polished white marble with gold trim, their conical roofs deep blue "
+                     "with gold finials, blue banners; the battlefield on the left now covered in snow with patches of "
+                     "frozen earth, the mountains behind snowy, the sky cold and clear, the moat dark icy water, the "
+                     "courtyard and the town behind the wall white stone with snow on the roofs")}
 LEVELS = {1: "fort", 2: "citadel", 3: "castle"}
 
 # battle.gd geometry (1920x1080)
@@ -189,7 +200,56 @@ SEG_WHAT = {
     6: "the smaller round tower at the bottom: smash its roof in and blast its body to a jagged broken stump, blocks "
        "and rubble heaped at its foot{moat}",
 }
-MAT = {"haven": "pale cream limestone, blue slate roofs", "necropolis": "black basalt, dark violet roofs"}
+MAT = {"haven": "pale cream limestone, blue slate roofs", "necropolis": "black basalt, dark violet roofs",
+       "tower": "white marble with gold trim, deep blue roofs, snow"}
+RESTYLE_PROMPT = ("This is a castle siege battlefield from a fantasy strategy game. Paint EXACTLY the same picture, same "
+                  "camera, every shape in exactly the same place and the same size (the wall, gatehouse, gate, the two "
+                  "round towers, the keep, the moat, the drawbridge and the ground must line up with a game grid laid "
+                  "over it later), restyled as {what}. {style}\nNo units, no people, no text.")
+ARCHER = {"tower": ("a marksman of the Illuminated: a crossbowman in a midnight-blue tabard with gold trim over mail and a "
+                    "polished steel cap, drawing a crossbow")}
+
+
+def restyle(fac):
+    from google import genai
+    import vertex_paint as vp
+    client = genai.Client(vertexai=True, project=vp.PROJECT, location=vp.LOCATION)
+    src = f"{BATCH}/in/restyle_{fac}.png"
+    Image.open(f"assets/battle/bg_siege_{RESTYLE_FROM[fac]}_3.png").convert("RGB").save(src)
+    img = vp.paint(client, "gemini-nano-banana-2.1", src, RESTYLE_PROMPT.format(what=RESTYLE[fac], style=vp.STYLE), "16:9", "2K")
+    if img:
+        img.save(f"{BATCH}/out/castle_{fac}.png"); print("done castle", fac, flush=True)
+
+
+def archer(fac):
+    """The arrow-tower crew, repainted over the source faction's on magenta (its canvas and anchor kept)."""
+    from google import genai
+    import vertex_paint as vp
+    from pose_paint import key_out, drop_specks
+    ref = Image.open(f"assets/battle/siege_{RESTYLE_FROM[fac]}_archer.png").convert("RGBA")
+    a = np.asarray(ref).copy()
+    a[..., 3] = np.where(a[..., 3] > 140, 255, 0)
+    c = Image.new("RGBA", ref.size, (255, 0, 255, 255))
+    c.alpha_composite(Image.fromarray(a))
+    s = 1024 / max(ref.size)
+    src = f"{BATCH}/in/archer_{fac}.png"
+    c.convert("RGB").resize((int(ref.width * s), int(ref.height * s)), Image.LANCZOS).save(src)
+    client = genai.Client(vertexai=True, project=vp.PROJECT, location=vp.LOCATION)
+    prompt = ("This is a soldier sprite of a hand-painted fantasy strategy game on a flat magenta backdrop. Repaint him "
+              "as {who}, the same pose, size and place in the frame, facing the same way, the same style and lighting. "
+              "The background stays a perfectly flat pure magenta (#FF00FF): no ground, no shadow, no text.").format(who=ARCHER[fac])
+    r = 1.0 if abs(ref.width - ref.height) < 0.1 * ref.width else (0.75 if ref.height > ref.width else 4 / 3)
+    img = vp.paint(client, "gemini-nano-banana-2.1", src, prompt, {1.0: "1:1", 0.75: "3:4", 4 / 3: "4:3"}[r], "1K")
+    if not img:
+        print("FAILED archer", fac); return
+    cut = drop_specks(key_out(img.convert("RGB").resize(ref.size, Image.LANCZOS)), keep=0.05)
+    cut.save(f"assets/battle/siege_{fac}_archer.png")
+    banch = json.load(open("assets/battle/anchors.json")) if os.path.exists("assets/battle/anchors.json") else {}
+    k = f"siege_{RESTYLE_FROM[fac]}_archer.png"
+    if k in banch:
+        banch[f"siege_{fac}_archer.png"] = banch[k]
+        json.dump(banch, open("assets/battle/anchors.json", "w"), indent=0, sort_keys=True)
+    print("archer", fac, ref.size)
 MOAT = {1: "", 2: " and into the moat", 3: " and into the moat"}
 BREACH = ("This is a crop of a castle siege battlefield from a fantasy strategy game. Paint EXACTLY the same picture, "
           "same framing, every shape in the same place, but with {what} smashed by catapult fire, a little dust; the stone keeps "
@@ -321,11 +381,15 @@ FEATHER = 24
 CUT_BANDS = {2: (380, 540), 3: (490, 668)}
 
 
-def ingest():
+def ingest(only=None):
     """Per level the finished backdrop, and per breakable segment a feathered cut of its breach painting and of its
-    battered painting (where each differs from the intact wall) with their position on the screen (the same for both)."""
-    meta = {}
+    battered painting (where each differs from the intact wall) with their position on the screen (the same for both).
+    `only`: those factions (the others' finished files and siege.json entries stay as they are)."""
+    mp = "assets/battle/siege.json"
+    meta = json.load(open(mp)) if only and os.path.exists(mp) else {}
     for fac in FACTIONS:
+        if only and fac not in only:
+            continue
         for lvl, lname in LEVELS.items():
             w = f"{BATCH}/out/{lname}_{fac}.png"
             if not os.path.exists(w):
@@ -379,5 +443,9 @@ if __name__ == "__main__":
         damage(sys.argv[2:])
     elif cmd == "retop":
         retop()
+    elif cmd == "restyle":
+        restyle(sys.argv[2])
+    elif cmd == "archer":
+        archer(sys.argv[2])
     elif cmd == "ingest":
-        ingest()
+        ingest(sys.argv[2:])

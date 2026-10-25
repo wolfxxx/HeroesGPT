@@ -358,12 +358,24 @@ func learn_guild(hero: Dictionary, town: Dictionary) -> Array:
 			learned.append(s)
 	return learned
 
-## Visiting own town: learn mage guild spells, refill mana.
+## Visiting own town: learn mage guild spells, refill mana, and study at a Wall of Knowledge once (+Knowledge).
 func hero_in_town(hero: Dictionary, town: Dictionary) -> Array:
 	var learned := learn_guild(hero, town)
 	if TownLogic.mage_guild_level(town) > 0:
 		hero["mana"] = maxi(hero["mana"], GameState.max_mana(hero))
 	return learned
+
+## The Illuminated's Wall of Knowledge: +1 Knowledge to a hero the first time it visits the town; the gain (0 if
+## none: no Wall, or studied it already).
+func study_wall(hero: Dictionary, town: Dictionary) -> int:
+	var k := TownLogic.effect(town, "visit_knowledge")
+	var seen: Array = town.get("knowledge_given", [])
+	if k <= 0 or hero["uid"] in seen:
+		return 0
+	seen.append(hero["uid"])
+	town["knowledge_given"] = seen
+	hero["knowledge"] += k
+	return k
 
 # ---------------------------------------------------------------------------------------------
 # Visiting

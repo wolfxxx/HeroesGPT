@@ -16,6 +16,26 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 the Illuminated (2026-10-25), committed with this HANDOFF update:** the user: "lets start with the illuminated"; answers: light
+  theming (Gremlins as Homunculi, Mages as Magi, the rest HoMM3's names) and "build it all". A third faction, id
+  `tower` (HoMM3's Tower), designed in the new `docs/ILLUMINATED.md`: twelve creatures with HoMM3's numbers plus Giants
+  and Titans as its seventh tier (now `"faction": "tower"`, still met on the map), six heroes from legend (Nicolas and
+  Perenelle Flamel, Paracelsus: Alchemists; Christian Rosenkreuz, Adam Weishaupt, Cagliostro: Wizards), the town
+  (Workshop ... Cloud Temple, the Library and the Wall of Knowledge, a Mage Guild to level 5, the Ammo Cart at the
+  Blacksmith), snow its native ground. New rules: `unliving` (HoMM3's non-living: Gargoyles and Golems; no morale, no
+  mind spells, Death Ripple, cloud, drain or disease, no Skeletons; `BattleLogic.living`), Magi (`no_wall_penalty`,
+  `spell_cost_down`: `BattleLogic.spell_cost`), Master Genies (`genie_spells`: three helpful spells a battle on an
+  ally, from the battle's dice; `genie_cast`, the player clicks an ally, the AI uses them early), the Library
+  (`guild_spells`) and the Wall of Knowledge (`AdvRules.study_wall`, in the town_visit command). Art, all painted:
+  the twelve creatures with poses and moves, six portraits (Perenelle repainted: a wimple read as a nun), the
+  Alchemist and Wizard on the map and in battle with idle and cast frames (the Wizard's idle repainted: it dropped the
+  staff), the town screen (new `tools/art/new_faction_town.py`: every layer of the Order's town repainted as the
+  Illuminated's in place, the backdrop a snowy plateau above the clouds; the Cloud Temple repainted: its clouds ran
+  to the layer's edges as a square), 28 build cards, the map town in three levels, the siege (the Temple's restyled
+  in marble and snow, all breaches and battered pieces, a crossbowman crew), town music (`town_tower`). The New Game
+  screen shares the faction row between three cards. Checked: new `tools/illuminated_test.tscn` (172 checks, in the
+  suite) and screenshots in ignored `shots/session67/illum/` (`b_0.png` / `b_2.png` a battle, `siege_sheet.png`,
+  `newgame.png`) and `shots/session67/illuminated_tower*.png` (the town early and built).
 - **Session67 Titans and Black Dragons (2026-10-25), committed with this HANDOFF update:** the user ("so lets keep going") chose HoMM3's way
   with the Hill Fort and all the abilities. Four neutral creatures with HoMM3's numbers, met on the map before their
   towns (the Illuminated, Agartha) exist: **Giant** (19/16, 40-60, 150 hp, speed 7; immune to mind spells) and
@@ -1240,7 +1260,9 @@ Proposed path, discussed with the user (not yet approved as a plan):
    colour). Next: a test between two real computers (the user is doing it); per-player fog on the wire.
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
-3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
+3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. Built: the
+   Illuminated (Tower, session67, `docs/ILLUMINATED.md`); next proposed: Agartha (Dungeon, with the Red and Black
+   Dragons already in), then Eridu. Not yet run: a tournament with the Illuminated. The user's own
    idea, an alien faction themed on Sumerian myth, is in `docs/ERIDU_PROPOSAL.md`; the whole setting (a secret
    history of conspiracies) in `docs/SETTING.md` (both awaiting answers).
 4. **Hardening:** relay or dedicated server, lobby, fog filtered per player, version checks, turn timers.
@@ -1509,6 +1531,12 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **The Illuminated (session67):** `GameData.FACTIONS["tower"]`, its creatures, classes, heroes and the `library` /
+  `wall_of_knowledge` buildings; `BattleLogic.living / spell_cost / genie_*`, `battle.gd` "genie" action;
+  `TownLogic.learn_guild_spells` (+guild_spells), `AdvRules.study_wall`; art tools `new_faction_town.py`,
+  `siege_levels_paint.py restyle|archer`, `legend_portraits.py`, `hero_class_paint.py` / `map_class_paint.py` /
+  `battle_anim_paint.py` (now taking names), `town_levels_paint.py` (factions), `building_cards.py cards <factions>`;
+  `tools/illuminated_test.tscn`; design in `docs/ILLUMINATED.md`.
 - **Titans and Black Dragons (session67):** data `GameData.CREATURES` (`giant`, `titan`, `red_dragon`,
   `black_dragon`; keys `hates`, `spell_immunity`, `fig_scale`, abilities `breath`, `no_melee_penalty`, `mind_immune`),
   `GameData.ability_words` (the hover panels), `upgrade_of_base` (neutral upgrades); rules in `BattleLogic`
@@ -1603,6 +1631,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- A new faction's art (session67): the art tools that loop over every faction or creature rewrite the older ones
+  (pose, cycle, card, siege ingest): pass the new names, restore the rest from git, merge only the new anchors.
+  Image-model calls can fail on a network hiccup ("getaddrinfo failed"): check every expected output exists.
 - New creatures' art (session67): `pose_paint.py ingest` and `cycle_paint.py ingest` re-cut every creature with an
   output (they rewrote the Bone Dragon's poses and moves): restore the others from git and merge only the new
   anchors into `creatures/anchors.json`. A map site with an anchor is drawn at a fixed scale (`MapView._sprite`), so

@@ -31,6 +31,11 @@ FIGS = {
                    "raises the skull staff high overhead, the skull blazing with green necromantic light"),
     "death_knight": ("a death knight in black spiked armour on a skeletal horse, holding a huge jagged sword upright",
                      "raises the huge sword high overhead, a sickly green glow along the blade"),
+    "tower": ("an alchemist in a midnight-blue coat and wide-brimmed hat with a bandolier of glowing flasks, a brass rod "
+              "resting on the thigh", "raises the brass rod high, a swirl of golden alchemical light around its tip"),
+    "wizard": ("a wizard in white-and-gold robes and a blue hooded mantle, holding a tall crystal-topped staff upright "
+               "in the right hand in every frame (he never lets go of the staff)",
+               "raises the crystal staff high overhead, the crystal blazing with pale-blue light"),
 }
 IDLE = ("The image shows the same mounted hero four times, {who}, from the battle screen of a hand-painted fantasy "
         "strategy game, side view facing right, on a flat magenta backdrop. Repaint the four cells as the four frames "
@@ -59,9 +64,11 @@ def _place(img, size, s, cw, ch):
     return big, (cw - big.width) // 2, int(ch * 0.88) - big.height
 
 
-def prep():
+def prep(names=None):
     os.makedirs(f"{BATCH}/in", exist_ok=True)
     for name in FIGS:
+        if names and name not in names:
+            continue
         fig = _fig(name)
         c = fig.crop(fig.getbbox())
         s = min(CELL_W * 0.8 / c.width, CELL_H * 0.8 / c.height)
@@ -114,8 +121,10 @@ def _stand(cut, fig, _shadow, out_path):
     Image.alpha_composite(out, layer).save(out_path)
 
 
-def ingest():
+def ingest(names=None):
     for name in FIGS:
+        if names and name not in names:
+            continue
         fig, shadow = _split(name)
         c = fig.crop(fig.getbbox())
         p = f"{BATCH}/out/{name}_idle.png"
@@ -140,4 +149,4 @@ def ingest():
 
 
 if __name__ == "__main__":
-    {"prep": lambda: prep(), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest()}[sys.argv[1]]()
+    {"prep": lambda: prep(sys.argv[2:]), "paint": lambda: paint(sys.argv[2:]), "ingest": lambda: ingest(sys.argv[2:])}[sys.argv[1]]()

@@ -164,9 +164,10 @@ static func _town_visit(rules: AdvRules, player: Dictionary, cmd: Dictionary) ->
 	var hero := _hero_of(rules, player, cmd)
 	if town.is_empty() or hero.is_empty() or hero["pos"] != town["pos"]:
 		return _no("The hero is not in the town.")
+	var knowledge := rules.study_wall(hero, town)  # (first: the spell points are restored to the new maximum)
 	var mana: int = hero["mana"]
 	var learned := rules.hero_in_town(hero, town)
-	return {"ok": true, "reason": "", "learned": learned, "mana": hero["mana"] - mana}
+	return {"ok": true, "reason": "", "learned": learned, "mana": hero["mana"] - mana, "knowledge": knowledge}
 
 static func _garrison(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
 	var town := _own_town(rules, player, cmd)

@@ -228,6 +228,19 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - Per-creature (optional): `sfx/<creature_id>_attack.mp3`, `sfx/<creature_id>_death.mp3`.
 - Voice (optional): `voice/<line_id>.mp3` narrator lines: intro, victory, defeat, new_week.
 
+## The Illuminated (session67, `tower`)
+Everything painted over existing art by the image model (docs/ILLUMINATED.md): creatures over the Skeleton, Vampire,
+Swordsman, Chaplain Brother, Ghost and Cavalier (`new_creature_paint.py`), each upgrade over its base; poses and moves
+as every creature. Hero portraits `legend_portraits.py`; the Alchemist (`battle_tower`, `map_tower*`) and Wizard
+(`battle_wizard`, `map_wizard*`) over the Temple's horse (`hero_class_paint.py`, `map_class_paint.py`,
+`battle_anim_paint.py`). The town screen `town/tower_*.png` and `layout_tower.json` by `tools/art/new_faction_town.py`
+(imagegen/batch40: each layer of the Order's town, padded on magenta, repainted as a different building in place;
+upgraded dwellings from the new base; the backdrop repainted keeping the ground; its `map` step paints
+`map/town_tower.png` over the Order's map town). Cards `building_cards.py cards tower`; map town levels
+`town_levels_paint.py`; the siege `battle/bg_siege_tower_*.png`, `siege_tower_*` and `siege_tower_archer.png` by
+`siege_levels_paint.py restyle tower` (the Temple's finished Castle repainted, walls in place), then `paint`,
+`breach`, `damage`, `archer`, `ingest tower`. Music `audio/music/town_tower.mp3` (`gen_audio.py music town_tower`).
+
 ## Faction colours from the setting (session67)
 The Temple (`haven`) town screen (`town/haven_*.png`, the layout unchanged; its backdrop is the repaint's distant
 castle, hills and sky over the original ground, `tools/art/town_bg_blend.py`, since the repaint had moved the plaza

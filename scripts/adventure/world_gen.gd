@@ -333,7 +333,7 @@ func _generate(settings: Dictionary) -> Dictionary:
 		picks.sort_custom(func(a, b): return a["uid"] < b["uid"])
 		for cid in ["giant", "red_dragon"]:
 			if picks.is_empty():  # (not two far enough from the towns: a nearer one)
-				picks = all.filter(func(o): return GameData.FACTIONS.has(GameData.CREATURES[o["creature"]]["faction"]))
+				picks = all.filter(func(o): return not o["creature"] in ["giant", "red_dragon"])
 			if picks.is_empty():
 				break
 			picks.pop_at(rng.randi() % picks.size())["creature"] = cid
@@ -896,7 +896,7 @@ func _guard(o: Dictionary, strength := 1.6) -> void:
 ## A guarded neutral dwelling of a town creature, at least `far` tiles from every town (it may become a Cloud Temple
 ## or a Dragon Cave).
 func _town_creature_dwelling(o: Dictionary, far: float) -> bool:
-	if o["type"] != "dwelling" or not GameData.FACTIONS.has(GameData.CREATURES[o["creature"]]["faction"]):
+	if o["type"] != "dwelling" or not GameData.FACTIONS.has(GameData.CREATURES[o["creature"]]["faction"]) 			or GameData.CREATURES[o["creature"]]["tier"] >= 7:
 		return false
 	for t in _town_positions():
 		if Vector2(t).distance_to(Vector2(o["pos"])) < far:

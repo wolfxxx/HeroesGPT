@@ -1,5 +1,7 @@
 """Building pictures for the build / recruit dialogs, like the hall screen of the classics.
 python tools/art/building_cards.py           ->  assets/icons/building_<faction>_<sprite id>.png (320x200)
+python tools/art/building_cards.py cards <factions>  ->  only those factions' cards (the Temple's and the Order's were
+                                                 repainted since: never run the bare command again)
 python tools/art/building_cards.py prep-edge ->  imagegen/batch9/in/card__<faction>__<id>.png for buildings cut off
                                                  by the screen edge; paint them with vertex_paint.py, then run
 python tools/art/building_cards.py ingest-edge
@@ -42,10 +44,10 @@ def crop_for(rect, aspect=CARD[0] / CARD[1]):
     y0 = min(max(0, cy - ch / 2), VIEW_H - ch)
     return (int(x0), int(y0), int(x0 + cw), int(y0 + ch))
 
-def cards():
+def cards(factions=("haven", "necropolis")):
     os.makedirs(OUT, exist_ok=True)
     n = 0
-    for fac in ("haven", "necropolis"):
+    for fac in factions:
         layout = json.load(open(f"assets/town/layout_{fac}.json"))
         edge = _edge_ids(fac, layout)
         for sid, rect in layout.items():
@@ -55,7 +57,7 @@ def cards():
             view = town_view(fac, [sid]).convert("RGB")
             view.crop(crop_for(rect)).resize(CARD, Image.LANCZOS).save(dst)
             n += 1
-    print(n, "cards; edge buildings:", {f: _edge_ids(f, json.load(open(f"assets/town/layout_{f}.json"))) for f in ("haven", "necropolis")})
+    print(n, "cards; edge buildings:", {f: _edge_ids(f, json.load(open(f"assets/town/layout_{f}.json"))) for f in factions})
 
 def prep_edge():
     os.makedirs(f"{BATCH}/in", exist_ok=True)
@@ -79,4 +81,7 @@ def ingest_edge():
             print("  card", fac, sid)
 
 if __name__ == "__main__":
-    {"prep-edge": prep_edge, "ingest-edge": ingest_edge}.get(sys.argv[1] if len(sys.argv) > 1 else "", cards)()
+    if len(sys.argv) > 2 and sys.argv[1] == "cards":
+        cards(tuple(sys.argv[2:]))
+    else:
+        {"prep-edge": prep_edge, "ingest-edge": ingest_edge}.get(sys.argv[1] if len(sys.argv) > 1 else "", cards)()

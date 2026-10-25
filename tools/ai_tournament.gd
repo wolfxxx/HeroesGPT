@@ -146,6 +146,7 @@ func _fight(p: Dictionary, seed: int, new_side: int) -> Dictionary:
 		match act["type"]:
 			"shoot": L.do_shoot(s, act["target"])
 			"melee": L.do_melee(s, act["target"], act["from"])
+			"genie": L.genie_cast(s, act["target"])
 			"move": L.do_move(s, act["hex"])
 			"wait":
 				if not L.do_wait(s):

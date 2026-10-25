@@ -18,6 +18,18 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 	var enemies := L.alive_stacks(1 - s["side"])
 	if enemies.is_empty():
 		return {"type": "defend"}
+	# a Master Genie spends its spells early, on the most valuable ally without them, unless it can strike now
+	if L.genie_casts_left(s) > 0 and L.round_num <= 3 and L.adjacent_enemies(s).is_empty():
+		var best = null
+		var bv := 0.0
+		for a in L.alive_stacks(s["side"]):
+			if L.genie_target_ok(s, a):
+				var v: float = L.cdata(a)["ai_value"] * a["count"]
+				if v > bv:
+					bv = v
+					best = a
+		if best != null and bv >= L.cdata(s)["ai_value"] * s["count"] * 0.5:
+			return {"type": "genie", "target": best}
 	if L.can_shoot(s):
 		var best := {}
 		var bv := -INF
@@ -31,7 +43,7 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 				for cell in L.cells(e):
 					around += BattleLogic.neighbors(cell)
 				for other in L.stacks_on(around):
-					if other == e or L.has_ab(other, "undead"):
+					if other == e or not L.living(other):
 						continue
 					var splash := _value_of_damage(L, other, maxf(1.0, _avg(L.damage_range(s, other, true)) * 0.5))
 					v += splash if other["side"] != s["side"] else -1.2 * splash
@@ -216,7 +228,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 	var allies := L.alive_stacks(side)
 	for sp in h["spells"]:
 		var d: Dictionary = GameData.SPELLS[sp]
-		if d["mana"] > h["mana"]:
+		if L.spell_cost(side, sp) > h["mana"]:
 			continue
 		match d["target"]:
 			"enemy":
@@ -286,7 +298,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 			"all_living":
 				var v := 0.0
 				for s in L.alive_stacks():
-					if not L.has_ab(s, "undead") and not L.stack_immune(s, sp):
+					if L.living(s) and not L.stack_immune(s, sp):
 						var val := _value_of_damage(L, s, L.spell_damage_to(side, sp, s))
 						v += val if s["side"] != side else -1.0 * val
 				if v > bv:

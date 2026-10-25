@@ -40,8 +40,8 @@ static func calculate(hero, army: Array, fallen: Array, player_index := -1) -> D
 		var data: Dictionary = GameData.CREATURES[stack["id"]]
 		if stack["id"] == "arrow_tower":
 			continue # a fortification, not a killed creature or war machine
-		if "golem" in data["abilities"]:
-			continue  # (not living: no skeleton rises from a statue, as HoMM3's golems)
+		if "golem" in data["abilities"] or "unliving" in data["abilities"]:
+			continue  # (not living: no skeleton rises from a statue, as HoMM3's golems and gargoyles)
 		var numerator: int = stack["count"] * mini(int(data["hp"]), target_hp) * percent
 		var denominator := 100 * target_hp
 		if upgraded:

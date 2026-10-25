@@ -171,7 +171,7 @@ func _demo_setup() -> Dictionary:
 	if Shot.setup.begins_with("siege"):  # Sir Aldric with all his machines before a Necropolis castle (--siege=1|2|3)
 		a["machines"] = GameData.WAR_MACHINES.duplicate()
 		out["siege"] = int(Shot.args.get("siege", "3"))
-		out["siege_faction"] = "haven" if Shot.setup == "siege_haven" else "necropolis"
+		out["siege_faction"] = {"siege_haven": "haven", "siege_tower": "tower"}.get(Shot.setup, "necropolis")
 	return out
 
 # ---------------------------------------------------------------------------------------------
@@ -827,6 +827,7 @@ func _ai_turn(s: Dictionary) -> void:
 	match act["type"]:
 		"shoot": _carry({"k": "shoot", "target": act["target"]["uid"]}, true)
 		"melee": _carry({"k": "melee", "target": act["target"]["uid"], "from": act["from"]}, true)
+		"genie": _carry({"k": "genie", "target": act["target"]["uid"]}, true)
 		"move": _carry({"k": "move", "hex": act["hex"]}, true)
 		"wait": _carry({"k": "wait"}, true)  # (the computer waits, as a player may: it acts again at the end of the round)
 		_: _carry({"k": "defend"}, true)
@@ -879,6 +880,7 @@ func _carry(a: Dictionary, local: bool) -> void:
 		"move": ev = L.do_move(cur, a["hex"])
 		"melee": ev = L.do_melee(cur, _stack(a["target"]), a["from"])
 		"shoot": ev = L.do_shoot(cur, _stack(a["target"]))
+		"genie": ev = L.genie_cast(cur, _stack(a["target"]))
 		"wait":
 			if L.do_wait(cur):
 				_set_log("%s %s." % [L._name(cur), "waits" if cur["count"] == 1 else "wait"])
@@ -1201,6 +1203,9 @@ func _update_hover() -> void:
 					txt = "Attack %s (damage %s, kills %s)" % [L._name(t), GameData.dmg_text(r[0], r[1]), _kills(t, r)]
 				else:
 					txt = "%s — out of reach" % L._name(t)
+		elif t and t["side"] == cur["side"] and L.genie_target_ok(cur, t):
+			_hover_action = {"type": "genie", "target": t}
+			txt = "Cast a helpful spell on %s (%d left)" % [L._name(t), L.genie_casts_left(cur)]
 		elif t and t["side"] == cur["side"]:
 			txt = "%d %s" % [t["count"], L._name(t)]
 		elif _reach.has(_hover) or (L.is_wide(cur) and _reach.has(_hover - BattleLogic.tail_dir(cur["side"]))):
@@ -1246,6 +1251,8 @@ func _click() -> void:
 			_carry({"k": "melee", "target": _hover_action["target"]["uid"], "from": _hover_action["from"]}, true)
 		"shoot":
 			_carry({"k": "shoot", "target": _hover_action["target"]["uid"]}, true)
+		"genie":
+			_carry({"k": "genie", "target": _hover_action["target"]["uid"]}, true)
 		"cast":
 			var sp := _spell
 			_spell = ""
@@ -1355,7 +1362,7 @@ func _on_spells() -> void:
 		return
 	var side: int = cur["side"]
 	var h = L.heroes[side]
-	var r = await SpellBook.open(self, h, func(sp): return GameData.SPELLS[sp]["mana"] <= h["mana"],
+	var r = await SpellBook.open(self, h, func(sp): return L.spell_cost(side, sp) <= h["mana"],
 		func(sp): return ("Now: %d damage." % L.spell_damage(side, sp)) if GameData.SPELLS[sp].has("damage") else "").closed
 	if r == null or r == "":
 		return
@@ -1494,17 +1501,18 @@ func _anim_attack(ev: Dictionary) -> void:
 	if ev["ranged"]:
 		_pose(a, "attack", 0.55)
 		var proj := _Projectile.new()
-		proj.kind = "magic" if GameData.base_of(a["id"]) in ["monk", "lich"] else ("lightning" if a["id"] == "titan" else "arrow")
+		proj.kind = {"monk": "magic", "lich": "magic", "magus": "magic", "titan": "lightning", "master_homunculus": "flask"}.get(
+			GameData.base_of(a["id"]), "arrow")
 		proj.from = na.position + Vector2(0, -_top(a) * 0.6)
 		proj.to = nd.position + Vector2(0, -60)
 		_fx.add_child(proj)
 		# (the ballista's heavy bolt its own deep thunk, not the archers' bow string)
-		Audio.sfx({"magic": "magic_arrow", "lightning": "lightning"}.get(proj.kind, "ballista_shot" if a["id"] == "ballista" else "arrow_shot"), -2)
+		Audio.sfx({"magic": "magic_arrow", "lightning": "lightning", "flask": "miss"}.get(proj.kind, "ballista_shot" if a["id"] == "ballista" else "arrow_shot"), -2)
 		var tw := spr.create_tween()  # recoil
 		tw.tween_property(spr, "position", home - dir * 10, 0.08).set_ease(Tween.EASE_OUT)
 		tw.tween_property(spr, "position", home, 0.25).set_trans(Tween.TRANS_SINE)
 		await proj.fly(0.28)
-		Audio.sfx("magic_hit" if proj.kind in ["magic", "lightning"] else "arrow_hit", -2)
+		Audio.sfx("magic_hit" if proj.kind in ["magic", "lightning", "flask"] else "arrow_hit", -2)
 	else:
 		# wind-up: draw back and lean away
 		var lean := signf(dir.x) if dir.x != 0.0 else 1.0
@@ -1629,7 +1637,7 @@ func _anim_spell(ev: Dictionary) -> void:
 		"cure": "heal", "resurrection": "heal", "meteor_shower": "meteor", "death_ripple": "curse", "frost_ring": "magic_hit", "ice_bolt": "magic_hit",
 		"chain_lightning": "lightning", "armageddon": "meteor", "implosion": "magic_hit", "blind": "curse", "berserk": "curse"}
 	Audio.sfx(sfx_map.get(sp, "spell_cast"))
-	if sp != "death_cloud" and L.heroes[ev["side"]] != null:
+	if sp != "death_cloud" and not ev.get("genie", false) and L.heroes[ev["side"]] != null:
 		_hero_cast(ev["side"])
 		_spell_banner(GameData.SPELLS[sp]["name"], ev["side"])
 		_flush_log(ev)  # (its log line with its banner, not only when it lands)
@@ -1737,6 +1745,7 @@ const WALL_BANDS := [[0, 306], [306, 442], [442, 578], [578, 646], [646, 782], [
 const ARCHER_SPOTS := {
 	"haven": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},
 	"necropolis": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},
+	"tower": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},  # (the Temple's walls, restyled)
 }
 
 func _build_walls() -> void:
@@ -2671,7 +2680,12 @@ class _Projectile extends Node2D:
 			draw_polyline(pts, Color(0.75, 0.88, 1.0, 0.8 * al), 6.0)
 			draw_polyline(pts, Color(1, 1, 1, al), 2.5)
 			return
-		var p := from.lerp(to, t) + Vector2(0, -sin(t * PI) * 60.0 * (1.0 if kind == "arrow" else 0.3))
+		var p := from.lerp(to, t) + Vector2(0, -sin(t * PI) * 60.0 * (1.0 if kind in ["arrow", "flask"] else 0.3))
+		if kind == "flask":  # (a Master Homunculus's thrown flask: green glass, tumbling)
+			draw_circle(p, 9, Color(0.35, 0.9, 0.45, 0.9))
+			draw_circle(p + Vector2(-3, -3), 3, Color(1, 1, 1, 0.8))
+			draw_line(p, p + Vector2(0, -12).rotated(t * 12.0), Color(0.55, 0.4, 0.25), 3.0)
+			return
 		if kind == "arrow":
 			var dir := (to - from).normalized().rotated(-cos(t * PI) * 0.35 * signf(to.x - from.x))
 			draw_line(p - dir * 26, p, Color(0.35, 0.22, 0.1), 3.0)

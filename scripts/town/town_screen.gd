@@ -27,14 +27,16 @@ func _ready() -> void:
 	Audio.music("town_%s" % town["faction"])
 	var report: Dictionary = GameState.pending_town.get("report", {})
 	if not hero.is_empty() and report.get("hero", -1) == hero["uid"]:
-		_announce_learning.call_deferred(report.get("learned", []), int(report.get("mana", 0)))
+		_announce_learning.call_deferred(report.get("learned", []), int(report.get("mana", 0)), int(report.get("knowledge", 0)))
 
 ## What a visit (or a new Mage Guild level) taught the visiting hero: the new spells with their icons, and spell
 ## points restored. Nothing to say: no dialog.
-func _announce_learning(learned: Array, mana_gain := 0) -> void:
-	if learned.is_empty() and mana_gain <= 0:
+func _announce_learning(learned: Array, mana_gain := 0, knowledge := 0) -> void:
+	if learned.is_empty() and mana_gain <= 0 and knowledge <= 0:
 		return
-	var m := Modal.custom(self, "Mage Guild", 760)
+	var m := Modal.custom(self, "Mage Guild" if knowledge <= 0 else "Wall of Knowledge", 760)
+	if knowledge > 0:
+		m.add_text("%s studies the Wall of Knowledge: +%d Knowledge." % [hero["name"], knowledge], 22)
 	if not learned.is_empty():
 		m.add_text("%s studies in the Mage Guild and learns %s:" % [hero["name"],
 			"a new spell" if learned.size() == 1 else "%d new spells" % learned.size()], 22)
@@ -54,6 +56,9 @@ func _resolve_state() -> void:
 		if Shot.setup.contains("necro"):
 			s["faction"] = "necropolis"
 			s["hero"] = "lord_morthis"
+		if Shot.setup.contains("tower"):  # (tower, tower_rich: the Illuminated)
+			s["faction"] = "tower"
+			s["hero"] = "nicolas_flamel"
 		GameState.world = WorldGen.generate(s)
 	world = GameState.world
 	var uid: int = GameState.pending_town.get("town_uid", -1)

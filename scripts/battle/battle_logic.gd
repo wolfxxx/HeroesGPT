@@ -166,8 +166,13 @@ func stack_immune(s: Dictionary, spell: String) -> bool:
 	if int(GameData.SPELLS[spell]["level"]) <= int(cdata(s).get("spell_immunity", 0)):
 		return true
 	if GameData.SPELLS[spell].get("mind", false):
-		return has_ab(s, "undead") or has_ab(s, "golem") or has_ab(s, "mind_immune") or s.get("machine", false)
+		return not living(s) or has_ab(s, "golem") or has_ab(s, "mind_immune") or s.get("machine", false)
 	return false
+
+## Alive in HoMM3's sense: not undead, not a made thing (Gargoyles, Golems) and not a war machine. Only the living
+## feel morale, are drained, diseased, struck by Death Ripple or a Lich's cloud, or bent by mind spells.
+func living(s: Dictionary) -> bool:
+	return not has_ab(s, "undead") and not has_ab(s, "unliving") and not s.get("machine", false)
 
 func has_ab(s: Dictionary, ab: String) -> bool:
 	return ab in cdata(s)["abilities"]
@@ -224,7 +229,7 @@ func is_moat(h: Vector2i) -> bool:
 
 ## Shots from outside at a stack behind an unbroken stretch of wall do half damage.
 func behind_wall(a: Dictionary, d: Dictionary) -> bool:
-	if siege == 0 or a["side"] != 0:
+	if siege == 0 or a["side"] != 0 or has_ab(a, "no_wall_penalty"):  # (the Magi's bolts pass the walls)
 		return false
 	var i := wall_seg(Vector2i(WALL_X, d["hex"].y))
 	return i >= 0 and (walls[i]["hp"] > 0 or i in SOLID_SEGS) and a["hex"].x < WALL_X and d["hex"].x > WALL_X
@@ -436,9 +441,9 @@ func luck(side: int) -> int:
 	return int(h["skills"].get("luck", 0)) + GameState.hero_stat(h, "luck") + int(h.get("next_battle_luck", 0))
 
 ## Morale of a stack's side (-3..3): the hero's Leadership and artifacts, -1 for each extra faction in the army.
-## Undead feel nothing: always 0 for them.
+## The undead and the made things feel nothing: always 0 for them.
 func morale(side: int, s = null) -> int:
-	if s != null and has_ab(s, "undead"):
+	if s != null and (has_ab(s, "undead") or has_ab(s, "unliving")):
 		return 0
 	var v := 0
 	var h = heroes[side]
@@ -806,7 +811,7 @@ func do_shoot(s: Dictionary, target: Dictionary) -> Array:
 		for c in cells(target):
 			around += neighbors(c)
 		for o in stacks_on(around):
-			if o != target and not has_ab(o, "undead"):
+			if o != target and living(o):
 				var dmg := maxi(1, int(_roll_damage(s, o, true, 0) * 0.5))
 				hit[o["uid"]] = dmg
 				killed[o["uid"]] = apply_damage(o, dmg)
@@ -849,11 +854,11 @@ func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation
 	log_lines.append("%s %s %s for %d damage.%s" % [_name(a), verb, dname, dmg,
 		(" %d %s." % [killed, "perishes" if killed == 1 else "perish"]) if killed > 0 else ""])
 	ev[0]["log"] = log_lines.size()
-	if has_ab(a, "life_drain") and a["alive"] and not has_ab(d, "undead"):
+	if has_ab(a, "life_drain") and a["alive"] and living(d):
 		var g := heal(a, dmg / 2, true)
 		if g > 0:
 			ev.append({"t": "heal", "s": a, "amount": g})
-	if has_ab(a, "disease") and d["alive"] and not has_ab(d, "undead") and rng.randf() < 0.3:
+	if has_ab(a, "disease") and d["alive"] and living(d) and rng.randf() < 0.3:
 		d["effects"]["disease"] = 3
 	if has_ab(a, "curse_strike") and d["alive"] and not immune(d["side"], "curse") and rng.randf() < 0.25:
 		d["effects"].erase("bless")  # (the Mummy's curse, as the spell: minimum damage for 3 rounds)
@@ -897,6 +902,50 @@ func breath_victim(a: Dictionary, d: Dictionary, head = null) -> Variant:
 			var o = stack_at(h)
 			return o if o != null and o != a and o != d else null
 	return null
+
+## Master Genies (HoMM3): three times a battle, instead of attacking, cast a helpful spell on an ally stack, one the
+## rules pick at random among those not already on it (Bless, Haste, Shield, Stone Skin; Cure when it is cursed, slowed
+## or weakened), for three rounds. The random pick is the battle's own, so every machine casts the same spell.
+const GENIE_SPELLS := ["bless", "haste", "shield", "stone_skin"]
+
+func genie_casts_left(s: Dictionary) -> int:
+	return int(s.get("genie_casts", 3)) if has_ab(s, "genie_spells") else 0
+
+func genie_options(t: Dictionary) -> Array:
+	if stack_immune(t, "bless") and stack_immune(t, "haste"):
+		return []
+	var out := GENIE_SPELLS.filter(func(sp): return not t["effects"].has(sp) and not stack_immune(t, sp))
+	if t["effects"].has("curse") or t["effects"].has("slow") or t["effects"].has("weakness"):
+		out.append("cure")
+	return out
+
+func genie_target_ok(s: Dictionary, t) -> bool:
+	return t != null and t["side"] == s["side"] and genie_casts_left(s) > 0 and not genie_options(t).is_empty()
+
+func genie_cast(s: Dictionary, t: Dictionary) -> Array:
+	var opts := genie_options(t)
+	if genie_casts_left(s) <= 0 or opts.is_empty():
+		return []
+	var sp: String = opts[rng.randi() % opts.size()]
+	s["genie_casts"] = genie_casts_left(s) - 1
+	match sp:
+		"bless":
+			t["effects"].erase("curse")
+		"haste":
+			t["effects"].erase("slow")
+	if sp == "cure":
+		for k in ["curse", "slow", "weakness", "disease"]:
+			t["effects"].erase(k)
+		heal(t, 30, false)
+	else:
+		t["effects"][sp] = 3
+	if sp in ["haste", "cure"]:
+		_resort_order()
+	log_lines.append("%s %s %s on %s." % [_name(s), "casts" if s["count"] == 1 else "cast", GameData.SPELLS[sp]["name"], _name(t)])
+	var ev := {"t": "spell", "spell": sp, "side": s["side"], "targets": [t], "hex": t["hex"], "dmg": {}, "killed": {},
+		"genie": true, "log": log_lines.size()}
+	finish_turn(s)
+	return [ev]
 
 ## A stack that loses its turn to a spell: "blind" (it stands until struck or the spell ends), else "".
 func spell_lost_turn(s: Dictionary) -> String:
@@ -959,8 +1008,13 @@ func can_cast(side: int) -> bool:
 	var h = heroes[side]
 	return h != null and not hero_cast[side] and h["spells"].size() > 0
 
+## A spell's price for the side's hero: 2 less while Magi stand in its army (HoMM3's Mages), never below 1.
 func spell_cost(side: int, spell: String) -> int:
-	return GameData.SPELLS[spell]["mana"]
+	var m: int = GameData.SPELLS[spell]["mana"]
+	for s in alive_stacks(side):
+		if has_ab(s, "spell_cost_down"):
+			return maxi(1, m - 2)
+	return m
 
 func spell_power(side: int) -> int:
 	var h = heroes[side]
@@ -1019,7 +1073,7 @@ func chain_targets(first: Dictionary, spell: String) -> Array:
 func cast(side: int, spell: String, hex: Vector2i) -> Array:
 	var h = heroes[side]
 	var sp: Dictionary = GameData.SPELLS[spell]
-	h["mana"] -= sp["mana"]
+	h["mana"] -= spell_cost(side, spell)
 	hero_cast[side] = true
 	var dur := spell_power(side) + 1
 	var ev := {"t": "spell", "spell": spell, "side": side, "targets": [], "hex": hex, "dmg": {}, "killed": {}}
@@ -1035,7 +1089,7 @@ func cast(side: int, spell: String, hex: Vector2i) -> Array:
 			targets = stacks_on([hex] + neighbors(hex))
 		"all_living":
 			for s in alive_stacks():
-				if not has_ab(s, "undead"):
+				if living(s):
 					targets.append(s)
 		"all":  # (every creature on the field: Armageddon; war machines are not creatures)
 			targets = alive_stacks().filter(func(s): return not s.get("machine", false))

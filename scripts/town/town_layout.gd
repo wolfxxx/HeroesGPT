@@ -24,6 +24,8 @@ const POS := {
 	"brotherhood": [Vector2(1220, 800), 220.0, 7],
 	"necromancy_amplifier": [Vector2(700, 800), 220.0, 7],
 	"skeleton_transformer": [Vector2(1220, 800), 220.0, 7],
+	"library": [Vector2(700, 800), 220.0, 7],
+	"wall_of_knowledge": [Vector2(1220, 800), 220.0, 7],
 }
 
 ## Which layout slot + sprite id a built building uses (upgrades share the base slot).
