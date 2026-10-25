@@ -476,8 +476,7 @@ func _unhandled_input(e: InputEvent) -> void:
 				hud.open_system_menu()
 			KEY_S:
 				if e.ctrl_pressed:
-					GameState.save_game()
-					hud.toast("Game saved")
+					hud.save_game()
 
 ## A row of an army's portraits: exact counts for your own troops, the classic count words for anyone else's.
 func _army_row(v: VBoxContainer, army: Array, exact: bool) -> void:

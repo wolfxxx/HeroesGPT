@@ -734,14 +734,15 @@ func open_system_menu() -> void:
 		var b := UI.button(e[0], func(): m.close(val), 24)
 		b.custom_minimum_size = Vector2(340, 56)
 		if val == "load":
-			b.disabled = not GameState.has_save() or Net.active  # (online: the host's game is the one played)
+			b.disabled = not GameState.has_save() or Net.online()  # (online: the host's game is the one played)
+		if val == "save":
+			b.disabled = Net.online() and not Net.is_host  # (online: only the host saves, save_game)
 		m.body.add_child(b)
 	m.set_meta("cancel", "close")
 	var r = await m.closed
 	match r:
 		"save":
-			if GameState.save_game():
-				toast("Game saved")
+			save_game()
 		"load":
 			if GameState.load_game():
 				GameState.change_scene(GameState.SCENE_ADVENTURE)
@@ -749,6 +750,16 @@ func open_system_menu() -> void:
 			GameState.change_scene(GameState.SCENE_MENU)
 		"quit":
 			adv.get_tree().quit()
+
+## Save Game (and Ctrl+S). Online the host saves the online game, the one Multiplayer's Resume hosts again (Net); the
+## other machines do not save (the host's game is the one played, and their copy holds the whole map).
+func save_game() -> void:
+	if Net.online():
+		if Net.is_host and Net.active:
+			Net.save(true)
+			toast("Game saved: Multiplayer, then Resume, continues it")
+	elif GameState.save_game():
+		toast("Game saved")
 
 ## Kingdom overview: towns with their income, heroes with their armies, the mines held and the day's income.
 func open_kingdom() -> void:

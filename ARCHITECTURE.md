@@ -315,8 +315,9 @@ first hero two steps from the first player's, for a battle between two machines 
 `sleep` command. Menu: Multiplayer (`main_menu._multiplayer`): Host Online Room (`_open_room`: the code shown large,
 also on the New Game screen and in "Waiting for <name> to join (room X)"), Host by Address (not in a browser), then
 the New Game screen with other human colours shown "Online", `_online`; or Join with a room code or an address
-(`Net.is_room_code`; `_join`: waits for the world, then the map). The game menu's Load Game is off online; the main
-menu leaves any online game. The camera follows another person's walking hero only where this player can see it.
+(`Net.is_room_code`; `_join`: waits for the world, then the map). The game menu's Load Game is off online; its Save
+Game (and Ctrl+S, `AdventureHUD.save_game`) saves the online game on the host (`Net.save(true)`, the one Resume
+hosts again) and is off on the other machines; the main menu leaves any online game. The camera follows another person's walking hero only where this player can see it.
 Relay (session67): `relay/src/index.js`, a Cloudflare Worker with one Durable Object per room (`Room`), deployed at
 `Net.RELAY` (wss://heroes-relay.shatteredcrown.workers.dev, the user's free Cloudflare account; `cd relay && npx
 wrangler deploy`). It runs no game: it passes binary frames between the host (peer 1) and the machines in its room,

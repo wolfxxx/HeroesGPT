@@ -16,6 +16,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 saving online (2026-10-25), committed with this HANDOFF update:** the user noticed both machines had Save Game online and
+  agreed to the proposal ("yes"). Before, Save wrote the machine's copy to the normal slot, which loads as a local
+  hot-seat game (and the joining machine's copy holds the whole map). Now on the host Save Game and Ctrl+S save the
+  online game, the one Multiplayer → Resume hosts again ("Game saved: Multiplayer, then Resume, continues it"); on
+  the other machines Save Game is greyed out, as Load Game already was (`AdventureHUD.save_game`). Checked in two
+  Chrome windows on the web build (`shots/session67/rejoin/s3.png`, `s4.png`).
 - **Session67 getting back into an online game (2026-10-25), committed with this HANDOFF update:** the user chose "rejoining after a
   dropped connection" next ("ok get started on 1 and ill test with 2 computers"). A machine whose connection goes
   during a game gets back in: a joining one tries every 3 seconds (the "Connection Lost" dialog, `Reconnect`,
