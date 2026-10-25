@@ -43,8 +43,7 @@ const LOGO_MENU := Rect2(1318, 70, 604, 170)
 const LOGO_SETUP := Rect2(510, 12, 900, 240)
 
 func _ready() -> void:
-	if Net.active:  # (back at the menu: any online game is left)
-		Net.leave()
+	Net.forget()  # (back at the menu: any online game is left)
 	theme = UI.theme()
 	_settings = GameState.new_game_settings.duplicate()
 	_build_background()
@@ -901,12 +900,20 @@ func _start_game() -> void:
 # ---------------------------------------------------------------------------------------------
 func _multiplayer() -> void:
 	var web := OS.has_feature("web")  # (a browser cannot open a game by address, nor reach one: room codes only)
+	var last := Net.last_join()
+	if _address == "":  # (the game joined last: after a restart, or a reload of the page, it is one press away)
+		_address = str(last.get("room", "")) if last.get("room", "") != "" else str(last.get("address", ""))
+	var saved := Net.online_save()
 	var m := Modal.custom(self, "Multiplayer", 820)
 	m.add_text("Host a game for players on other computers, or join one.
 " +
 		"Online room: you are given a short code to tell the others; it works from a browser and across the internet." +
 		("" if web else "
 By address: the others type this computer's address; it must accept connections on port %d." % Net.PORT), 20)
+	if not saved.is_empty():
+		var o: Dictionary = saved["online"]
+		m.add_text("Resume: the online game you hosted last (%s%s). The others join it again with the same code, as the colours they played." % [
+			AdvRules.new(saved["world"]).date_string(), (", room " + str(o["room"])) if o.get("room", "") != "" else ""], 20)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(UI.label("Room code" if web else "Room code or address", 20, UI.GOLD))
@@ -920,11 +927,15 @@ By address: the others type this computer's address; it must accept connections 
 	var buttons := [["Host Online Room", "room"]]
 	if not web:
 		buttons.append(["Host by Address", "host"])
+	if not saved.is_empty():
+		buttons.append(["Resume", "resume"])
 	m.add_buttons(buttons + [["Join", "join"], ["Back", ""]])
 	m.set_meta("cancel", "")
 	var r = await m.closed
 	_address = addr.text.strip_edges()
-	if r == "host" or r == "room":
+	if r == "resume":
+		await _resume()
+	elif r == "host" or r == "room":
 		var err := Net.host() if r == "host" else await _open_room()
 		if err != "":
 			if err != "cancel":
@@ -947,9 +958,25 @@ By address: the others type this computer's address; it must accept connections 
 		else:
 			await _join(_address)
 
-## Opens a room on the relay and shows its code. Returns "" once it is open, else what went wrong ("cancel").
-func _open_room() -> String:
-	var err := Net.host_room()
+## Hosts the online game saved last (Net.resume_saved): its room again, under the same code if it can be, then
+## straight onto the map (the others rejoin there).
+func _resume() -> void:
+	var by_room: bool = Net.online_save().get("online", {}).get("room", "") != "" or OS.has_feature("web")
+	var err := await _open_room(true) if by_room else Net.resume_saved()
+	if err != "":
+		if err != "cancel":
+			await Modal.message(self, "Multiplayer", err).closed
+		Net.forget()
+		GameState.world = {}
+		return
+	GameState.return_scene = GameState.SCENE_ADVENTURE
+	GameState.change_scene(GameState.SCENE_ADVENTURE, 0.6)
+
+## Opens a room on the relay and shows its code (`again`: the saved online game's room, Net.resume_saved). Returns ""
+## once it is open, else what went wrong ("cancel").
+func _open_room(again := false) -> String:
+	var old: String = Net.online_save().get("online", {}).get("room", "") if again else ""
+	var err := Net.resume_saved() if again else Net.host_room()
 	if err != "":
 		return err
 	var m := Modal.custom(self, "Online Room", 640)
@@ -966,10 +993,11 @@ func _open_room() -> String:
 	if r != "open":
 		return str(r)
 	var shown := Modal.custom(self, "Online Room", 640)
-	shown.add_text("Your room code is", 22)
+	shown.add_text("Your room code is" if old == "" or old == Net.room else "Your room has a new code (someone else had %s)" % old, 22)
 	shown.add_text(Net.room, 64).add_theme_color_override("font_color", UI.GOLD)
-	shown.add_text("Tell it to the other players: they choose Multiplayer, type it and press Join. " +
-		"They can join now or once the game has begun.", 20)
+	shown.add_text(("The others join it again: they choose Multiplayer, type it and press Join." if again else
+		"Tell it to the other players: they choose Multiplayer, type it and press Join. " +
+		"They can join now or once the game has begun."), 20)
 	shown.add_buttons([["OK", "ok"]])
 	shown.set_meta("cancel", "ok")
 	shown.set_meta("default", "ok")
@@ -980,7 +1008,9 @@ func _open_room() -> String:
 ## computer plays.
 func _join(address: String) -> void:
 	var by_code := Net.is_room_code(address)
-	var err := Net.join_room(address) if by_code else Net.join(address)
+	var last := Net.last_join()  # (the same game again: the same colour, if it is free)
+	var want: int = int(last.get("seat", -1)) if str(last.get("room" if by_code else "address", "")) == (address.to_upper() if by_code else address) else -1
+	var err := Net.join_room(address, want) if by_code else Net.join(address, Net.PORT, want)
 	if err != "":
 		await Modal.message(self, "Multiplayer", err).closed
 		return

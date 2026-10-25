@@ -24,6 +24,8 @@ func _ready() -> void:
 	if _started:  # (Blue back from its battle: the scene reloads; the driver on the root carries on)
 		return
 	_started = true
+	Net.online_path = "user://net_test_online.dat"  # (not the player's own online files)
+	Net.join_path = "user://net_test_join.dat"
 	if "--net-role=client" in OS.get_cmdline_user_args():
 		var c := Client.new()
 		c.name = "NetClient"

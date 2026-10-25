@@ -291,14 +291,15 @@ Map screen (`adventure.gd`): `Net.rules` is its rules (remote commands keep its 
 marks the map to redraw next frame (`_net_dirty`, `_net_redraw`); a remote `end_turn` gives the day's news and
 decides what comes next (`_on_remote_command`); `_await_others` shows "<name> is moving..." (or "Waiting for <name> to
 join...") with input blocked; the computer players run only on the host (`_run_ai_turns`, `end_turn`, `_post_ready`
-check `Net.mine`); the host's world arriving restarts the screen (`_on_world_received`); a lost connection returns to
-the menu. Battles (`adventure._start_battle`): each person fights their own side on their own machine. Two
+check `Net.mine`); the host's world arriving restarts the screen (`_on_world_received`); a lost connection opens
+the Reconnect dialog (see "Getting back in" below). Battles (`adventure._start_battle`): each person fights their own side on their own machine. Two
 people: the battle runs on both screens at once (`Net.battle_begin` sends the setup, seed included, with
 `remote_sides` and `net_result` as the other machine sees them); each machine sends only its own side's actions
 (`Net.battle_send` / `battle_next`, routed through the host between two joined machines) and carries out both
 alike. The computer against another machine's player: the host sends the setup (`Net.fight_remote`), that machine
 fights it (the computer's side chosen there) and sends the result back (`Net.battle_done`); the host applies it as
-`battle_result`. `net_result`: "apply" (the machine whose turn it is applies the result), "none" (the other one),
+`battle_result`. `net_result`: "apply" (the machine whose turn it is applies the result), "none" (the other one,
+except on the host when the other machine left mid-battle, `Net.battle_left`: then the host applies it),
 "send" (back to the host). A machine that leaves mid-battle: its side is fought by the computer (`{"k": "left"}`),
 or the host resolves a battle it was fighting for the host (`quick_resolve`). Levels gained by another machine's
 hero wait for its own turn (`_handle_level_ups` skips them; `_start_human_turn` takes pending ones).
@@ -322,18 +323,39 @@ wrangler deploy`). It runs no game: it passes binary frames between the host (pe
 and sends its own notes as JSON text (room, id, join, leave, error, host_left). The game's side is
 `scripts/core/relay_peer.gd` (`RelayPeer`, a `MultiplayerPeerExtension` over a `WebSocketPeer`), in ENet's shape:
 joined machines talk to the host only and the host passes messages between them (server relay); long messages go in
-60 KB pieces. Everything above it (rpcs, `Net`) is the same for both ways of connecting.
+60 KB pieces. Everything above it (rpcs, `Net`) is the same for both ways of connecting. Each room has a key (sent
+with the code, kept in `RelayPeer.key` / `Net.room_key`): `<relay>/host/<code>/<key>` opens that room again, while it
+is free or with its key (a lingering old host connection is closed and the room's others told the host left, so
+that they rejoin); a wrong key gets another code. A peer's queued messages are dropped when it leaves.
+Getting back in (session67): a joining machine first says which player it would play (`Net._hello(want)`); the host
+seats it as that player if it is free, else as the first free one (`_seat_peer`, only once `Net.playing`). When the
+connection goes during a game (`Net.playing`), `Net._drop` keeps the way back in `Net.resume` ({host, room, key,
+address, seat}; `Net.my_seat()` still names this machine's player and `Net.online()` stays true, so the screen keeps
+its player's view) and the screens open `scripts/ui/reconnect.gd` (`Reconnect.run`, a dialog with a Main Menu way
+out): it calls `Net.rejoin()` every 3 seconds (each try given 15) until back: a joining machine rejoins its room or
+address as the same player, and its map screen restarts on the host's world; the host opens its room again under the
+same code (or hosts by address again) and goes on, and the others rejoin. On the battle screen the host fights on
+(the computer takes the side of a machine that left) and reopens its room after the battle; a joining machine's
+battle is dropped (the host's world is the true one) and it rejoins. The map screen also checks `Net.resume` when it
+opens (`_post_ready`: a loss heard on another screen). The host saves the game it hosts as it goes
+(`Net.online_path`, `user://online_game.dat`, not the player's slot: with the room code, key and its seat; every
+command marks it, written at most every 2 seconds and at once at a turn's end, and when the map screen opens); the
+main menu's Multiplayer dialog offers Resume for it (`main_menu._resume`, `Net.resume_saved`: the saved world, its
+room again, straight onto the map; not once the game has ended). A joining machine remembers the game it joined and
+its colour (`Net.join_path`, `user://online_join.dat`): the dialog's code field is filled with it and Join asks for
+that colour.
 Browser version (session67): `export_presets.cfg` "Web" (single-threaded, so it needs no special page headers;
 `tools/`, `docs/`, `relay/` left out), built and published by `.github/workflows/pages.yml` on every push to main to
 https://wolfxxx.github.io/HeroesGPT/. In a browser: no Quit buttons, no hosting by address, edge scrolling from where
 the cursor is over the page, and once it has left, on toward the edge it left by until it comes back
 (`adventure._edge_scroll`, `_mouse_in`, `_left_at`, `_past_edge`), as past the window's edge on the desktop; saves live in the browser's storage.
-Not yet: joining a saved online game, a lobby, fog filtered per player (each
-machine holds the whole world), turn timers, reconnecting a dropped player to their seat by name.
+Not yet: a lobby, fog filtered per player (each machine holds the whole world), turn timers; a player's own
+view (their selection, the briefing seen) after a reload of their page comes from the host's copy.
 Checked by `tools/net_test.tscn` (two processes: a joined player walks, computer players move on the host, a spoiled
 world is caught by the digest and put right, a computer player's attack is fought on the joined machine, the worlds
 match at the end; `-- --relay` runs it through the live relay by room code, not in the suite) and `tools/net_battle_test.tscn` (one battle on two machines, each side in auto combat on its
-own machine: every action crosses and both reach the same result).
+own machine: every action crosses and both reach the same result), and `tools/net_rejoin_test.tscn` (getting back in:
+see Tools).
 
 ## Factions as data
 Everything that makes a faction is one record in `GameData.FACTIONS` (its header lists the fields): creatures and
@@ -553,6 +575,10 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
 - `tools/net_test.tscn` — in the full suite: starts a second Godot process that joins the first over the network
   (port 24791) as Blue for four days with two computer players, one of whose heroes attacks Blue's (see "Online").
   With `-- --relay` the same game goes through the live relay by room code (needs the internet; run by hand).
+- `tools/net_rejoin_test.tscn` — in the full suite (port 24793; `-- --relay=<url>` through a relay by room code,
+  `npx wrangler dev` in `relay/` or the live one, by hand): a joining process is given Blue, then asking for Teal
+  gets Teal; the host's world is dropped and its saved online game resumed (same room code); the other rejoins as
+  Teal; then the host's connection goes mid-game, it opens its room again and the other comes back; the worlds match.
 - `tools/battle_morale_test.tscn` — in the full suite: two computer-led armies with Leadership 3 on the real
   battle screen; both sides win good morale, each time the stack that has just acted, never twice a round.
 - `tools/net_battle_test.tscn` — in the full suite: one battle fought by two processes (port 24792). `tools/net_diff.tscn` lists what

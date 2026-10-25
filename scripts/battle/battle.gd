@@ -866,13 +866,21 @@ func _stack(uid: int) -> Dictionary:
 			return st
 	return {}
 
+## The connection went. The host fights on (the computer has taken the other side, Net "left") and opens its room
+## again once the battle is over (the map screen, Reconnect). A joining machine's battle cannot count (the host's world
+## is the true one): it rejoins the game, and its map screen starts again on the host's world.
 func _on_net_lost(reason: String) -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or Reconnect.running or Net.resume.get("host", false):
 		return
 	_ended = true
-	await Modal.message(self, "Disconnected", reason).closed
 	GameState.pending_battle = {}
-	GameState.change_scene(GameState.SCENE_MENU)
+	if Net.resume.is_empty():
+		await Modal.message(self, "Disconnected", reason).closed
+		GameState.change_scene(GameState.SCENE_MENU)
+	elif await Reconnect.run(self, reason):
+		GameState.change_scene(GameState.SCENE_ADVENTURE, 0.2)
+	else:
+		GameState.change_scene(GameState.SCENE_MENU)
 
 ## Plays an action's events; `again`: the stack that won good morale (announced, then it acts again).
 func _act(ev: Array, again = null) -> void:
@@ -2281,6 +2289,8 @@ func _end_battle(winner: int) -> void:
 	# (online: the machine whose turn it is applies the result; a battle the host's computer player started against
 	# this machine's player is sent back to the host to apply)
 	var how: String = setup_d.get("net_result", "apply")
+	if how == "none" and Net.battle_left and (Net.is_host or Net.resume.get("host", false)):
+		how = "apply"  # (the other machine left mid-battle: the host's world takes the result)
 	if how == "send":
 		result["context"] = setup_d.get("context", {})
 		Net.battle_done(result)

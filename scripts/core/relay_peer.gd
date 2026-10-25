@@ -13,6 +13,7 @@ signal closed(reason: String)      ## the connection to the relay is gone (or ne
 const CHUNK := 60000
 
 var reason := ""        ## why the relay refused, or the connection ended
+var key := ""           ## host: the room's key, with which it can open the same room again (`<relay>/host/<code>/<key>`)
 var _ws := WebSocketPeer.new()
 var _hosting := false
 var _id := 0
@@ -25,7 +26,8 @@ var _parts := {}        ## from -> the pieces of a long message so far
 var _from := 0          ## the sender of the message last read
 var _joined := {}       ## host: the machines in the room
 
-## Connects to the relay: `<relay>/host` opens a room, `<relay>/join/<code>` joins one.
+## Connects to the relay: `<relay>/host` opens a room (`/host/<code>/<key>`: that room again), `<relay>/join/<code>`
+## joins one.
 func open(url: String, hosting: bool) -> Error:
 	_hosting = hosting
 	_ws.inbound_buffer_size = 1 << 22
@@ -62,6 +64,7 @@ func _note(n) -> void:
 		"room":
 			_id = 1
 			_status = CONNECTION_CONNECTED
+			key = str(n.get("key", ""))
 			room_opened.emit(str(n["code"]))
 		"id":
 			_id = int(n["id"])
@@ -71,8 +74,11 @@ func _note(n) -> void:
 			_joined[int(n["id"])] = true
 			peer_connected.emit(int(n["id"]))
 		"leave":
-			if _joined.erase(int(n["id"])):
-				peer_disconnected.emit(int(n["id"]))
+			var id := int(n["id"])
+			_in = _in.filter(func(m): return m[0] != id)  # (what it sent just before is not read after it has gone)
+			_parts.erase(id)
+			if _joined.erase(id):
+				peer_disconnected.emit(id)
 		"error":
 			reason = str(n.get("reason", "The relay refused."))
 		"host_left":

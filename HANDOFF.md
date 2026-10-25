@@ -16,6 +16,21 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 getting back into an online game (2026-10-25), committed with this HANDOFF update:** the user chose "rejoining after a
+  dropped connection" next ("ok get started on 1 and ill test with 2 computers"). A machine whose connection goes
+  during a game gets back in: a joining one tries every 3 seconds (the "Connection Lost" dialog, `Reconnect`,
+  `scripts/ui/reconnect.gd`, with a Main Menu way out) and comes back as the colour it played (`Net._hello`); the host
+  opens its room again under the same code (the relay now gives a room a key: `relay/src/index.js`, redeployed) and
+  goes on. The host keeps the online game saved as it plays (`user://online_game.dat`), so after a restart or a
+  reload of the page Multiplayer offers **Resume** (same code; the others rejoin). The joining machine remembers the
+  room and its colour: after a reload the code is filled in and Join gives it its colour back. On the host, a
+  battle whose other machine left mid-way is now applied by the host. Checked: `tools/net_rejoin_test.tscn` (new, in
+  the suite; also through the live relay, twice, and a local `wrangler dev`), `relay_resume.mjs` against the live
+  relay, `net_test -- --relay`, and in two Chrome windows on the web build: host room F5TA, Blue joined, the host's
+  page reloaded and resumed (F5TA again, its move kept) while Blue's dialog waited and rejoined; then Blue's page
+  reloaded, the code was filled in and Join gave Blue back (`shots/session67/rejoin/`). Not checked: the host's
+  dialog itself after a real network drop (the same path is in the test). Known: a reloaded joining page sees the
+  scenario briefing again.
 - **Session67 browser edge scrolling (2026-10-25), committed with this HANDOFF update:** the user found that in the browser the map stopped
   scrolling up once the cursor went past the top of the page (the fix in `4ab24d5` turned edge scrolling off when the
   cursor left the page). Now, as on the desktop, it keeps scrolling toward the edge the cursor left by until it comes
@@ -1055,6 +1070,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 | Browser version, locally | `Godot --headless --path . --export-release "Web" build/web/index.html`, then serve `build/web` (e.g. `python -m http.server`) |
 | Online test through the relay | `Godot --headless --path . res://tools/net_test.tscn -- --relay` |
 | Redeploy the relay | `cd relay && npx wrangler deploy` |
+| Rejoin test through a relay | `... res://tools/net_rejoin_test.tscn -- --relay=wss://heroes-relay.shatteredcrown.workers.dev` (or `ws://127.0.0.1:8787` with `cd relay && npx wrangler dev`) |
 
 Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space, images saved at 1600x900;
 `--setup=artifacts` lays an artifact of each tier beside the first hero):
@@ -1130,7 +1146,8 @@ Proposed path, discussed with the user (not yet approved as a plan):
    replay test (`scripts/core/dice.gd`, `tools/replay_test.tscn`). Phase 2 begun: `Net` (host and join by
    address, commands passed between machines, digest checks), battles fought by each person on their own machine,
    room codes through a relay (also from the browser version on GitHub Pages).
-   Next: a test between two real computers; joining a saved online game, a lobby, per-player fog on the wire.
+   Getting back in after a dropped connection or a reload, and resuming the hosted game (Multiplayer → Resume).
+   Next: a test between two real computers (the user is doing it); a lobby, per-player fog on the wire.
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
@@ -1404,7 +1421,8 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 - **Online (session67):** `scripts/core/net.gd` (autoload `Net`), `Commands.run` (passes commands on, turn rule),
   `adventure.gd` "Online (Net)" section and `_start_battle`, `battle.gd` `_carry` / `_turn`, `main_menu._multiplayer`
-  / `_join` / `_open_room`, `tools/net_test.tscn`, `tools/net_battle_test.tscn`, `tools/net_diff.tscn`. Relay:
+  / `_join` / `_open_room` / `_resume`, `scripts/ui/reconnect.gd` (getting back in), `tools/net_test.tscn`,
+  `tools/net_battle_test.tscn`, `tools/net_rejoin_test.tscn`, `tools/net_diff.tscn`. Relay:
   `relay/src/index.js`, `scripts/core/relay_peer.gd`. Browser version: `export_presets.cfg`,
   `.github/workflows/pages.yml`. ARCHITECTURE.md "Online".
 - **Dice and replay (session67):** `scripts/core/dice.gd` (`Dice.roll/chance/index/pick`, `gen`/`keep`, `derived`,
@@ -1488,7 +1506,13 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   positions; past the page's edge it goes on toward the edge the cursor left by, as the user asked); a room code may start with a digit; ENet does not work in a browser (room codes only). A new
   workers.dev subdomain took a few minutes before its certificate worked. The browser drive used for checks is
   Playwright (`playwright-core` with the installed Chrome) clicking two windows; the screenshot harness does not
-  run in a browser.
+  run in a browser. Headful Chrome windows pop up on the user's screen (one closed mid-check): the driver
+  (`scratchpad/pw/drive.mjs`) now runs headless with SwiftShader unless `SHOW=1`; `/reload` reloads a page with its
+  storage kept (a page reload as the user would do it).
+- Getting back in (session67): a retry must wait for its answer; trying again too soon (the test first used half a
+  second) drops a join still on its way, and the host briefly sees the machine come and go. Relay rooms are found
+  by attachment (`_host()`), not by `getWebSockets("host")[0]`: a closing connection can still be listed. Online
+  tests use their own `Net.online_path` / `Net.join_path` so the player's own files in `user://` are not touched.
 - Online (session67): anything the screen writes into the world outside a command makes the machines differ (the
   first two-window run found `asleep`). Make it a command, or, if it is truly one machine's own, add its key to
   `Net.PRIVATE`. Two windows on one computer: start each with its own `--remote=<dir>`; they share `user://`. The

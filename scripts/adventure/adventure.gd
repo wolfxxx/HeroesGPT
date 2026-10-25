@@ -77,13 +77,8 @@ func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color(0.02, 0.02, 0.03))
 	rules = AdvRules.new(world)
 	ai = AdvAI.new(rules)
-	if Net.active:  # (online: other machines' commands are applied through this screen's rules, then shown)
-		Net.rules = rules
-		Net.remote_command.connect(_on_remote_command)
-		Net.world_received.connect(_on_world_received)
-		Net.roster_changed.connect(_on_roster_changed)
-		Net.lost.connect(_on_net_lost)
-		Net.world_ready()
+	if Net.active:
+		_net_attach()
 
 	view = MapView.new()
 	add_child(view)
@@ -115,6 +110,14 @@ func _ready() -> void:
 
 func _post_ready() -> void:
 	await get_tree().process_frame
+	if not Net.active and not Net.resume.is_empty():  # (online: the connection went on another screen)
+		if not await Reconnect.run(self, "The connection to the game was lost."):
+			GameState.change_scene(GameState.SCENE_MENU)
+			return
+		if not Net.is_host:  # (the host's world has come: the screen starts again on it)
+			GameState.change_scene(GameState.SCENE_ADVENTURE, 0.2)
+			return
+		_net_attach()
 	if Shot.active:
 		_shot_view()
 	if not GameState.battle_result.is_empty():
@@ -1310,11 +1313,29 @@ func _on_roster_changed() -> void:
 		if busy and not Net.mine(world["current_player"]):
 			_await_others()
 
+## The connection went: back into the game (Reconnect: a joining machine rejoins, and its screen starts again on the
+## host's world, _on_world_received; the host opens its room again and goes on), or to the main menu.
 func _on_net_lost(reason: String) -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or Reconnect.running:
 		return
-	await Modal.message(self, "Disconnected", reason).closed
-	GameState.change_scene(GameState.SCENE_MENU)
+	if Net.resume.is_empty():
+		await Modal.message(self, "Disconnected", reason).closed
+		GameState.change_scene(GameState.SCENE_MENU)
+	elif not await Reconnect.run(self, reason):
+		GameState.change_scene(GameState.SCENE_MENU)
+	elif Net.is_host and is_inside_tree():
+		hud.refresh()
+		if busy and not Net.mine(world["current_player"]):
+			_await_others()
+
+## Online: other machines' commands are applied through this screen's rules, then shown.
+func _net_attach() -> void:
+	Net.rules = rules
+	for pair in [[Net.remote_command, _on_remote_command], [Net.world_received, _on_world_received],
+			[Net.roster_changed, _on_roster_changed], [Net.lost, _on_net_lost]]:
+		if not (pair[0] as Signal).is_connected(pair[1]):
+			(pair[0] as Signal).connect(pair[1])
+	Net.world_ready()
 
 func _exit_tree() -> void:
 	if Net.rules == rules:
@@ -1387,6 +1408,7 @@ func _check_game_over() -> bool:
 		lost = "The snows have melted and your enemies' hosts have joined together. Time has run out."
 	if lost != "":
 		world["game_over"] = true
+		Net.save(true)  # (online: the host's saved game has ended, and is no longer offered to resume)
 		Audio.music("defeat")
 		await Modal.message(self, "Defeat", lost).closed
 		GameState.world = {}
@@ -1405,6 +1427,7 @@ func _check_game_over() -> bool:
 		if _human_count() > 1 and not won.begins_with(me["name"]):
 			won = "%s wins! %s" % [me["name"], won]
 		world["game_over"] = true
+		Net.save(true)
 		Audio.music("victory")
 		await Modal.message(self, "Victory!", won).closed
 		GameState.world = {}

@@ -13,6 +13,8 @@ func _ready() -> void:
 	if _started:  # (the battle's end returns to this scene: the driver on the root carries on)
 		return
 	_started = true
+	Net.online_path = "user://net_battle_test_online.dat"  # (not the player's own online files)
+	Net.join_path = "user://net_battle_test_join.dat"
 	var d := Driver.new()
 	d.client = "--net-role=client" in OS.get_cmdline_user_args()
 	get_tree().root.add_child.call_deferred(d)

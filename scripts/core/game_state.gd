@@ -443,8 +443,8 @@ func current_player() -> Dictionary:
 func human_player_index() -> int:
 	if world.is_empty():
 		return 0
-	if Net.active and Net.seat >= 0:  # (online: this machine's own player, always)
-		return Net.seat
+	if Net.my_seat() >= 0:  # (online: this machine's own player, always; also while it gets back in)
+		return Net.my_seat()
 	var cur: Dictionary = world["players"][world["current_player"]]
 	if not cur["is_ai"] and cur["alive"]:
 		return cur["index"]
@@ -476,7 +476,7 @@ func was_handed(to: int) -> bool:
 
 ## Hot-seat: more than one human player still in the game.
 func hotseat() -> bool:
-	return _humans_alive() > 1 and not Net.active  # (online: each person at their own screen)
+	return _humans_alive() > 1 and not Net.online()  # (online: each person at their own screen)
 
 ## Some human player is still in the game.
 func hotseat_alive() -> bool:
