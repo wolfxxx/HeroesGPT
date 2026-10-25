@@ -157,6 +157,9 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
   and moved to the front-right lawn by `tools/art/town_edge_paint.py` (imagegen/batch19), which also rewrites its rect.
   The archers' tower (`haven_dwelling_2.png`) had its roof cut at the left edge: `tools/art/tower_edge_paint.py`
   (imagegen/batch21) repaints the roof and platform whole, aligned to the old sprite, and moves it right.
+  The tower at the right end of the Fort's wall (`haven_fort.png`) had an unfinished white cone (the Mage Guild stands
+  on that spot once built): `tools/art/fort_tower_paint.py` (imagegen/batch39) gives it a slate roof like the Fort's
+  other towers, pasted over the roof rows only, and clears the render's faint shadow haze beside it.
 
 ## Icons & UI
 - `icons/res_<resource>.png` — 64x64 resource icons.
@@ -216,7 +219,8 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - Voice (optional): `voice/<line_id>.mp3` narrator lines: intro, victory, defeat, new_week.
 
 ## Faction colours from the setting (session67)
-The Temple (`haven`) town screen (`town/haven_*.png`, the backdrop, the layout unchanged), its building cards
+The Temple (`haven`) town screen (`town/haven_*.png`, the layout unchanged; its backdrop was repainted too but is the
+original again since session67: the repaint had moved the plaza down and painted a castle in), its building cards
 (`icons/building_haven_*.png`), its map towns (`map/town_haven*.png`) and the main menu painting (`ui/main_menu_bg.png`)
 were repainted in the Templars' colours by `tools/art/faction_repaint.py haven` (`prep`, `paint`, `ingest`;
 imagegen/batch37; first named `temple_repaint.py`):

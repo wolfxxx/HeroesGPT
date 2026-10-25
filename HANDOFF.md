@@ -16,6 +16,17 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 Temple fort tower (2026-10-25), committed with this HANDOFF update:** the user circled the tower at the right end of the
+  Temple's Fort wall ("that tower does not look correct"). Cause: the Templar repaint had redrawn the backdrop
+  (`town/haven_bg.png`) with its plaza about 110 px lower and a whole castle painted in the distance, so the Fort's
+  walls hung over grass with tree trunks under them (and a castle showed with no Fort built). The original backdrop
+  is back (it had nothing in the Temple's colours); the tower's unfinished white cone (the Mage Guild covers that
+  spot once built) is now a slate roof with gold trim like the Fort's other towers, and the render's faint dark haze
+  beside it is gone (`tools/art/fort_tower_paint.py`, imagegen/batch39; the old sprite in ignored
+  `tools/art/raw/town/haven_fort_white_cone.png`). With the Mage Guild built the new roof shows a little behind the
+  guild's tower, read as a tower behind it (the old cone showed there too). The Order of the Dragon backdrop drifted
+  less and its town still stands right. Screenshots in ignored `shots/session67/tower/` (before/after, early and
+  fully built, `guild_cover.png`).
 - **Session67 room code and icon (2026-10-25), committed with this HANDOFF update:** the user found the room code gone once the host was in
   the lobby, and did not like the Godot favicon. The code now shows large beside the title in the lobby, on the
   host's and the joined screens (`main_menu._room_badge`). New game icon `assets/ui/icon.png` (the logo's broken
@@ -1528,6 +1539,10 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- Town backdrops (session67): an image-model repaint of `town/<faction>_bg.png` can move the ground (the Temple's
+  plaza went 110 px lower and a castle appeared), and every building sprite is placed for the old ground. After any
+  backdrop change, look at the town screen early (`--setup=demo`) and fully built (`--setup=rich`), not the
+  backdrop alone.
 - Browser version (session67): only the cursor over the page is known (edge scrolling must not use screen
   positions; past the page's edge it goes on toward the edge the cursor left by, as the user asked); a room code may start with a digit; ENet does not work in a browser (room codes only). A new
   workers.dev subdomain took a few minutes before its certificate worked. The browser drive used for checks is
