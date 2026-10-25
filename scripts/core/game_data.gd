@@ -19,6 +19,7 @@ const PLAYER_COLOR_NAMES := ["Red", "Blue", "Green", "Gold"]
 ## Temple, `necropolis` the Order of the Dragon; docs/SETTING.md).
 ##   name, short (for tight labels), desc; creatures / upgrades: tiers 1-7; terrain: native terrain; smith_machine: the war machine its Blacksmith forges;
 ##   specials: its own buildings (the Town Hall's second row); requires: extra prerequisites in its towns;
+##   mage_guild_levels: how high its Mage Guild goes (HoMM3: the Castle's 4, the Necropolis's 5);
 ##   dwelling_names, town_names; classes: [might, magic] (see CLASSES); battle_figure_lift: its battle hero figures
 ##   are brightened with a rim light (dark figures before dark siege towers).
 const FACTIONS := {
@@ -32,6 +33,7 @@ const FACTIONS := {
 		"smith_machine": "ballista",
 		"specials": ["stables", "brotherhood"],
 		"requires": {"dwelling_6": ["stables"]},  # (the Stables before the cavalry, as the classic Castle)
+		"mage_guild_levels": 4,
 		"dwelling_names": ["Guardhouse", "Archers' Tower", "Griffin Tower", "Barracks", "Monastery", "Training Grounds",
 			"Portal of Glory"],
 		# Templar houses and strongholds of history; five, as before, so a seeded map keeps its names' places
@@ -49,6 +51,7 @@ const FACTIONS := {
 		"smith_machine": "first_aid_tent",
 		"specials": ["necromancy_amplifier", "skeleton_transformer"],
 		"requires": {},
+		"mage_guild_levels": 5,
 		"dwelling_names": ["Cursed Temple", "Graveyard", "Tomb of Souls", "Estate", "Mausoleum", "Hall of Darkness",
 			"Dragon Vault"],
 		"town_names": ["Gravenmoor", "Ashenveil", "Mortholme", "Duskhaven", "Blackfen"],
@@ -256,7 +259,10 @@ const SKILLS := {
 }
 
 # ---------------------------------------------------------------------------------------------
-# Spells (combat).  target: enemy, ally, any, all_enemies, area, ally_dead
+# Spells (combat).  target: enemy, ally, area, all_living, all (every stack on the field, both sides).
+# mind: a mind spell (undead and the ushabti, as HoMM3's golems, are immune). chain: stacks a bolt strikes, the first at
+# full damage and each jump at half the one before (Chain Lightning). HoMM3's values at the basic level (the game has no
+# school mastery).
 # ---------------------------------------------------------------------------------------------
 const SPELLS := {
 	"magic_arrow": {"name": "Magic Arrow", "level": 1, "school": "air", "mana": 5, "target": "enemy", "damage": [10, 10], "desc": "Deals 10 + 10×Power damage."},
@@ -275,6 +281,11 @@ const SPELLS := {
 	"death_ripple": {"name": "Death Ripple", "level": 2, "school": "earth", "mana": 10, "target": "all_living", "damage": [10, 5], "desc": "Deals 10 + 5×Power damage to every living creature."},
 	"resurrection": {"name": "Resurrection", "level": 4, "school": "earth", "mana": 20, "target": "ally", "desc": "Revives 40 + 20×Power HP of fallen creatures."},
 	"meteor_shower": {"name": "Meteor Shower", "level": 4, "school": "earth", "mana": 16, "target": "area", "damage": [25, 25], "desc": "Deals 25 + 25×Power damage in an area."},
+	"blind": {"name": "Blind", "level": 2, "school": "fire", "mana": 10, "target": "enemy", "mind": true, "desc": "The target cannot act until it is attacked or the spell ends; attacked, it strikes back at half damage. Undead and ushabti are immune."},
+	"chain_lightning": {"name": "Chain Lightning", "level": 4, "school": "air", "mana": 24, "target": "enemy", "damage": [25, 40], "chain": 4, "desc": "Deals 25 + 40×Power damage to the target, then jumps to the nearest stack, friend or foe, three more times at half the damage each jump."},
+	"berserk": {"name": "Berserk", "level": 4, "school": "fire", "mana": 20, "target": "enemy", "mind": true, "desc": "On its turn the target attacks the nearest stack, friend or foe; the spell ends once it has attacked. Undead and ushabti are immune."},
+	"armageddon": {"name": "Armageddon", "level": 4, "school": "fire", "mana": 24, "target": "all", "damage": [30, 50], "desc": "Deals 30 + 50×Power damage to every creature on the field, yours too."},
+	"implosion": {"name": "Implosion", "level": 5, "school": "earth", "mana": 30, "target": "enemy", "damage": [100, 75], "desc": "Deals 100 + 75×Power damage to the target."},
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -294,6 +305,7 @@ const BUILDINGS := {
 	"mage_guild_2": {"name": "Mage Guild Lv2", "cost": {"gold": 1000, "wood": 5, "ore": 5, "crystal": 4, "gems": 4}, "requires": ["mage_guild_1"], "replaces": "mage_guild_1", "desc": "Teaches level 2 spells."},
 	"mage_guild_3": {"name": "Mage Guild Lv3", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 4, "sulfur": 4, "crystal": 4, "gems": 4}, "requires": ["mage_guild_2"], "replaces": "mage_guild_2", "desc": "Teaches level 3 spells."},
 	"mage_guild_4": {"name": "Mage Guild Lv4", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 6, "sulfur": 6, "crystal": 6, "gems": 6}, "requires": ["mage_guild_3"], "replaces": "mage_guild_3", "desc": "Teaches level 4 spells."},
+	"mage_guild_5": {"name": "Mage Guild Lv5", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 10, "sulfur": 10, "crystal": 10, "gems": 10}, "requires": ["mage_guild_4"], "replaces": "mage_guild_4", "desc": "Teaches level 5 spells."},
 	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's."},
 	# faction special buildings ("faction": only that faction's towns can build them). "effects" are what they do, read
 	# by the rules (TownLogic.effect): start_day_movement (a hero starting the day in the town), siege_morale (the
@@ -323,6 +335,16 @@ const BUILDINGS := {
 	"dwelling_6u": {"name": "Upg. Dwelling VI", "cost": {"gold": 3000, "wood": 10, "ore": 10, "sulfur": 5}, "dwelling_tier": 6, "requires": ["dwelling_6"], "replaces": "dwelling_6"},
 	"dwelling_7u": {"name": "Upg. Dwelling VII", "cost": {"gold": 20000, "ore": 10, "mercury": 10, "gems": 10}, "dwelling_tier": 7, "requires": ["dwelling_7", "mage_guild_3"], "replaces": "dwelling_7"},
 }
+
+## Whether a town of this faction can have the building: its own specials only, and its Mage Guild only as high as
+## the faction's goes.
+static func in_faction(faction: String, id: String) -> bool:
+	var b: Dictionary = BUILDINGS[id]
+	if b.get("faction", faction) != faction:
+		return false
+	if id.begins_with("mage_guild_") and int(id.substr(11)) > int(FACTIONS[faction].get("mage_guild_levels", 4)):
+		return false
+	return true
 
 ## Everything a building needs in a town of this faction.
 static func requires(faction: String, id: String) -> Array:

@@ -204,7 +204,7 @@ bonus keys and flags are listed in its header comment) and `GameData.ARTIFACT_TI
 `hero_stat` (numbers), `hero_flags` (immunities, raise), `artifact_slots`, `can_wear`, `give_artifact` / `swap_artifact`
 (both return the name of a combination they completed), `merge_combinations`, `split_combination`,
 `join_combination` (a hero's `"apart"` list keeps split sets from re-merging). Effects are applied in
-`BattleLogic.max_hp / speed / spell_damage / immune`, `Necromancy` (post-battle raising), `AdvRules` (scouting, daily gold and
+`BattleLogic.max_hp / speed / spell_damage / immune / stack_immune`, `Necromancy` (post-battle raising), `AdvRules` (scouting, daily gold and
 mana, weekly first-level growth). Placement by tier: `WorldGen._place_artifacts`. Design: `docs/ARTIFACTS_PROPOSAL.md`.
 
 `MapView._ArtifactGlow` draws the twinkle as explicit convex triangles, skipping near-invisible subpixel phases.
@@ -581,6 +581,12 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/spell_batch_test.tscn` — in the full suite: the session67 spells on fixed layouts: their HoMM3 levels, schools
+  and costs and pictures; Chain Lightning's order (the nearest each jump, ours too) and halving; Armageddon on every
+  creature and no machine; Implosion's damage; Blind (mind: not the undead or ushabti; the lost turn; struck, it
+  wakes and strikes back at half); Berserk (its own stack attacked, the spell ended, a shooter shoots the nearest);
+  the computer's chain and Armageddon choices; the Order's fifth Mage Guild level (Implosion) and not the Temple's;
+  shrines up to level 3 and the Pyramid's level 5 spell on a generated map.
 - `tools/pyramid_test.tscn` — in the full suite: the ushabti's numbers, sprites and spell resistance, one Pyramid near
   the middle of a medium map and none on a small one, the guard battle and its result, the spell learned or lost, the
   empty pyramid's luck, no Skeletons from ushabti, the computer's valuation, and the walk-in on the map screen.

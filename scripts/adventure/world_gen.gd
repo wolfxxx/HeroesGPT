@@ -290,7 +290,8 @@ func _generate(settings: Dictionary) -> Dictionary:
 	for k in int(round(5 * area_scale)):
 		_place_obj({"type": "campfire"}, Vector2i(w / 2, h / 2), 0, n, reach, false, 7)
 	_place_artifacts(area_scale, n, reach)
-	var spells := GameData.SPELLS.keys()
+	# (a shrine teaches a spell of level 1 to 3, as HoMM3's three shrines; the higher ones come from guilds and pyramids)
+	var spells := GameData.SPELLS.keys().filter(func(sp): return GameData.SPELLS[sp]["level"] <= 3)
 	for k in int(round(4 * area_scale)):
 		_place_obj({"type": "shrine", "spell": spells[rng.randi() % spells.size()]}, Vector2i(w / 2, h / 2), 0, n, reach, false, 8)
 	for k in int(round(3 * area_scale)):

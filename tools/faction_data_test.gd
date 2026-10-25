@@ -53,8 +53,14 @@ func _ready() -> void:
 		"dwelling_4", "marketplace", "citadel", "blacksmith", "dwelling_5", "city_hall", "stables", "dwelling_6", "mage_guild_2",
 		"brotherhood", "necromancy_amplifier", "dwelling_7", "castle", "dwelling_1u", "dwelling_2u", "dwelling_3u", "dwelling_4u",
 		"capitol", "mage_guild_3", "dwelling_5u", "dwelling_6u", "dwelling_7u", "mage_guild_4"]
+	# (then the Mage Guild's fifth level, where the faction's guild goes that high: the Order's, as HoMM3's Necropolis)
 	_ok(AdvAI.build_order("haven") == old.filter(func(b): return b != "necromancy_amplifier"), "the Temple's build order")
-	_ok(AdvAI.build_order("necropolis") == old.filter(func(b): return not b in ["stables", "brotherhood"]), "the Order of the Dragon's build order")
+	_ok(AdvAI.build_order("necropolis") == old.filter(func(b): return not b in ["stables", "brotherhood"]) + ["mage_guild_5"],
+		"the Order of the Dragon's build order")
+	var g := TownLogic.make_town("haven", 0, Vector2i.ZERO, "Rosslyn", true)
+	_ok(not "mage_guild_5" in TownLogic.buildable_list(g) and TownLogic.build_block_reason(g, {"resources": {}}, "mage_guild_5") == "Not in this town",
+		"the Temple's Mage Guild stops at level 4")
+	_ok(GameData.in_faction("necropolis", "mage_guild_5"), "the Order's goes to level 5")
 
 	# the rules read the effects
 	var t := TownLogic.make_town("haven", 0, Vector2i.ZERO, "Rosslyn", true)

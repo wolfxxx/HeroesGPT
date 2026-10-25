@@ -40,6 +40,12 @@ ICONS = [
     ("death_ripple", "a ghostly green-black shockwave rippling out from a grinning skull"),
     ("resurrection", "a fallen warrior's spirit rising in a column of golden light"),
     ("meteor_shower", "flaming meteors raining down from a red sky onto dark hills"),
+    # session67's batch: painted one by one (`paint <id>`), past the 4 x 4 sheet
+    ("chain_lightning", "a crackling white-blue bolt of lightning forking and leaping from one dark silhouette to the next"),
+    ("armageddon", "a burning sky raining fire and flaming rocks onto a scorched, blazing battlefield"),
+    ("implosion", "a swirling violet-black vortex collapsing inward on itself, crushing light into its dark centre"),
+    ("blind", "a hooded figure whose eyes are covered by a band of glowing red-orange smoke"),
+    ("berserk", "a snarling warrior's face lit red, eyes blazing with rage, swinging an axe wildly"),
 ]
 ISZ, IGAP = 448, 32  # icon squares in the 2048 guide: 4 x (448 + 2*32)
 

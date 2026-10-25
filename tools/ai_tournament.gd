@@ -121,11 +121,19 @@ func _fight(p: Dictionary, seed: int, new_side: int) -> Dictionary:
 		var s = L.current()
 		if s == null:
 			break
-		if L.check_bad_morale(s) or (not s.get("machine", false) and L.check_fear(s)):
+		if L.spell_lost_turn(s) != "" or L.check_bad_morale(s) or (not s.get("machine", false) and L.check_fear(s)):
 			L.finish_turn(s)
 			continue
 		if s.get("machine", false):
 			L.machine_act(s)
+			continue
+		var bz := L.berserk_action(s)  # (a berserk stack's turn is the rules', not either AI's)
+		if not bz.is_empty():
+			match bz["type"]:
+				"shoot": L.do_shoot(s, bz["target"])
+				"melee": L.do_melee(s, bz["target"], bz["from"])
+				"move": L.do_move(s, bz["hex"])
+				_: L.do_defend(s)
 			continue
 		var cur: bool = s["side"] == new_side
 		if not L.hero_cast[s["side"]]:

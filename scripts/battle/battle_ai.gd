@@ -215,11 +215,28 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 		match d["target"]:
 			"enemy":
 				for e in enemies:
-					if L.immune(e["side"], sp):  # (protected by a combination artifact)
+					if L.stack_immune(e, sp):  # (protected by a combination artifact; a mind spell on the mindless)
 						continue
 					var v := 0.0
-					if d.has("damage"):
+					if d.has("chain"):  # (the whole chain: a jump onto our own stacks counts against it)
+						var chain: Array = L.chain_targets(e, sp)
+						for i in chain.size():
+							var val := _value_of_damage(L, chain[i], L.spell_damage_to(side, sp, chain[i]) / pow(2.0, i))
+							v += val if chain[i]["side"] != side else -1.2 * val
+					elif d.has("damage"):
 						v = _value_of_damage(L, e, L.spell_damage_to(side, sp, e))
+					elif sp in ["blind", "berserk"] and not e["effects"].has("blind") and not e["effects"].has("berserk") \
+							and not e.get("acted", false):
+						# a stack that would act this round loses it (Blind), or turns on the stack nearest it: worth
+						# the most when that is one of its own (Berserk)
+						var near = null
+						var nd := 1 << 20
+						for o in L.alive_stacks():
+							if o != e and L.stack_distance(e, o) < nd:
+								nd = L.stack_distance(e, o)
+								near = o
+						var share := 0.3 if sp == "blind" else (0.4 if near != null and near["side"] == e["side"] else 0.1)
+						v = L.cdata(e)["ai_value"] * e["count"] * share
 					elif sp == "slow" and not e["effects"].has("slow"):
 						v = L.cdata(e)["ai_value"] * e["count"] * 0.12
 					elif sp in ["curse", "weakness"] and not e["effects"].has(sp):
@@ -229,7 +246,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 						best = {"spell": sp, "hex": e["hex"]}
 			"ally":
 				for a in allies:
-					if L.immune(a["side"], sp):
+					if L.stack_immune(a, sp):
 						continue
 					var v := 0.0
 					if sp in ["bless", "haste", "shield", "stone_skin"] and not a["effects"].has(sp):
@@ -253,7 +270,7 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 				for hex in centers:
 					var v := 0.0
 					for s in L.stacks_on([hex] + BattleLogic.neighbors(hex)):
-						if L.immune(s["side"], sp):
+						if L.stack_immune(s, sp):
 							continue
 						var val := _value_of_damage(L, s, L.spell_damage_to(side, sp, s))
 						v += val if s["side"] != side else -1.2 * val
@@ -264,6 +281,15 @@ static func decide_spell(L: BattleLogic, side: int) -> Dictionary:
 				var v := 0.0
 				for s in L.alive_stacks():
 					if not L.has_ab(s, "undead") and not L.immune(s["side"], sp):
+						var val := _value_of_damage(L, s, L.spell_damage_to(side, sp, s))
+						v += val if s["side"] != side else -1.0 * val
+				if v > bv:
+					bv = v
+					best = {"spell": sp, "hex": Vector2i(7, 5)}
+			"all":  # (Armageddon: every creature, ours too)
+				var v := 0.0
+				for s in L.alive_stacks():
+					if not s.get("machine", false) and not L.stack_immune(s, sp):
 						var val := _value_of_damage(L, s, L.spell_damage_to(side, sp, s))
 						v += val if s["side"] != side else -1.0 * val
 				if v > bv:

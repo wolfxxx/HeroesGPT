@@ -16,6 +16,26 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 spell batch (2026-10-25), committed with this HANDOFF update:** the user asked how to make the factions more interesting
+  ("titans, black dragons and the chain lightning spell"); the plan offered: spells first, then Titans and Black
+  Dragons as creatures, then their towns (the Illuminated, Agartha). They chose "start with the spell batch". Five of
+  HoMM3's combat spells at its basic-level values (the game has no school mastery): **Chain Lightning** (air 4, 24
+  mana, 25 + 40 x Power, then three jumps to the nearest stack, friend or foe, each at half), **Armageddon** (fire 4,
+  24, 30 + 50 x Power to every creature, both sides; not war machines), **Implosion** (earth 5, 30, 100 + 75 x
+  Power), **Blind** (fire 2, 10: the stack loses its turns until struck or the spell ends; struck, it strikes back
+  at half) and **Berserk** (fire 4, 20: on its turn the rules send it at the nearest stack, friend or foe; ends once
+  it has attacked). Blind and Berserk are mind spells: the undead, the ushabti and war machines are immune (so they
+  do nothing against an Order of the Dragon army, as against HoMM3's Necropolis). Implosion is level 5: the Order's
+  Mage Guild now goes to level 5, the Temple's stops at 4 (HoMM3's Necropolis and Castle; `FACTIONS.mage_guild_levels`,
+  `GameData.in_faction`); the Pyramid's top-level spell is now a level 5 one (as HoMM3). Shrines now teach levels 1-3
+  only (they could give any level, a deviation that would have handed out Armageddon). Berserk turns are decided by the
+  rules on every machine alike (`BattleLogic.berserk_action`; nothing crosses the network). The battle AI weighs the
+  chain's whole path (a jump onto its own stack counts against it), Armageddon's cost to its own army, Blind and
+  Berserk. Five spellbook miniatures painted (`spellbook_paint.py paint <id>`, imagegen/batch14). Not in this batch:
+  Town Portal (needs casting on the adventure map, sent as a command). Checked: new `tools/spell_batch_test.tscn` (37
+  checks, in the suite), the whole suite (`pyramid_test` now expects the level 5 spell and Expert Wisdom to learn it) and screenshots in ignored `shots/session67/spells/` (`fire.png` the Fire tab, `arm_2.png`
+  Armageddon, `chain_2.png` the chain's preview line and `chain_3/4.png` its arcs, `bz_sheet.png` Berserk sending the
+  enemy Angel at its own Cavaliers, `bl_sheet.png` Blind; in `bz` the computer also cast Implosion on our Angel).
 - **Session67 Temple backdrop back (2026-10-25), committed with this HANDOFF update:** the user: "this didnt solve anything it just took the
   nice background away. the rights side tower still looks weird without a roof". The Templar backdrop's distant
   castle, hills and sky are back: `tools/art/town_bg_blend.py` keeps the repaint above row 400 and the original
@@ -1467,6 +1487,10 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Spells (session67 batch):** data `GameData.SPELLS` (`mind`, `chain`, target `all`), rules in `BattleLogic`
+  (`stack_immune`, `chain_targets`, `cast`, `spell_lost_turn`, `berserk_action`, `_wake`), the screen in `battle.gd`
+  (`_next` Blind, `_turn` Berserk, `_anim_spell` and `_Arc`), the AI in `BattleAI.decide_spell`, the guild's fifth
+  level in `GameData.in_faction` / `TownLogic.mage_guild_level`; `tools/spell_batch_test.tscn`.
 - **Online (session67):** `scripts/core/net.gd` (autoload `Net`), `Commands.run` (passes commands on, turn rule),
   `adventure.gd` "Online (Net)" section and `_start_battle`, `battle.gd` `_carry` / `_turn`, `main_menu._multiplayer`
   / `_join` / `_open_room` / `_resume` and "The lobby" section, `scripts/ui/reconnect.gd` (getting back in),

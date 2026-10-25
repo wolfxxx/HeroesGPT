@@ -157,6 +157,15 @@ func immune(side: int, spell: String) -> bool:
 	return spell in GameState.hero_flags(h, "immune_spells") \
 		or (sp.has("damage") and sp["school"] in GameState.hero_flags(h, "immune_school"))
 
+## Whether this stack is spared by the spell: its side's protection (above), or, for a mind spell (Blind, Berserk), a
+## creature without a mind to bend (the undead, the ushabti as HoMM3's golems, war machines).
+func stack_immune(s: Dictionary, spell: String) -> bool:
+	if immune(s["side"], spell):
+		return true
+	if GameData.SPELLS[spell].get("mind", false):
+		return has_ab(s, "undead") or has_ab(s, "golem") or s.get("machine", false)
+	return false
+
 func has_ab(s: Dictionary, ab: String) -> bool:
 	return ab in cdata(s)["abilities"]
 
@@ -762,16 +771,19 @@ func do_melee(s: Dictionary, target: Dictionary, from_hex: Vector2i) -> Array:
 		moved = path.size() - 1 if not is_flyer(s) else distance(s["hex"], from_hex)
 		s["hex"] = from_hex
 		ev.append({"t": "move", "s": s, "path": path})
+	var woke := _wake(target)
 	ev += _strike(s, target, false, moved, false)
 	if target["alive"] and s["alive"] and not target.get("machine", false) and target["retaliations"] > 0 and not has_ab(s, "no_retaliation") and _can_act(target):
 		target["retaliations"] -= 1
-		ev += _strike(target, s, false, 0, true)
+		ev += _strike(target, s, false, 0, true, 0.5 if woke else 1.0)  # (a blinded stack, struck, wakes at half)
 	if s["alive"] and has_ab(s, "double_strike") and target["alive"]:
 		ev += _strike(s, target, false, 0, false)
+	s["effects"].erase("berserk")  # (Berserk ends once the stack has attacked)
 	finish_turn(s)
 	return ev
 
 func do_shoot(s: Dictionary, target: Dictionary) -> Array:
+	_wake(target)
 	var ev := _strike(s, target, true, 0, false)
 	var cart := false
 	for o in alive_stacks(s["side"]):
@@ -799,14 +811,21 @@ func do_shoot(s: Dictionary, target: Dictionary) -> Array:
 			for o in targets:
 				if not o["alive"]:
 					ev.append({"t": "death", "s": o})
+	s["effects"].erase("berserk")
 	finish_turn(s)
 	return ev
 
 func _can_act(s: Dictionary) -> bool:
 	return s["alive"]
 
-func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation: bool) -> Array:
+## An attack ends Blind on the stack it strikes (HoMM3); true if it was blinded.
+func _wake(s: Dictionary) -> bool:
+	return s["effects"].erase("blind")
+
+func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation: bool, mult := 1.0) -> Array:
 	var dmg := _roll_damage(a, d, ranged, moved)
+	if mult != 1.0:
+		dmg = maxi(1, int(dmg * mult))
 	var lucky := false
 	var lk := luck(a["side"])
 	if lk > 0 and rng.randf() < lk / 24.0:
@@ -834,6 +853,51 @@ func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation
 	if not d["alive"]:
 		ev.append({"t": "death", "s": d})
 	return ev
+
+## A stack that loses its turn to a spell: "blind" (it stands until struck or the spell ends), else "".
+func spell_lost_turn(s: Dictionary) -> String:
+	return "blind" if s["effects"].has("blind") else ""
+
+## A berserk stack's action, as the rules decide it (HoMM3): it goes for the nearest stack, friend or foe (the
+## nearer by hexes, then the earlier on the field); a shooter with nothing beside it shoots it, others strike it if
+## they can reach it this turn, else march toward it. Same form as BattleAI.decide's; {} when not berserk.
+func berserk_action(s: Dictionary) -> Dictionary:
+	if not s["effects"].has("berserk"):
+		return {}
+	var others := alive_stacks().filter(func(o): return o != s)
+	if others.is_empty():
+		return {"type": "defend"}
+	others.sort_custom(func(a, b):
+		var da := stack_distance(s, a)
+		var db := stack_distance(s, b)
+		return da < db if da != db else a["uid"] < b["uid"])
+	var nearest: Dictionary = others[0]
+	var beside := false
+	for c in cells(s):
+		for n in neighbors(c):
+			var o = stack_at(n)
+			if o != null and o != s:
+				beside = true
+	if s["shots"] > 0 and not beside:
+		return {"type": "shoot", "target": nearest}
+	var reach := reachable(s)
+	var pos := attack_positions(s, nearest, reach)
+	if not pos.is_empty():
+		pos.sort_custom(func(a, b):
+			var ca: int = 0 if a == s["hex"] else reach.get(a, 99)
+			var cb: int = 0 if b == s["hex"] else reach.get(b, 99)
+			return ca < cb if ca != cb else (a.y < b.y if a.y != b.y else a.x < b.x))
+		return {"type": "melee", "target": nearest, "from": pos[0]}
+	var best: Vector2i = s["hex"]
+	var bd := stack_distance(s, nearest)
+	for h in reach:
+		var d := 99
+		for c in cells(nearest):
+			d = mini(d, distance(h, c))
+		if d < bd or (d == bd and best != s["hex"] and (h.y < best.y or (h.y == best.y and h.x < best.x))):
+			bd = d
+			best = h
+	return {"type": "move", "hex": best} if best != s["hex"] else {"type": "defend"}
 
 ## Fear: bone dragons can make living enemies lose their turn.
 func check_fear(s: Dictionary) -> bool:
@@ -872,20 +936,41 @@ func spell_damage(side: int, spell: String) -> int:
 		v *= 1.0 + GameState.hero_stat(h, "school_" + String(GameData.SPELLS[spell]["school"])) / 100.0
 	return int(v)
 
-## Valid targets: "enemy", "ally" -> stack; "area" -> any hex; "all_living" -> none needed.
+## Valid targets: "enemy", "ally" -> stack; "area" -> any hex; "all_living", "all" -> none needed.
 func spell_target_ok(side: int, spell: String, hex: Vector2i) -> bool:
 	var t: String = GameData.SPELLS[spell]["target"]
 	var s = stack_at(hex)
 	match t:
 		"enemy":
-			return s != null and s["side"] != side and not immune(s["side"], spell)
+			return s != null and s["side"] != side and not stack_immune(s, spell)
 		"ally":
-			return s != null and s["side"] == side and not immune(s["side"], spell)
+			return s != null and s["side"] == side and not stack_immune(s, spell)
 		"area":
 			return in_bounds(hex)
-		"all_living":
+		"all_living", "all":
 			return true
 	return false
+
+## The stacks a chain spell strikes, in order: the target, then each time the nearest stack not yet struck, friend
+## or foe (the nearer by hexes, then the earlier on the field), creatures only, past those it cannot touch.
+func chain_targets(first: Dictionary, spell: String) -> Array:
+	var hit := [first]
+	var n: int = GameData.SPELLS[spell].get("chain", 1)
+	while hit.size() < n:
+		var last: Dictionary = hit[-1]
+		var best = null
+		var bd := 1 << 20
+		for o in alive_stacks():
+			if o in hit or o.get("machine", false) or stack_immune(o, spell):
+				continue
+			var d := stack_distance(last, o)
+			if d < bd or (d == bd and o["uid"] < best["uid"]):
+				bd = d
+				best = o
+		if best == null:
+			break
+		hit.append(best)
+	return hit
 
 func cast(side: int, spell: String, hex: Vector2i) -> Array:
 	var h = heroes[side]
@@ -900,19 +985,26 @@ func cast(side: int, spell: String, hex: Vector2i) -> Array:
 			var s = stack_at(hex)
 			if s:
 				targets = [s]
+				if sp.has("chain"):
+					targets = chain_targets(s, spell)
 		"area":
 			targets = stacks_on([hex] + neighbors(hex))
 		"all_living":
 			for s in alive_stacks():
 				if not has_ab(s, "undead"):
 					targets.append(s)
-	targets = targets.filter(func(t): return not immune(t["side"], spell))  # (a combination's protection)
+		"all":  # (every creature on the field: Armageddon; war machines are not creatures)
+			targets = alive_stacks().filter(func(s): return not s.get("machine", false))
+	targets = targets.filter(func(t): return not stack_immune(t, spell))  # (a combination's protection; mind spells)
 	ev["targets"] = targets
 	var first_name := _name(targets[0]) if targets.size() > 0 else ""  # (before the damage: "on Liches", not after)
 	var out := [ev]
-	for s in targets:
+	for i in targets.size():
+		var s: Dictionary = targets[i]
 		if sp.has("damage"):
 			var dmg := spell_damage_to(side, spell, s)
+			if sp.has("chain"):
+				dmg = maxi(1, int(dmg / pow(2.0, i)))  # (each jump of the chain at half the one before)
 			ev["dmg"][s["uid"]] = dmg
 			ev["killed"][s["uid"]] = apply_damage(s, dmg)
 			if not s["alive"]:
@@ -939,6 +1031,12 @@ func cast(side: int, spell: String, hex: Vector2i) -> Array:
 				"resurrection":
 					var g := heal(s, 40 + 20 * spell_power(side), true)
 					out.append({"t": "heal", "s": s, "amount": g})
+				"blind":
+					s["effects"].erase("berserk")
+					s["effects"]["blind"] = dur
+				"berserk":
+					s["effects"].erase("blind")
+					s["effects"]["berserk"] = dur
 	if spell in ["haste", "slow", "cure"]:
 		_resort_order()
 	# the log names the target and the damage, so every number on the field has its line

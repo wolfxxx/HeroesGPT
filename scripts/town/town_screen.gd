@@ -631,7 +631,8 @@ func _hall_rows() -> Array:
 	return [
 		[["village_hall", "town_hall", "city_hall", "capitol"], ["fort", "citadel", "castle"], ["tavern"], ["marketplace"],
 			["blacksmith"]],
-		[["mage_guild_1", "mage_guild_2", "mage_guild_3", "mage_guild_4"]] + GameData.FACTIONS[town["faction"]]["specials"].map(
+		[["mage_guild_1", "mage_guild_2", "mage_guild_3", "mage_guild_4", "mage_guild_5"].filter(
+			func(g): return GameData.in_faction(town["faction"], g))] + GameData.FACTIONS[town["faction"]]["specials"].map(
 			func(s): return [s]),
 		[dw.call(1), dw.call(2), dw.call(3), dw.call(4)],
 		[dw.call(5), dw.call(6), dw.call(7)],

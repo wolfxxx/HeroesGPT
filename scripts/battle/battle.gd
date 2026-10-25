@@ -745,6 +745,13 @@ func _next() -> void:
 		await _play(L.machine_act(s))
 		_next()
 		return
+	if L.spell_lost_turn(s) == "blind":
+		_set_log("%s %s blinded and cannot act." % [L._name(s), "is" if s["count"] == 1 else "are"])
+		_float_text(Vector2(0, -_top(s) - 10), "Blinded", Color(0.85, 0.8, 0.95), 28, "", 0.0, _unit(s))
+		L.finish_turn(s)
+		await get_tree().create_timer(0.7).timeout
+		_next()
+		return
 	if L.check_fear(s):
 		_set_log("%s freeze in fear!" % L._name(s))
 		_float_text(Vector2(0, -_top(s) - 10), "Fear!", Color(0.8, 0.65, 1.0), 30, "", 0.0, _unit(s))
@@ -761,8 +768,23 @@ func _next() -> void:
 		return
 	_turn(s)
 
-## Whose choice the stack's turn is: the person at this screen, another machine's player (online), or the computer.
+## Whose choice the stack's turn is: the person at this screen, another machine's player (online), or the computer;
+## a berserk stack's is nobody's: the rules choose it (L.berserk_action), the same on every machine.
 func _turn(s: Dictionary) -> void:
+	var bz := L.berserk_action(s)
+	if not bz.is_empty():
+		_quiet()
+		_set_log("%s %s berserk!" % [L._name(s), "goes" if s["count"] == 1 else "go"])
+		_float_text(Vector2(0, -_top(s) - 10), "Berserk!", Color(1.0, 0.45, 0.35), 28, "", 0.0, _unit(s))
+		await get_tree().create_timer(0.6).timeout
+		if _ended:
+			return
+		match bz["type"]:
+			"shoot": _carry({"k": "shoot", "target": bz["target"]["uid"]}, false)
+			"melee": _carry({"k": "melee", "target": bz["target"]["uid"], "from": bz["from"]}, false)
+			"move": _carry({"k": "move", "hex": bz["hex"]}, false)
+			_: _carry({"k": "defend"}, false)
+		return
 	if _remote[s["side"]]:
 		_remote_turn(s)
 	elif _human_controls(s["side"]):
@@ -1010,7 +1032,7 @@ func _stat_grid() -> GridContainer:
 	g.add_theme_constant_override("v_separation", 1)
 	return g
 
-const _EFFECT_NAMES := {"disease": "Diseased", "bless": "Blessed", "curse": "Cursed"}
+const _EFFECT_NAMES := {"disease": "Diseased", "bless": "Blessed", "curse": "Cursed", "blind": "Blinded"}
 const _SKILL_STEP := {"offense": 10, "archery": 15, "armorer": 7}
 
 func _stack_info(st: Dictionary) -> Control:
@@ -1143,6 +1165,12 @@ func _update_hover() -> void:
 				var hit: Array = L.stacks_on([_hover] + L.neighbors(_hover)).map(func(s): return L._name(s))
 				if hit.size() > 0:
 					txt += " on %s" % ", ".join(hit) + (" (%d damage each)" % L.spell_damage(cur["side"], _spell) if sp.has("damage") else "")
+			elif sp.has("chain") and t:
+				var parts := []
+				var chain: Array = L.chain_targets(t, _spell)
+				for i in chain.size():
+					parts.append("%s %d" % [L._name(chain[i]), maxi(1, int(L.spell_damage_to(cur["side"], _spell, chain[i]) / pow(2.0, i)))])
+				txt += " (damage: %s)" % ", then ".join(parts)
 			elif sp.has("damage") and t:
 				txt += " on %s (%d damage)" % [L._name(t), L.spell_damage_to(cur["side"], _spell, t)]
 		else:
@@ -1322,7 +1350,7 @@ func _on_spells() -> void:
 		func(sp): return ("Now: %d damage." % L.spell_damage(side, sp)) if GameData.SPELLS[sp].has("damage") else "").closed
 	if r == null or r == "":
 		return
-	if GameData.SPELLS[r]["target"] == "all_living":
+	if GameData.SPELLS[r]["target"] in ["all_living", "all"]:
 		_carry({"k": "cast", "side": side, "spell": r, "hex": Vector2i(7, 5)}, true)
 		return
 	_spell = r
@@ -1578,7 +1606,8 @@ func _anim_spell(ev: Dictionary) -> void:
 	if sp == "death_cloud":
 		col = Color(0.5, 0.9, 0.4)
 	var sfx_map := {"magic_arrow": "magic_arrow", "lightning_bolt": "lightning", "fireball": "fireball", "bless": "bless", "curse": "curse",
-		"cure": "heal", "resurrection": "heal", "meteor_shower": "meteor", "death_ripple": "curse", "frost_ring": "magic_hit", "ice_bolt": "magic_hit"}
+		"cure": "heal", "resurrection": "heal", "meteor_shower": "meteor", "death_ripple": "curse", "frost_ring": "magic_hit", "ice_bolt": "magic_hit",
+		"chain_lightning": "lightning", "armageddon": "meteor", "implosion": "magic_hit", "blind": "curse", "berserk": "curse"}
 	Audio.sfx(sfx_map.get(sp, "spell_cast"))
 	if sp != "death_cloud" and L.heroes[ev["side"]] != null:
 		_hero_cast(ev["side"])
@@ -1593,9 +1622,26 @@ func _anim_spell(ev: Dictionary) -> void:
 		for t in targets:
 			centers.append(_unit(t).position + Vector2(0, -70))
 	var fx: String = FX_OF.get(sp, "arcane")
-	for c in centers:
+	if sp == "armageddon":  # (the sky burns: the whole field flushes red under the falling fire)
+		var flash := ColorRect.new()
+		flash.color = Color(1.0, 0.3, 0.05, 0.0)
+		flash.size = Vector2(1920, 1080)
+		flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_fx.add_child(flash)
+		var ft := flash.create_tween()
+		ft.tween_property(flash, "color:a", 0.32, 0.25)
+		ft.tween_property(flash, "color:a", 0.0, 0.9)
+		ft.tween_callback(flash.queue_free)
+	for i in centers.size():
+		var c: Vector2 = centers[i]
 		var p: Vector2 = c
-		if sp == "lightning_bolt":
+		if sp == "chain_lightning" and i > 0:  # each jump an arc from the stack before, a moment after it
+			await get_tree().create_timer(0.12).timeout
+			var arc := _Arc.new()
+			arc.a = centers[i - 1] + Vector2(0, 30)
+			arc.b = c + Vector2(0, 30)
+			_fx.add_child(arc)
+		if sp == "lightning_bolt" or (sp == "chain_lightning" and i == 0):
 			var burst := _Burst.new()  # the bolt from the sky; the painted sparks are the impact, at the feet
 			burst.bolt = true
 			burst.position = c + Vector2(0, 62)
@@ -1611,7 +1657,8 @@ func _anim_spell(ev: Dictionary) -> void:
 			_play_fx(fx, p - layer.position, Vector2(1.3, 0.95), 1.1, 1.0, layer)
 			get_tree().create_timer(1.3).timeout.connect(layer.queue_free)
 		else:
-			_play_fx(fx, p, Vector2.ONE * (0.75 if fx == "spark" else 0.95), 0.8, 0.5 if fx == "spark" else 1.0)
+			var size := 1.25 if sp == "implosion" else (0.75 if fx == "spark" else 0.95)
+			_play_fx(fx, p, Vector2.ONE * size, 0.8, 0.5 if fx == "spark" else 1.0)
 	await get_tree().create_timer(0.35).timeout
 	_flush_log(ev)
 	for t in targets:
@@ -1632,7 +1679,8 @@ func _anim_spell(ev: Dictionary) -> void:
 const FX_OF := {"fireball": "fire", "meteor_shower": "fire", "frost_ring": "frost", "ice_bolt": "frost",
 	"lightning_bolt": "spark", "magic_arrow": "arcane", "bless": "holy", "cure": "holy", "resurrection": "holy",
 	"shield": "holy", "stone_skin": "holy", "haste": "holy", "curse": "dark", "slow": "dark", "weakness": "dark",
-	"death_ripple": "dark", "death_cloud": "dark"}
+	"death_ripple": "dark", "death_cloud": "dark", "chain_lightning": "spark", "armageddon": "fire", "implosion": "arcane",
+	"blind": "dark", "berserk": "fire"}
 
 func _play_fx(fx: String, p: Vector2, sc: Vector2, dur := 0.8, alpha := 1.0, parent: Node2D = null) -> void:
 	if not Assets.has("battle/fx_%s.png" % fx):
@@ -2661,6 +2709,31 @@ class _Moat extends Node2D:
 			var closed := poly.duplicate()
 			closed.append(poly[0])
 			draw_polyline(closed, Color(0.55, 0.85, 1.0, 0.4), 1.5, true)
+
+## Chain Lightning's jump from one stack to the next: a jagged white-blue arc that flickers out.
+class _Arc extends Node2D:
+	var a := Vector2.ZERO
+	var b := Vector2.ZERO
+	var t := 0.0
+	var _pts := PackedVector2Array()
+	func _ready() -> void:
+		z_index = 26
+		var n := 9
+		var side := (b - a).orthogonal().normalized()
+		for i in n + 1:
+			var f := float(i) / n
+			var jag := 0.0 if i == 0 or i == n else Dice.look().randf_range(-18.0, 18.0)
+			_pts.append(a.lerp(b, f) + side * jag)
+		var tw := create_tween()
+		tw.tween_property(self, "t", 1.0, 0.45)
+		tw.tween_callback(queue_free)
+	func _process(_d: float) -> void:
+		queue_redraw()
+	func _draw() -> void:
+		var al := 1.0 - t
+		draw_polyline(_pts, Color(0.45, 0.65, 1.0, 0.25 * al), 18.0)
+		draw_polyline(_pts, Color(0.7, 0.85, 1.0, 0.6 * al), 8.0)
+		draw_polyline(_pts, Color(1, 1, 1, al), 3.0)
 
 class _Burst extends Node2D:
 	var color := Color.WHITE

@@ -131,6 +131,8 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - `ui/spellbook.png` — 1536x1024 open leather spellbook with five school tabs (all, air, fire, water, earth), keyed
   from magenta. Page and tab rectangles are in `scripts/ui/spell_book.gd`. `icons/spell_<id>.png` (128 px) are painted
   miniatures. Both by `tools/art/spellbook_paint.py` (imagegen/batch14; `paint <spell_id>` repaints one miniature).
+  Session67's five (chain_lightning, armageddon, implosion, blind, berserk) were painted one by one that way and cut as
+  `ingest` does (8 px inset, 128 px), past the 4 x 4 sheet.
 - `ui/paperdoll.png` — 600x800 hero-screen paper-doll: a faint gilded etching of an armoured figure on dark slate;
   the artifact sockets are drawn over it (`scripts/ui/hero_screen.gd` SOCKETS). `tools/art/paperdoll_paint.py`
   (imagegen/batch17).

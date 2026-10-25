@@ -54,8 +54,8 @@ func _ready() -> void:
 			continue
 		var o: Dictionary = pyrs[0]
 		_ok(Vector2(o["pos"]).distance_to(Vector2(24, 24)) < 12.0, "near the middle: %s" % o["pos"])
-		_ok(o["guards"] == WorldGen.PYRAMID_GUARDS and GameData.SPELLS[o["spell"]]["level"] == 4,
-			"guarded by 40 Gilded and 2 x 10 Crystal Ushabtis, a level-4 spell inside")
+		_ok(o["guards"] == WorldGen.PYRAMID_GUARDS and GameData.SPELLS[o["spell"]]["level"] == 5,
+			"guarded by 40 Gilded and 2 x 10 Crystal Ushabtis, a level-5 spell inside (as HoMM3's)")
 		_play(w, o)
 
 	_mummies()
@@ -114,7 +114,7 @@ func _play(w: Dictionary, o: Dictionary) -> void:
 	# the computer stays away while its army is weaker
 	var ai := AdvAI.new(rules)
 	_ok(ai._object_value(h, w["players"][0], o, 1000.0) == 0.0, "the computer leaves it alone with a small army")
-	h["skills"]["wisdom"] = 2
+	h["skills"]["wisdom"] = 3  # (Expert Wisdom: a level 5 spell)
 	_ok(ai._object_value(h, w["players"][0], o, 200000.0) > 0.0, "and goes for it with a great one")
 	# a lost battle leaves the survivors; a won one clears the guards
 	rules.apply_battle({"winner": "defender", "attacker_army": h["army"], "defender_army": [{"id": "gold_golem", "count": 31}, null, null, null, null, null, null],
@@ -141,9 +141,9 @@ func _play(w: Dictionary, o: Dictionary) -> void:
 	_ok(not h.has("next_battle_luck"), "and only that one")
 	# with the wisdom, a fresh pyramid's spell is learned
 	o["spell"] = sp
-	h["skills"]["wisdom"] = 2
+	h["skills"]["wisdom"] = 3
 	ev = rules.visit(h, o)
-	_ok(sp in h["spells"] and o["spell"] == "", "with Advanced Wisdom the spell is learned, once")
+	_ok(sp in h["spells"] and o["spell"] == "", "with Expert Wisdom the spell is learned, once")
 	# no Skeletons from statues
 	var nec := GameState.make_hero("lord_morthis", 1)
 	var r := Necromancy.calculate(nec, nec["army"], [{"id": "gold_golem", "count": 40}], 1)
@@ -173,7 +173,7 @@ class Walk extends Node:
 		var me: Dictionary = w["players"][0]  # (human while the map loads, so it plays no computer turn)
 		var h: Dictionary = w["heroes"][me["heroes"][0]]
 		h["army"] = [{"id": "archangel", "count": 40}, {"id": "champion", "count": 40}, null, null, null, null, null]
-		h["skills"]["wisdom"] = 2
+		h["skills"]["wisdom"] = 3
 		h["pos"] = o["pos"]
 		get_tree().change_scene_to_file("res://scenes/adventure.tscn")
 		await get_tree().create_timer(2.0).timeout

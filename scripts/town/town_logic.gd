@@ -52,7 +52,7 @@ static func pay(player: Dictionary, cost: Dictionary, times := 1) -> void:
 ## Returns "" if buildable, otherwise a human readable reason.
 static func build_block_reason(town: Dictionary, player: Dictionary, id: String) -> String:
 	var b: Dictionary = GameData.BUILDINGS[id]
-	if b.get("faction", town["faction"]) != town["faction"]:
+	if not GameData.in_faction(town["faction"], id):
 		return "Not in this town"
 	if has_building(town, id):
 		return "Already built"
@@ -76,7 +76,7 @@ static func buildable_list(town: Dictionary) -> Array:
 		var b: Dictionary = GameData.BUILDINGS[id]
 		if b.has("replaces") and not has_building(town, b["replaces"]):
 			continue
-		if b.get("faction", town["faction"]) != town["faction"]:
+		if not GameData.in_faction(town["faction"], id):
 			continue
 		out.append(id)
 	return out
@@ -175,7 +175,7 @@ static func learn_guild_spells(town: Dictionary) -> void:
 			have += 1
 
 static func mage_guild_level(town: Dictionary) -> int:
-	for l in range(4, 0, -1):
+	for l in range(5, 0, -1):
 		if has_building(town, "mage_guild_%d" % l):
 			return l
 	return 0
