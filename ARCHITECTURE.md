@@ -284,9 +284,22 @@ keeps its own view. On a difference both worlds are written to `user://net_out_o
 `tools/net_diff.tscn` lists what differs. A player acts only on their own turn (`Commands.run`, except
 `level_roll`/`level_up`/`battle_result`).
 Seats: `Net.seat` is this machine's player (`GameState.human_player_index` returns it; `GameState.hotseat()` is false
-online); the host gives each joining machine the next human colour that is not its own (`Net.peers`), and sends
-the world on joining (`_welcome`, zstd-compressed `var_to_bytes`), or once its map screen has made the world
-(`Net.world_ready`). `Net.mine(p)`: this machine's player, and on the host the computer players.
+online); the host gives each joining machine the colour it asks for (`_hello`: the one it held in the lobby, or
+played before) if free, else the next human colour that is not its own (`Net.peers`), and sends the world on
+joining (`_welcome`, zstd-compressed `var_to_bytes`), or once its map screen is whole (`Net.world_ready`, at the end
+of `adventure._ready`).
+Lobby (session67): before the game the joined machines wait on the host's New Game screen (`main_menu.gd` "The
+lobby"). The host's screen sends it out after every change (`_refresh_scenario` ends in `_lobby_after_change`;
+`_lobby_push`: `Net.lobby_assign` settles who holds which colour open to people, `Net.lobby_send` sends the
+settings, the colours held and who waits without one). A joined screen shows it (`_guest`, `_apply_lobby` from
+`Net.lobby`, `Net.lobby_mine`): its own colour's town, hero and bonus on the left, sent to the host when changed
+(`Net.lobby_ask({"choice"})`, checked in `_on_lobby_request`: a town and bonus that exist, a hero no other person
+leads); a free open colour taken with a click (`{"take"}`, `Net.lobby_take`); everything else out of reach
+(`_lock_for_guest`). The players row online (`_lobby_seat_buttons`): per colour who plays it and its town; the host
+clicks through Open (a person who joins) / Computer / Empty (random maps only, as HoMM3: settings `seat_empty`, the
+colour's player is out from the start, `empty`, and its town neutral, `WorldGen._neutral_town`) and through a
+computer's town (`seat_ai_faction`, "" Random). Begin: `Net.lobby_begin`, then each joined machine is seated as the
+colour it held (`_greeted`). Offline the New Game screen is as before (those two settings are dropped). `Net.mine(p)`: this machine's player, and on the host the computer players.
 Map screen (`adventure.gd`): `Net.rules` is its rules (remote commands keep its tile cache right); a remote command
 marks the map to redraw next frame (`_net_dirty`, `_net_redraw`); a remote `end_turn` gives the day's news and
 decides what comes next (`_on_remote_command`); `_await_others` shows "<name> is moving..." (or "Waiting for <name> to
@@ -350,13 +363,13 @@ Browser version (session67): `export_presets.cfg` "Web" (single-threaded, so it 
 https://wolfxxx.github.io/HeroesGPT/. In a browser: no Quit buttons, no hosting by address, edge scrolling from where
 the cursor is over the page, and once it has left, on toward the edge it left by until it comes back
 (`adventure._edge_scroll`, `_mouse_in`, `_left_at`, `_past_edge`), as past the window's edge on the desktop; saves live in the browser's storage.
-Not yet: a lobby, fog filtered per player (each machine holds the whole world), turn timers; a player's own
+Not yet: fog filtered per player (each machine holds the whole world), turn timers; a player's own
 view (their selection, the briefing seen) after a reload of their page comes from the host's copy.
 Checked by `tools/net_test.tscn` (two processes: a joined player walks, computer players move on the host, a spoiled
 world is caught by the digest and put right, a computer player's attack is fought on the joined machine, the worlds
 match at the end; `-- --relay` runs it through the live relay by room code, not in the suite) and `tools/net_battle_test.tscn` (one battle on two machines, each side in auto combat on its
-own machine: every action crosses and both reach the same result), and `tools/net_rejoin_test.tscn` (getting back in:
-see Tools).
+own machine: every action crosses and both reach the same result), `tools/net_rejoin_test.tscn` (getting back in)
+and `tools/net_lobby_test.tscn` (the lobby): see Tools.
 
 ## Factions as data
 Everything that makes a faction is one record in `GameData.FACTIONS` (its header lists the fields): creatures and
@@ -580,6 +593,11 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   `npx wrangler dev` in `relay/` or the live one, by hand): a joining process is given Blue, then asking for Teal
   gets Teal; the host's world is dropped and its saved online game resumed (same room code); the other rejoins as
   Teal; then the host's connection goes mid-game, it opens its room again and the other comes back; the worlds match.
+- `tools/net_lobby_test.tscn` — in the full suite (port 24794): the lobby through two real main menus: the joined
+  screen holds Blue, picks its town and hero (they reach the host); the host turns to a random map with Green open,
+  Tan a computer with a chosen town; the joined player takes Green and the host empties Blue; the joined screen
+  shows it all and cannot reach the scenario; at Begin it is seated as Green with its choices, Blue is out with a
+  neutral town, Tan has its town, the worlds match, and turns pass Blue by.
 - `tools/battle_morale_test.tscn` — in the full suite: two computer-led armies with Leadership 3 on the real
   battle screen; both sides win good morale, each time the stack that has just acted, never twice a round.
 - `tools/net_battle_test.tscn` — in the full suite: one battle fought by two processes (port 24792). `tools/net_diff.tscn` lists what

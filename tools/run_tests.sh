@@ -9,6 +9,7 @@
 #   NET TEST: N checks, failures: 0         (a second process joins over the network; the worlds stay equal)
 #   NET BATTLE TEST: N checks, failures: 0  (one battle fought on two machines; both reach the same result)
 #   NET REJOIN TEST: N checks, failures: 0  (a machine rejoins as its colour; the host resumes its saved game)
+#   NET LOBBY TEST: N checks, failures: 0   (the lobby on two New Game screens; seated as the colour held)
 #   REPLAY TEST: N checks, failures: 0      (recorded commands replayed on the starting world give the same world)
 #   CAMPAIGN WEEK TEST: N checks, failures: 0
 #   CAMPAIGN FLOW TEST: N checks, failures: 0
@@ -44,6 +45,7 @@ echo "--commands"; timeout 60 $G --headless --path . res://tools/commands_test.t
 echo "--net"; timeout 300 $G --headless --path . res://tools/net_test.tscn 2>&1 | grep -E "NET TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--net-battle"; timeout 300 $G --headless --path . res://tools/net_battle_test.tscn 2>&1 | grep -E "NET BATTLE TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--net-rejoin"; timeout 300 $G --headless --path . res://tools/net_rejoin_test.tscn 2>&1 | grep -E "NET REJOIN TEST|SCRIPT ERROR|FAIL" | tail -8
+echo "--net-lobby"; timeout 300 $G --headless --path . res://tools/net_lobby_test.tscn 2>&1 | grep -E "NET LOBBY TEST|SCRIPT ERROR|FAIL" | tail -8
 echo "--replay"; timeout 300 $G --headless --path . res://tools/replay_test.tscn 2>&1 | grep -E "REPLAY TEST|SCRIPT ERROR|FAIL|differs|refused" | tail -8
 echo "--battle"; timeout 300 $G --headless --path . res://tools/battle_test.tscn 2>&1 | grep -E "BATTLE TEST|SCRIPT ERROR" | tail -4
 echo "--battle-morale"; timeout 200 $G --headless --path . res://tools/battle_morale_test.tscn 2>&1 | grep -E "BATTLE MORALE TEST|SCRIPT ERROR|FAIL" | tail -6

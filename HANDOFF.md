@@ -16,6 +16,18 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 the lobby (2026-10-25), committed with this HANDOFF update:** the user found setting up online odd ("the joining computers
+  just see joining and cannot see if theres any success before the host launches") and asked for a lobby where
+  everyone sees who joined and picks a faction, with computer players or neutral castles. Their answers: HoMM3's
+  way of control, and empty colours on random maps only. Now a joining computer lands on the host's New Game screen,
+  shown live: it holds a colour, picks its own town, hero and bonus (checked by the host: no hero two people lead),
+  can take another open colour; the host sets the scenario and options and, per colour, Open / Computer (with a town
+  or Random) / Empty (random maps: the colour's player is out from the start and its town neutral). The host's
+  Begin seats everyone as the colour they held. Found on the way: the map screen seated waiting players before its
+  panels existed (a crash on the "joined" notice, which also cut its setup short); now seated once it is whole.
+  Checked: `tools/net_lobby_test.tscn` (new, in the suite) and two Chrome windows on the web build
+  (`shots/session67/lobby/`: the guest's lobby, its choices on the host, the random map's Empty and computer town,
+  "Beginning..." and the guest on the map as its colour). Offline New Game unchanged.
 - **Session67 saving online (2026-10-25), committed with this HANDOFF update:** the user noticed both machines had Save Game online and
   agreed to the proposal ("yes"). Before, Save wrote the machine's copy to the normal slot, which loads as a local
   hot-seat game (and the joining machine's copy holds the whole map). Now on the host Save Game and Ctrl+S save the
@@ -1153,7 +1165,8 @@ Proposed path, discussed with the user (not yet approved as a plan):
    address, commands passed between machines, digest checks), battles fought by each person on their own machine,
    room codes through a relay (also from the browser version on GitHub Pages).
    Getting back in after a dropped connection or a reload, and resuming the hosted game (Multiplayer → Resume).
-   Next: a test between two real computers (the user is doing it); a lobby, per-player fog on the wire.
+   A lobby on the New Game screen (each person picks their own town, hero and bonus; the host sets who plays each
+   colour). Next: a test between two real computers (the user is doing it); per-player fog on the wire.
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. The user's own
@@ -1427,8 +1440,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 - **Online (session67):** `scripts/core/net.gd` (autoload `Net`), `Commands.run` (passes commands on, turn rule),
   `adventure.gd` "Online (Net)" section and `_start_battle`, `battle.gd` `_carry` / `_turn`, `main_menu._multiplayer`
-  / `_join` / `_open_room` / `_resume`, `scripts/ui/reconnect.gd` (getting back in), `tools/net_test.tscn`,
-  `tools/net_battle_test.tscn`, `tools/net_rejoin_test.tscn`, `tools/net_diff.tscn`. Relay:
+  / `_join` / `_open_room` / `_resume` and "The lobby" section, `scripts/ui/reconnect.gd` (getting back in),
+  `tools/net_test.tscn`, `tools/net_battle_test.tscn`, `tools/net_rejoin_test.tscn`, `tools/net_lobby_test.tscn`,
+  `tools/net_diff.tscn`. Relay:
   `relay/src/index.js`, `scripts/core/relay_peer.gd`. Browser version: `export_presets.cfg`,
   `.github/workflows/pages.yml`. ARCHITECTURE.md "Online".
 - **Dice and replay (session67):** `scripts/core/dice.gd` (`Dice.roll/chance/index/pick`, `gen`/`keep`, `derived`,
@@ -1515,6 +1529,10 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
   run in a browser. Headful Chrome windows pop up on the user's screen (one closed mid-check): the driver
   (`scratchpad/pw/drive.mjs`) now runs headless with SwiftShader unless `SHOW=1`; `/reload` reloads a page with its
   storage kept (a page reload as the user would do it).
+- Lobby (session67): anything a screen's `_ready` sends over the network must come after the screen is whole: a
+  signal answered at once (roster_changed) reaches handlers that use its panels. Tests that drive two main menus
+  must wait out the scene fade before asking the joined machine about its map. The New Game screen is at the
+  window's height limit: the lobby's taller players row fits only because the online preview is smaller.
 - Getting back in (session67): a retry must wait for its answer; trying again too soon (the test first used half a
   second) drops a join still on its way, and the host briefly sees the machine come and go. Relay rooms are found
   by attachment (`_host()`), not by `getWebSockets("host")[0]`: a closing connection can still be listed. Online

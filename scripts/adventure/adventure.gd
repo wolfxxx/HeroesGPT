@@ -106,6 +106,8 @@ func _ready() -> void:
 			sel = _first_hero_with_mp()
 		_select_hero(sel, true)
 	_update_music()
+	if Net.active:
+		Net.world_ready()  # (once the screen is whole: players waiting in the lobby are seated now)
 	_post_ready.call_deferred()
 
 func _post_ready() -> void:
@@ -118,6 +120,7 @@ func _post_ready() -> void:
 			GameState.change_scene(GameState.SCENE_ADVENTURE, 0.2)
 			return
 		_net_attach()
+		Net.world_ready()
 	if Shot.active:
 		_shot_view()
 	if not GameState.battle_result.is_empty():
@@ -1307,7 +1310,7 @@ func _on_world_received() -> void:
 	GameState.change_scene(GameState.SCENE_ADVENTURE, 0.2)  # (the host's world: the screen starts again on it)
 
 func _on_roster_changed() -> void:
-	if is_inside_tree():
+	if is_inside_tree() and hud != null:
 		hud.toast("A player has joined or left the game.")
 		if busy and not Net.mine(world["current_player"]):
 			_await_others()
@@ -1334,7 +1337,6 @@ func _net_attach() -> void:
 			[Net.roster_changed, _on_roster_changed], [Net.lost, _on_net_lost]]:
 		if not (pair[0] as Signal).is_connected(pair[1]):
 			(pair[0] as Signal).connect(pair[1])
-	Net.world_ready()
 
 func _exit_tree() -> void:
 	if Net.rules == rules:

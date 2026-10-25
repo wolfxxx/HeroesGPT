@@ -12,13 +12,20 @@ extends Node
 ## same player (it asks for it: _hello), the host opens its room again under the same code (its key) or its address.
 ## The host keeps the game it hosts saved as it goes (`online_path`), so that it can be resumed after a restart or a
 ## reload of the page (resume_saved); the others rejoin it.
-## Not yet: a lobby; the fog hides the others' maps on screen only.
+## Before the game, the lobby: the machines that join wait on the host's New Game screen, shown to them as it changes
+## (lobby_send / lobby_changed); the host gives each a colour open to people (lobby_assign, lobby_take), each picks its
+## own town, hero and bonus (lobby_ask / lobby_request), and the host begins (lobby_begin); the colours they held are
+## the ones they are seated as (`_greeted`).
+## Not yet: the fog hides the others' maps on screen only.
 
 signal remote_command(cmd: Dictionary, res: Dictionary)  ## a command from another machine was applied
 signal world_received                                    ## the host's world arrived (joined, or put right)
 signal roster_changed                                    ## a player joined or left
 signal lost(reason: String)                              ## the connection is gone (or never came)
 signal room_opened(code: String)                         ## host through the relay: the code others join with
+signal lobby_changed                                     ## joining machine: the host's lobby arrived (`lobby`)
+signal lobby_request(id: int, change: Dictionary)        ## host: a machine in the lobby asks for a change
+signal lobby_begun                                       ## joining machine: the host has begun the game
 
 const PORT := 24680
 const RELAY := "wss://heroes-relay.shatteredcrown.workers.dev"  ## the relay for room codes (relay/, RelayPeer)
@@ -45,6 +52,7 @@ var notes: Array = []    ## what went astray, as printed (a diagnostic)
 var room := ""           ## the room code, when the game goes through the relay ("" while it opens, or by address)
 var room_key := ""       ## host: the room's key, with which the relay gives the same room again
 var relay := RELAY       ## (tools/net_test.gd points it at a relay of its own)
+var port := PORT         ## the port hosting and joining by address use (the menu's; tests use their own)
 var online_path := ONLINE_SAVE  ## (the tests point these two at files of their own)
 var join_path := LAST_JOIN
 var playing := false     ## a game is under way: the host's map screen has opened, or the host's world has come
@@ -53,13 +61,18 @@ var resume := {}
 var _want := -1          ## joining: the player asked for (the one this machine played before)
 var _greeted := {}       ## host: peer -> the player it asked for
 var _save_at := 0        ## host: when the game is next saved (msec; 0: nothing new)
+## The lobby. Host: colour -> the machine holding it (1: the host). Joining machine: the host's lobby as last sent,
+## {"settings": the New Game settings, "seats": colour -> machine, "waiting": machines without a colour}.
+var lobby_seats := {}
+var lobby := {}
 
 ## Opens a game for others to join by this machine's address (ENet). Returns "" or what went wrong.
-func host(port := PORT) -> String:
+func host(p := 0) -> String:
 	leave()
+	var at := p if p > 0 else port
 	var peer := ENetMultiplayerPeer.new()
-	if peer.create_server(port, 7) != OK:
-		return "Cannot open port %d: is another game hosting already?" % port
+	if peer.create_server(at, 7) != OK:
+		return "Cannot open port %d: is another game hosting already?" % at
 	_hosting(peer)
 	return ""
 
@@ -155,6 +168,8 @@ func leave() -> void:
 	room_key = ""
 	peers = {}
 	_greeted = {}
+	lobby_seats = {}
+	lobby = {}
 	_inbox = []
 	_battle_peer = -1
 	_fight_peer = -1
@@ -244,7 +259,8 @@ func _hello(want: int) -> void:
 		return
 	_greeted[id] = want
 	if not playing or GameState.world.is_empty():
-		_waiting.append(id)
+		_waiting.append(id)  # (in the lobby until the game begins)
+		roster_changed.emit()
 	else:
 		_seat_peer(id)
 
@@ -264,8 +280,11 @@ func _seat_peer(id: int) -> void:
 	roster_changed.emit()
 
 func _on_peer_disconnected(id: int) -> void:
+	var in_lobby := _waiting.has(id)
 	_waiting.erase(id)
 	_greeted.erase(id)
+	if in_lobby:
+		roster_changed.emit()
 	if id == _fight_peer:  # (it left mid-battle: the host settles the battle itself)
 		_fight_peer = -1
 		battle_result_arrived.emit({})
@@ -375,6 +394,91 @@ func _ask_world() -> void:
 	if is_host and peers.has(id):
 		_dump("host")
 		_welcome.rpc_id(id, peers[id], _pack())
+
+# ---------------------------------------------------------------------------------------------
+# The lobby (before the game)
+# ---------------------------------------------------------------------------------------------
+## Host: the colour each machine in the lobby holds, given the colours open to people (`open`): one whose colour is
+## no longer open loses it; one without a colour takes the one it asked for if that is open and free, else the first
+## free one. It is seated as that colour when the game begins.
+func lobby_assign(open: Array) -> void:
+	for pi in lobby_seats.keys():
+		if pi != seat and (not pi in open or not lobby_seats[pi] in _waiting):
+			lobby_seats.erase(pi)
+	for id in _waiting:
+		if id in lobby_seats.values():
+			continue
+		var want: int = _greeted.get(id, -1)
+		var pick := -1
+		for pi in open:
+			if not lobby_seats.has(pi) and (pick < 0 or pi == want):
+				pick = pi
+		if pick >= 0:
+			lobby_seats[pick] = id
+	lobby_seats[seat] = 1
+	for pi in lobby_seats:
+		if lobby_seats[pi] != 1:
+			_greeted[lobby_seats[pi]] = pi
+
+## Host: a machine moves to another open colour, if no one holds it.
+func lobby_take(id: int, pi: int, open: Array) -> void:
+	if not id in _waiting or not pi in open or lobby_seats.has(pi):
+		return
+	for k in lobby_seats.keys():
+		if lobby_seats[k] == id:
+			lobby_seats.erase(k)
+	lobby_seats[pi] = id
+	_greeted[id] = pi
+
+## Host: the colour a machine holds in the lobby, or -1.
+func lobby_seat_of(id: int) -> int:
+	for pi in lobby_seats:
+		if lobby_seats[pi] == id:
+			return pi
+	return -1
+
+## Host: the lobby as it now is, to every machine in it.
+func lobby_send(settings: Dictionary) -> void:
+	var b := var_to_bytes({"settings": settings, "seats": lobby_seats,
+		"waiting": _waiting.filter(func(id): return not id in lobby_seats.values())})
+	for id in _waiting:
+		_lobby_state.rpc_id(id, b)
+
+@rpc("authority", "call_remote", "reliable")
+func _lobby_state(b: PackedByteArray) -> void:
+	var d = bytes_to_var(b)
+	if d is Dictionary and not playing:
+		lobby = d
+		lobby_changed.emit()
+
+## Joining machine: the colour it holds in the lobby, or -1.
+func lobby_mine() -> int:
+	var me := multiplayer.get_unique_id()
+	for pi in lobby.get("seats", {}):
+		if lobby["seats"][pi] == me:
+			return int(pi)
+	return -1
+
+## Joining machine: asks the host for a change: {"take": colour}, or {"choice": {"faction", "hero", "bonus"}} for its
+## own colour.
+func lobby_ask(change: Dictionary) -> void:
+	_lobby_ask.rpc_id(1, var_to_bytes(change))
+
+@rpc("any_peer", "call_remote", "reliable")
+func _lobby_ask(b: PackedByteArray) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	var d = bytes_to_var(b)
+	if is_host and not playing and id in _waiting and d is Dictionary:
+		lobby_request.emit(id, d)
+
+## Host: the game begins; the machines in the lobby wait for the world (it comes once the map screen has made it).
+func lobby_begin() -> void:
+	for id in _waiting:
+		_lobby_begun.rpc_id(id)
+
+@rpc("authority", "call_remote", "reliable")
+func _lobby_begun() -> void:
+	lobby_begun.emit()
 
 # ---------------------------------------------------------------------------------------------
 # Commands

@@ -85,6 +85,10 @@ func _generate(settings: Dictionary) -> Dictionary:
 	var seat_faction: Array = settings.get("seat_faction", [])
 	var seat_hero: Array = settings.get("seat_hero", [])
 	var seat_bonus: Array = settings.get("seat_bonus", [])
+	# the online lobby: a computer player's town chosen by the host ("" = random), and colours left empty (a random
+	# map only, as HoMM3: no player there; its town starts neutral)
+	var seat_ai_faction: Array = settings.get("seat_ai_faction", [])
+	var seat_empty: Array = settings.get("seat_empty", [])
 	var humans := []
 	for i in nplayers:
 		humans.append(i == 0 or (i < seat_human.size() and bool(seat_human[i])))
@@ -106,7 +110,8 @@ func _generate(settings: Dictionary) -> Dictionary:
 			factions.append(human_faction)
 		else:
 			factions.append(GameData.FACTIONS.keys()[rng.randi() % GameData.FACTIONS.size()])
-			var chosen: String = str(seat_faction[i]) if humans[i] and i < seat_faction.size() else ""
+			var chosen: String = str(seat_faction[i]) if humans[i] and i < seat_faction.size() else (
+				str(seat_ai_faction[i]) if not humans[i] and i < seat_ai_faction.size() else "")
 			if GameData.FACTIONS.has(chosen):  # (drawn first all the same, so the rest of the map stays as it was)
 				factions[i] = chosen
 
@@ -181,13 +186,7 @@ func _generate(settings: Dictionary) -> Dictionary:
 			continue
 		var f: String = GameData.FACTIONS.keys()[rng.randi() % GameData.FACTIONS.size()]
 		var t := TownLogic.make_town(f, -1, pos, "", false)
-		t["buildings"] = ["village_hall", "fort", "dwelling_1"]
-		t["available"] = [0, 0, 0, 0, 0, 0, 0]
-		TownLogic.weekly_growth(t)
-		var c: Array = GameData.FACTIONS[f]["creatures"]
-		t["garrison"][0] = {"id": c[0], "count": rng.randi_range(20, 35)}
-		t["garrison"][1] = {"id": c[1], "count": rng.randi_range(8, 14)}
-		t["garrison"][2] = {"id": c[2], "count": rng.randi_range(3, 6)}
+		_neutral_town(t, rng)
 		_place_town(t)
 		town_list.append(t)
 
@@ -350,6 +349,10 @@ func _generate(settings: Dictionary) -> Dictionary:
 		player["explored"].resize(w * h)
 		player["explored"].fill(0)
 		world["players"].append(player)
+		if i > 0 and i < seat_empty.size() and bool(seat_empty[i]):  # (an empty colour: out of the game from the start)
+			player.merge({"alive": false, "is_ai": true, "empty": true, "towns": []}, true)
+			_neutral_town(town_list[i], rng)
+			continue
 		var hid: String = settings.get("hero", "") if i == 0 else (str(seat_hero[i]) if humans[i] and i < seat_hero.size() else "")
 		if hid == "" or GameData.HEROES.get(hid, {}).get("faction", "") != factions[i] or hid in used_heroes:
 			var cands := []
@@ -388,6 +391,18 @@ func _generate(settings: Dictionary) -> Dictionary:
 				bonus = GameData.START_BONUSES.keys()[rng.randi() % GameData.START_BONUSES.size()]
 			_start_bonus(p, world["heroes"][p["start_hero"]], bonus)
 	return world
+
+## A neutral town: a small one, guarded (the map's neutral towns, and the town of a colour left empty).
+func _neutral_town(t: Dictionary, r: RandomNumberGenerator) -> void:
+	t["owner"] = -1
+	t["buildings"] = ["village_hall", "fort", "dwelling_1"]
+	t["available"] = [0, 0, 0, 0, 0, 0, 0]
+	TownLogic.weekly_growth(t)
+	var c: Array = GameData.FACTIONS[t["faction"]]["creatures"]
+	t["garrison"] = [null, null, null, null, null, null, null]
+	t["garrison"][0] = {"id": c[0], "count": r.randi_range(20, 35)}
+	t["garrison"][1] = {"id": c[1], "count": r.randi_range(8, 14)}
+	t["garrison"][2] = {"id": c[2], "count": r.randi_range(3, 6)}
 
 ## "You" when one person plays; in hot-seat each human is named by colour ("Blue Player").
 static func _player_name(i: int, humans: Array) -> String:

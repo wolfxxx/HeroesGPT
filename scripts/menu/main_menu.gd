@@ -34,6 +34,13 @@ var _logo: Control
 var _menu_band: Control
 var _online := false         # the New Game screen sets up a hosted game: other people's colours join over the network
 var _address := ""  # the last room code or host address typed (Join)
+# The lobby (online, before the game): the host's New Game screen, shown on the joined computers as it changes (Net).
+var _guest := false          # this computer joined someone's game: the screen shows the host's lobby
+var _applying := false       # the host's lobby is being shown here (not a change made on this screen)
+var _sent_choice := {}       # joined: its own town, hero and bonus as last sent to the host
+var _push_due := false       # host: the lobby goes out at the end of the frame
+var _begin_btn: Button
+var _back_btn: Button
 
 # Torch flames in the painted backdrop (1920x1080 space): lamp posts, then wall and tower torches.
 const TORCHES := [[308, 606, 1.0], [613, 601, 1.0], [1302, 593, 1.0], [471, 473, 0.7], [480, 346, 0.7], [699, 471, 0.7],
@@ -44,6 +51,12 @@ const LOGO_SETUP := Rect2(510, 12, 900, 240)
 
 func _ready() -> void:
 	Net.forget()  # (back at the menu: any online game is left)
+	Net.roster_changed.connect(_on_lobby_roster)
+	Net.lobby_request.connect(_on_lobby_request)
+	Net.lobby_changed.connect(_apply_lobby)
+	Net.lobby_begun.connect(_on_lobby_begun)
+	Net.world_received.connect(_on_lobby_world)
+	Net.lost.connect(_on_lobby_lost)
 	theme = UI.theme()
 	_settings = GameState.new_game_settings.duplicate()
 	_build_background()
@@ -403,6 +416,8 @@ Play on: heroes carry on without a town for as long as they last.
 	var start := UI.button("Begin", _start_game, 30)
 	start.custom_minimum_size = Vector2(280, 64)
 	brow.add_child(start)
+	_back_btn = back
+	_begin_btn = start
 
 	if not _settings.has("opponents"):
 		_settings["opponents"] = 1
@@ -496,6 +511,7 @@ func _select_scenario(id: String) -> void:
 	if not random:
 		_settings["map_size"] = sc["size"]
 		_settings["opponents"] = sc["opponents"]
+		_settings.erase("seat_empty")  # (a colour left empty only on a random map, as HoMM3)
 	_random_opts.visible = random
 	_scen_title.text = sc["name"]
 	_scen_desc.text = sc["desc"]
@@ -513,7 +529,8 @@ func _refresh_preview() -> void:
 	_preview_box.visible = not sc.get("random", false)
 	if sc.get("random", false):
 		return
-	var seats := range(1, int(sc["opponents"]) + 1).map(func(i): return _seat_faction(i) if _seat_human(i) else "")
+	var seats := range(1, int(sc["opponents"]) + 1).map(func(i): return _seat_faction(i) if _seat_human(i) else (
+		"ai:" + _choice("ai_faction", i) if _online else ""))
 	var key := "%s/%s/%s" % [sc["id"], _settings.get("faction", "haven"), ",".join(PackedStringArray(seats))]
 	if not _preview_cache.has(key):
 		var s := _settings.duplicate()
@@ -576,10 +593,16 @@ func _refresh_scenario() -> void:
 	var n: int = int(_settings.get("opponents", 1))
 	var ms: int = int(_settings.get("map_size", 48))
 	var people := range(n + 1).filter(func(i): return _seat_human(i)).size()
-	if people > 1:  # (hot-seat)
+	if _online:  # (the lobby: how many of the colours open to people have someone)
+		var open := _open_seats()
+		var held := _lobby_seats()
+		var bots := range(1, n + 1).filter(func(i): return not _seat_human(i) and not _seat_empty(i)).size()
+		_scen_info.text = "Map: %s (%d x %d)     %s: %d of %d joined%s" % [size_name, ms, ms,
+			("Room " + Net.room) if Net.room != "" else "Online", open.filter(func(i): return held.has(i)).size(),
+			open.size(), "" if bots == 0 else ", %d computer" % bots]
+	elif people > 1:  # (hot-seat)
 		var bots := n + 1 - people
-		_scen_info.text = "Map: %s (%d x %d)     Players: %s%s" % [size_name, ms, ms,
-			("you and %d online%s" % [people - 1, (", room " + Net.room) if Net.room != "" else ""]) if _online else ("%d at this screen" % people),
+		_scen_info.text = "Map: %s (%d x %d)     Players: %d at this screen%s" % [size_name, ms, ms, people,
 			"" if bots == 0 else ", %d computer" % bots]
 	else:
 		_scen_info.text = "Map: %s (%d x %d)     Players: you and %d %s" % [size_name, ms, ms, n, "rival" if n == 1 else "rivals"]
@@ -596,6 +619,7 @@ func _refresh_scenario() -> void:
 		tv.add_child(UI.label(pair[3], 21, UI.TEXT))
 		row.add_child(tv)
 
+	_lobby_after_change()
 ## Selected toggles sit on the bright gold texture: force dark ink text in every pressed/focus state, no focus ring.
 func _ink(b: Button) -> void:
 	b.focus_mode = Control.FOCUS_NONE
@@ -706,7 +730,7 @@ func _set_choice(key: String, i: int, v) -> void:
 func _set_seat_value(key: String, i: int, v) -> void:
 	var a: Array = _settings.get(key, []).duplicate()
 	while a.size() < 4:
-		a.append(false if key == "seat_human" else "")
+		a.append(false if key in ["seat_human", "seat_empty"] else "")
 	a[i] = v
 	_settings[key] = a
 
@@ -777,6 +801,10 @@ func _refresh_seats() -> void:
 	for c in _seats_box.get_children():
 		_seats_box.remove_child(c)
 		c.queue_free()
+	_preview.custom_minimum_size = Vector2(150, 150) if _online else Vector2(172, 172)  # (room for the lobby's taller row)
+	if _online:
+		_lobby_seat_buttons()
+		return
 	for i in _players_in_play():
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(140, 54)
@@ -861,7 +889,15 @@ func _open_setup() -> void:
 	_menu_band.visible = false
 
 func _close_setup() -> void:
-	if _online:  # (a hosted game set up and abandoned: stop hosting)
+	if _guest:  # (left the lobby: this computer's own settings back)
+		_guest = false
+		_online = false
+		Net.forget()
+		_settings = GameState.new_game_settings.duplicate()
+		_edit_seat = 0
+		_fix_seats()
+		_select_scenario(_settings.get("scenario", GameData.SCENARIOS[0]["id"]))
+	elif _online:  # (a hosted game set up and abandoned: stop hosting)
 		_online = false
 		Net.leave()
 		_refresh_seats()
@@ -889,6 +925,11 @@ class _TorchGlow extends Sprite2D:
 func _start_game() -> void:
 	var sc := GameData.scenario(_settings.get("scenario", ""))
 	_settings["seed"] = randi() if sc.get("random", false) else int(sc["seed"])
+	if not _online:  # (computer towns and empty colours are the online lobby's)
+		_settings.erase("seat_ai_faction")
+		_settings.erase("seat_empty")
+	elif Net.is_host:
+		Net.lobby_begin()
 	GameState.new_game_settings = _settings.duplicate()
 	GameState.world = {}
 	GameState.return_scene = GameState.SCENE_ADVENTURE
@@ -950,6 +991,7 @@ By address: the others type this computer's address; it must accept connections 
 		_refresh_preview()
 		_refresh_seats()
 		_refresh_scenario()
+		_lobby_push()
 	elif r == "join":
 		if _address == "":
 			await Modal.message(self, "Multiplayer", "Type the room code the host was given%s." % ("" if web else ", or its address")).closed
@@ -1010,7 +1052,7 @@ func _join(address: String) -> void:
 	var by_code := Net.is_room_code(address)
 	var last := Net.last_join()  # (the same game again: the same colour, if it is free)
 	var want: int = int(last.get("seat", -1)) if str(last.get("room" if by_code else "address", "")) == (address.to_upper() if by_code else address) else -1
-	var err := Net.join_room(address, want) if by_code else Net.join(address, Net.PORT, want)
+	var err := Net.join_room(address, want) if by_code else Net.join(address, Net.port, want)
 	if err != "":
 		await Modal.message(self, "Multiplayer", err).closed
 		return
@@ -1019,19 +1061,251 @@ func _join(address: String) -> void:
 	m.add_buttons([["Cancel", "cancel"]])
 	m.set_meta("cancel", "cancel")
 	var got := func(): if is_instance_valid(m): m.close("joined")
+	var lobby := func(): if is_instance_valid(m): m.close("lobby")
 	var fail := func(reason: String): if is_instance_valid(m): m.close(reason)
 	Net.world_received.connect(got)
+	Net.lobby_changed.connect(lobby)
 	Net.lost.connect(fail)
 	var r = await m.closed
 	Net.world_received.disconnect(got)
+	Net.lobby_changed.disconnect(lobby)
 	Net.lost.disconnect(fail)
-	if r == "joined":
+	if r == "lobby":  # (the game has not begun: the host's New Game screen, as it changes)
+		_guest = true
+		_online = true
+		_open_setup()
+		_apply_lobby()
+	elif r == "joined":
 		GameState.return_scene = GameState.SCENE_ADVENTURE
 		GameState.change_scene(GameState.SCENE_ADVENTURE, 0.6)
 	elif r == "cancel":
 		Net.leave()
 	else:
 		await Modal.message(self, "Multiplayer", str(r)).closed
+
+# ---------------------------------------------------------------------------------------------
+# The lobby: the host's New Game screen shared with the computers that joined (Net, before the game). The host sets
+# the scenario and options and who plays each colour; each person picks their own town, hero and bonus; the host
+# begins. A joined computer sees every change and asks the host for its own (Net.lobby_ask).
+# ---------------------------------------------------------------------------------------------
+func _seat_empty(i: int) -> bool:
+	var a: Array = _settings.get("seat_empty", [])
+	return i > 0 and i < a.size() and bool(a[i])
+
+## The colours open to people who join (not Red, the host's).
+func _open_seats() -> Array:
+	return range(1, _players_in_play()).filter(func(i): return _seat_human(i) and not _seat_empty(i))
+
+## Colour -> the computer holding it in the lobby.
+func _lobby_seats() -> Dictionary:
+	return Net.lobby.get("seats", {}) if _guest else Net.lobby_seats
+
+## Each colour in play: who plays it, and its town. The host clicks through who plays a colour: a person (open to
+## whoever joins), the computer, and on a random map no one (its town starts neutral, as HoMM3's random maps), and
+## through a computer lord's town (or Random). A joined player clicks a free open colour to take it. A person's town is
+## their own choice, on the left.
+func _lobby_seat_buttons() -> void:
+	var held := _lobby_seats()
+	var me := Net.lobby_mine() if _guest else 0
+	for i in _players_in_play():
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 2)
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(140, 40)
+		b.toggle_mode = true
+		_ink(b)
+		b.button_pressed = i == me
+		b.icon = UI.flag_icon(GameData.PLAYER_COLORS[i])
+		b.add_theme_constant_override("icon_max_width", 24)
+		b.add_theme_constant_override("h_separation", 4)
+		b.add_theme_font_size_override("font_size", 17)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var who := "Open"
+		if i == me:
+			who = "You"
+		elif i == 0:
+			who = "Host"
+		elif _seat_empty(i):
+			who = "Empty"
+		elif not _seat_human(i):
+			who = "Computer"
+		elif held.has(i):
+			who = "Joined"
+		b.text = who
+		var si := i
+		b.pressed.connect(func():
+			b.button_pressed = si == me
+			if not _guest and si > 0:
+				_cycle_seat(si)
+			elif _guest and who == "Open":
+				Audio.sfx("click", -6)
+				Net.lobby_ask({"take": si}))
+		cell.add_child(b)
+		var t := Button.new()
+		t.custom_minimum_size = Vector2(140, 28)
+		t.focus_mode = Control.FOCUS_NONE
+		t.add_theme_font_size_override("font_size", 15)
+		var f := _choice("faction", i) if _seat_human(i) else _choice("ai_faction", i)
+		t.text = "Neutral town" if _seat_empty(i) else (GameData.FACTIONS[f]["short"] if GameData.FACTIONS.has(f) else "Random")
+		if not _guest and not _seat_human(i) and not _seat_empty(i):
+			t.pressed.connect(func(): _cycle_ai_town(si))
+		else:
+			t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cell.add_child(t)
+		var name: String = GameData.PLAYER_COLOR_NAMES[i]
+		var tip := ("%s: you. Your town, hero and bonus are on the left." % name if i == me else
+			("%s: the host." % name if i == 0 else
+			("%s: who plays it. Click: a person who joins (Open), the computer, or%s. Below: its town (click a computer's)." % [name,
+				" no one (Empty: its town starts neutral)" if GameData.scenario(_settings.get("scenario", "")).get("random", false)
+				else " (on a random map) no one"] if not _guest else
+			("%s: open. Click to play this colour." % name if who == "Open" else "%s: %s." % [name, who.to_lower()]))))
+		var wc: WeakRef = weakref(cell)
+		(func(): if wc.get_ref(): HoverInfo.attach(wc.get_ref(), func(): return tip)).call_deferred()
+		_seats_box.add_child(cell)
+
+## Host: the next of a person (open), the computer, and on a random map no one (while another rival remains).
+func _cycle_seat(i: int) -> void:
+	Audio.sfx("click", -6)
+	var random: bool = GameData.scenario(_settings.get("scenario", "")).get("random", false)
+	var others := range(1, _players_in_play()).any(func(j): return j != i and not _seat_empty(j))
+	if _seat_human(i):
+		_set_seat_value("seat_human", i, false)
+	elif not _seat_empty(i) and random and others:
+		_set_seat_value("seat_empty", i, true)
+	else:
+		_set_seat_value("seat_empty", i, false)
+		_set_seat_value("seat_human", i, true)
+	_fix_seats()
+	_refresh_preview()
+	_refresh_options()
+
+## Host: a computer lord's next town (Random, then each faction).
+func _cycle_ai_town(i: int) -> void:
+	Audio.sfx("click", -6)
+	var opts: Array = [""] + GameData.FACTIONS.keys()
+	_set_choice("ai_faction", i, opts[(opts.find(_choice("ai_faction", i)) + 1) % opts.size()])
+	_refresh_preview()
+	_refresh_options()
+
+## After any change on the setup screen (_refresh_scenario): online, the host sends the lobby out; a joined computer
+## sends its own choices to the host and keeps what is not its own out of reach.
+func _lobby_after_change() -> void:
+	if not _online:
+		return
+	_lock_for_guest()
+	if _applying:
+		return
+	if _guest:
+		var me := Net.lobby_mine()
+		if me < 0:
+			return
+		var c := {"faction": _choice("faction", me), "hero": _choice("hero", me), "bonus": _choice("bonus", me)}
+		if c != _sent_choice:
+			_sent_choice = c
+			Net.lobby_ask({"choice": c})
+	elif Net.is_host and not _push_due:
+		_push_due = true
+		_lobby_push.call_deferred()
+
+## Host: the colours held are settled (Net.lobby_assign), the lobby goes to everyone in it, and is shown here.
+func _lobby_push() -> void:
+	_push_due = false
+	if not _online or _guest or not Net.is_host:
+		return
+	Net.lobby_assign(_open_seats())
+	Net.lobby_send(_settings)
+	_applying = true
+	_refresh_seats()
+	_refresh_scenario()
+	_applying = false
+
+## Host: someone joined or left the lobby.
+func _on_lobby_roster() -> void:
+	if _online and not _guest and _setup_panel.visible:
+		_lobby_push()
+
+## Host: a joined computer asks to take a colour, or sets its own town, hero and bonus (checked here: a hero no one
+## else leads, a town and bonus that exist).
+func _on_lobby_request(id: int, change: Dictionary) -> void:
+	if not _online or _guest:
+		return
+	if change.has("take"):
+		Net.lobby_take(id, int(change["take"]), _open_seats())
+	elif change.get("choice") is Dictionary:
+		var pi := Net.lobby_seat_of(id)
+		if pi <= 0 or not _seat_human(pi):
+			return
+		var c: Dictionary = change["choice"]
+		if GameData.FACTIONS.has(str(c.get("faction", ""))):
+			_set_choice("faction", pi, str(c["faction"]))
+		var hid := str(c.get("hero", ""))
+		if GameData.HEROES.get(hid, {}).get("faction", "") == _choice("faction", pi) and not hid in _taken_heroes(pi):
+			_set_choice("hero", pi, hid)
+		if GameData.START_BONUSES.has(str(c.get("bonus", ""))):
+			_set_choice("bonus", pi, str(c["bonus"]))
+		_fix_seats()
+		_refresh_preview()
+	_refresh_options()
+	_lobby_push()
+
+## Joined: the host's lobby, shown as it is (its own colour's choices on the left).
+func _apply_lobby() -> void:
+	if not _guest:
+		return
+	_applying = true
+	_settings = Net.lobby.get("settings", {}).duplicate(true)
+	var me := Net.lobby_mine()
+	_edit_seat = me if me >= 0 else 0
+	if me >= 0:
+		_sent_choice = {"faction": _choice("faction", me), "hero": _choice("hero", me), "bonus": _choice("bonus", me)}
+	_select_scenario(str(_settings.get("scenario", GameData.SCENARIOS[0]["id"])))
+	_edit(_edit_seat)
+	_refresh_seats()
+	_refresh_scenario()
+	_applying = false
+	_lock_for_guest()
+
+## Joined: only its own colour's town, hero and bonus can be chosen; the rest is the host's.
+func _lock_for_guest() -> void:
+	if _begin_btn == null:
+		return
+	var mine := not _guest or (_edit_seat == Net.lobby_mine() and Net.lobby_mine() >= 0)
+	var stop := Control.MOUSE_FILTER_STOP
+	var none := Control.MOUSE_FILTER_IGNORE
+	for b in _scen_buttons.values():
+		b.mouse_filter = none if _guest else stop
+	for key in _option_buttons:
+		for b in _option_buttons[key]:
+			b.mouse_filter = none if _guest else stop
+	for b in _faction_buttons.values() + _bonus_buttons.values() + _hero_row.get_children():
+		if b is Button:
+			b.mouse_filter = stop if mine else none
+	if _guest:
+		_begin_btn.disabled = true
+		if _begin_btn.text == "Begin":
+			_begin_btn.text = "Host begins"
+	else:
+		_begin_btn.disabled = false
+		_begin_btn.text = "Begin"
+	_back_btn.text = "Leave" if _guest else "Back"
+
+func _on_lobby_begun() -> void:
+	if _guest:
+		_begin_btn.text = "Beginning..."
+
+## Joined: the host's world has come (the game has begun): its map.
+func _on_lobby_world() -> void:
+	if _guest:
+		_guest = false
+		GameState.return_scene = GameState.SCENE_ADVENTURE
+		GameState.change_scene(GameState.SCENE_ADVENTURE, 0.6)
+
+## The connection went in the lobby (the host left, or the relay): back to the main menu's own screen.
+func _on_lobby_lost(reason: String) -> void:
+	if not _online or not _setup_panel.visible:
+		return
+	await Modal.message(self, "Multiplayer", reason).closed
+	_close_setup()
 
 func _load_game() -> void:
 	if GameState.load_game():
