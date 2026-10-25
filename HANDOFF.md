@@ -16,6 +16,20 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session67 browser version and online rooms (2026-10-25), committed with this HANDOFF update:** the user asked for the game on GitHub
+  Pages so it opens easily on several computers, and chose a relay so the browser version can play online too
+  (Cloudflare account made and `wrangler login` run by the user). New: the relay (`relay/`, a Cloudflare Worker with
+  a Durable Object per room, live at wss://heroes-relay.shatteredcrown.workers.dev; workers.dev subdomain
+  `shatteredcrown` registered for it), `RelayPeer` (`scripts/core/relay_peer.gd`) and `Net.host_room` /
+  `join_room`: the host gets a four-character room code, the others type it (desktop or browser, no port to
+  open; joining by address stays on the desktop). Menu: Host Online Room / Host by Address / Join (code or address).
+  The Web export preset (`export_presets.cfg`, single-threaded) and `.github/workflows/pages.yml` (Godot exports on
+  every push to main and publishes to https://wolfxxx.github.io/HeroesGPT/). Browser fixes: no Quit buttons; edge
+  scrolling only while the cursor is over the page. Found and fixed in the two-browser run (also on desktop): the
+  camera followed another person's walking hero through the fog, showing where they went. Checked: `net_test --
+  --relay` (22 checks through the live relay, including a whole world resent and a battle fought on the joined
+  machine); two browser windows (Playwright with Chrome) hosting and joining a room, moving and passing turns
+  (`shots/session67/web/`). The web download is about 118 MB of game data plus a 40 MB engine.
 - **Session67 good morale fixed (2026-10-24), committed with this HANDOFF update:** the user agreed to fix it ("yes"). In played battles the
   computer's stacks never won good morale, and a person's roll went to the wrong stack: `_act` read
   `L.current()` after the action had already ended the stack's turn, so the roll fell on the next stack (often the
@@ -1019,6 +1033,10 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 - Blender with the Blender MCP addon on port 9876 (`tools/art/blender/bl.py` talks to it directly for long jobs).
 - Audio: ElevenLabs via `tools/audio/gen_audio.py`.
 - `shots/` and `imagegen/` are git-ignored (screenshots and painting batches stay local).
+- Export templates for 4.7.2 (web single-threaded and Windows x86_64 only) are in
+  `%APPDATA%/Godot/export_templates/4.7.2.stable`. `build/` (local exports) is git-ignored.
+- The relay runs on the user's free Cloudflare account; wrangler's login is stored on this PC (never print its
+  token). Redeploy with `cd relay && npx wrangler deploy`.
 
 ## 5. Commands
 
@@ -1029,6 +1047,9 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 | Full test pass (~4 min) | `sh tools/run_tests.sh` (expected output is in its header) |
 | One screenshot | `Godot --path . -- --shot=shots/x.png --scene=res://scenes/battle.tscn --delay=3 --setup=demo` |
 | Judge screenshot set | `sh tools/judge_round.sh N` → `shots/judgeN/` (33 shots, 1600x900) |
+| Browser version, locally | `Godot --headless --path . --export-release "Web" build/web/index.html`, then serve `build/web` (e.g. `python -m http.server`) |
+| Online test through the relay | `Godot --headless --path . res://tools/net_test.tscn -- --relay` |
+| Redeploy the relay | `cd relay && npx wrangler deploy` |
 
 Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space, images saved at 1600x900;
 `--setup=artifacts` lays an artifact of each tier beside the first hero):
@@ -1102,7 +1123,8 @@ Proposed path, discussed with the user (not yet approved as a plan):
    **Progress (2026-10-24):** phase 1 done. Faction data; every map and town action is a command (battles still
    drive `BattleLogic` from `battle.gd`); per-player screen state in `world["views"]`; the world's dice and the
    replay test (`scripts/core/dice.gd`, `tools/replay_test.tscn`). Phase 2 begun: `Net` (host and join by
-   address, commands passed between machines, digest checks), battles fought by each person on their own machine.
+   address, commands passed between machines, digest checks), battles fought by each person on their own machine,
+   room codes through a relay (also from the browser version on GitHub Pages).
    Next: a test between two real computers; joining a saved online game, a lobby, per-player fog on the wire.
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
@@ -1377,7 +1399,9 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 - **Online (session67):** `scripts/core/net.gd` (autoload `Net`), `Commands.run` (passes commands on, turn rule),
   `adventure.gd` "Online (Net)" section and `_start_battle`, `battle.gd` `_carry` / `_turn`, `main_menu._multiplayer`
-  / `_join`, `tools/net_test.tscn`, `tools/net_battle_test.tscn`, `tools/net_diff.tscn`. ARCHITECTURE.md "Online".
+  / `_join` / `_open_room`, `tools/net_test.tscn`, `tools/net_battle_test.tscn`, `tools/net_diff.tscn`. Relay:
+  `relay/src/index.js`, `scripts/core/relay_peer.gd`. Browser version: `export_presets.cfg`,
+  `.github/workflows/pages.yml`. ARCHITECTURE.md "Online".
 - **Dice and replay (session67):** `scripts/core/dice.gd` (`Dice.roll/chance/index/pick`, `gen`/`keep`, `derived`,
   `look`), `world["rng"]`, `world["battles"]`, `AdvRules.battle_seed`, `Commands.log`/`log_world`,
   `tools/replay_test.tscn`. ARCHITECTURE.md "Dice and the replay test" says which generator each roll uses.
@@ -1455,6 +1479,11 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- Browser version (session67): only the cursor over the page is known (edge scrolling must not use screen
+  positions); a room code may start with a digit; ENet does not work in a browser (room codes only). A new
+  workers.dev subdomain took a few minutes before its certificate worked. The browser drive used for checks is
+  Playwright (`playwright-core` with the installed Chrome) clicking two windows; the screenshot harness does not
+  run in a browser.
 - Online (session67): anything the screen writes into the world outside a command makes the machines differ (the
   first two-window run found `asleep`). Make it a command, or, if it is truly one machine's own, add its key to
   `Net.PRIVATE`. Two windows on one computer: start each with its own `--remote=<dir>`; they share `user://`. The

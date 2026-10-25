@@ -6,6 +6,8 @@ extends Node
 ## the battle is fought on Blue's machine (in auto combat here) and its result sent back to the host (Net.fight_remote).
 ## At the end both worlds must match.
 ##   Godot --headless --path . res://tools/net_test.tscn      (the host; it starts the joining process itself)
+##   ... res://tools/net_test.tscn -- --relay                   (the same through the online relay, by room code:
+##                                                               needs the internet, so not in the suite)
 
 const PORT := 24791
 const DAYS := 4
@@ -49,7 +51,13 @@ func _host() -> void:
 		print("FAIL the online test ran out of time")
 		print("NET TEST: %d checks, failures: %d" % [checks, failures + 1])
 		_quit(1))
-	_ok(Net.host(PORT) == "", "the game is hosted")
+	var relay := "--relay" in OS.get_cmdline_user_args()
+	if relay:
+		_ok(Net.host_room() == "", "the room is asked for")
+		await Net.room_opened
+		print("  room ", Net.room)
+	else:
+		_ok(Net.host(PORT) == "", "the game is hosted")
 	GameState._uid = 1000
 	var w := WorldGen.generate({"seed": 52001, "map_size": 36, "opponents": 2, "faction": "haven",
 		"seat_human": [true, true, false]})
@@ -62,6 +70,8 @@ func _host() -> void:
 	Net.rules = driver.rules
 	Net.world_ready()
 	var args := ["--headless", "--path", ProjectSettings.globalize_path("res://"), "res://tools/net_test.tscn", "--", "--net-role=client"]
+	if relay:
+		args.append("--room=" + Net.room)
 	_client_pid = OS.create_process(OS.get_executable_path(), args)
 	_ok(_client_pid > 0, "the joining game is started")
 	while Net.peers.is_empty():
@@ -129,7 +139,14 @@ class Client extends Node:
 	var _log := []
 
 	func _ready() -> void:
-		Net.join("127.0.0.1", PORT)
+		var room := ""
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--room="):
+				room = a.trim_prefix("--room=")
+		if room != "":
+			Net.join_room(room)
+		else:
+			Net.join("127.0.0.1", PORT)
 		await Net.world_received
 		_log.append("joined as player %d on day %d" % [Net.seat, GameState.world["day"]])
 		var spoiled := false

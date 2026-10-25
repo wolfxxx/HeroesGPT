@@ -1,5 +1,6 @@
 extends Node
-## Online play, first version (HANDOFF §8, phase 2). One player hosts the real game; the others join it by address.
+## Online play, first version (HANDOFF §8, phase 2). One player hosts the real game; the others join it by address
+## (ENet) or by a room code (through the relay: RelayPeer, relay/; the only way from a browser).
 ## Every command a machine accepts on its world (Commands.run) is passed on: a joining player's to the host, which
 ## checks it against its own world and passes it to everyone else; the host's own (its player's and the computer
 ## players') to everyone. Each machine applies them in the same order to its copy of the world, and the rules give
@@ -7,15 +8,16 @@ extends Node
 ## carries its digest, and a machine whose world differs, or that had a command refused, is sent the host's world.
 ## Each machine shows its own player (`seat`, GameState.human_player_index) and its own view (GameState.view); the
 ## computer players move on the host only.
-## Not yet: a battle between people on both screens (the side whose machine is not fighting it is led by the
-## computer), joining a saved online game, a lobby; the fog hides the others' maps on screen only.
+## Not yet: joining a saved online game, a lobby; the fog hides the others' maps on screen only.
 
 signal remote_command(cmd: Dictionary, res: Dictionary)  ## a command from another machine was applied
 signal world_received                                    ## the host's world arrived (joined, or put right)
 signal roster_changed                                    ## a player joined or left
 signal lost(reason: String)                              ## the connection is gone (or never came)
+signal room_opened(code: String)                         ## host through the relay: the code others join with
 
 const PORT := 24680
+const RELAY := "wss://heroes-relay.shatteredcrown.workers.dev"  ## the relay for room codes (relay/, RelayPeer)
 ## Keys that are not game state, left out of the digest: each player's own view, the computer's notes, a walking
 ## hero's route and facing on screen, the screen's note to take a treasure once its guard is beaten, and the game's
 ## end as this machine saw it.
@@ -33,34 +35,88 @@ var sent := 0            ## commands passed on from this machine (a diagnostic)
 var received := 0        ## commands from other machines applied here
 var resyncs := 0         ## times the host's world was received after the first
 var notes: Array = []    ## what went astray, as printed (a diagnostic)
+var room := ""           ## the room code, when the game goes through the relay ("" while it opens, or by address)
 
-## Opens a game for others to join. Returns "" or what went wrong.
+## Opens a game for others to join by this machine's address (ENet). Returns "" or what went wrong.
 func host(port := PORT) -> String:
 	leave()
 	var peer := ENetMultiplayerPeer.new()
 	if peer.create_server(port, 7) != OK:
 		return "Cannot open port %d: is another game hosting already?" % port
+	_hosting(peer)
+	return ""
+
+## Opens a game for others to join by a room code, through the relay (RelayPeer): from a browser too, and with no
+## port to open. The code comes later (room_opened), or `lost` if the relay cannot be reached.
+func host_room() -> String:
+	leave()
+	var peer := RelayPeer.new()
+	if peer.open(RELAY + "/host", true) != OK:
+		return "Cannot reach the relay."
+	peer.room_opened.connect(func(code: String):
+		room = code
+		print("NET room ", code)
+		room_opened.emit(code))
+	peer.closed.connect(func(why: String): if multiplayer.multiplayer_peer == peer: _drop(why))
+	_hosting(peer)
+	return ""
+
+func _hosting(peer: MultiplayerPeer) -> void:
 	multiplayer.multiplayer_peer = peer
 	active = true
 	is_host = true
 	seat = 0
 	_link(multiplayer.peer_connected, _on_peer_connected)
 	_link(multiplayer.peer_disconnected, _on_peer_disconnected)
-	return ""
 
-## Joins a game hosted at the address. The world arrives later (world_received), or `lost` if it cannot.
+## Joins a game hosted at the address (ENet). The world arrives later (world_received), or `lost` if it cannot.
 func join(address: String, port := PORT) -> String:
 	leave()
 	var peer := ENetMultiplayerPeer.new()
 	if peer.create_client(address, port) != OK:
 		return "Cannot reach %s." % address
+	_joining(peer)
+	_link(multiplayer.connection_failed, _no_answer)
+	_link(multiplayer.server_disconnected, _host_left)
+	_address = address
+	return ""
+
+## Joins the game with the room code, through the relay.
+func join_room(code: String) -> String:
+	leave()
+	var peer := RelayPeer.new()
+	if peer.open(RELAY + "/join/" + code.strip_edges().to_upper().uri_encode(), false) != OK:
+		return "Cannot reach the relay."
+	peer.closed.connect(func(why: String): if multiplayer.multiplayer_peer == peer: _drop(why))
+	_joining(peer)
+	room = code.strip_edges().to_upper()
+	return ""
+
+func _joining(peer: MultiplayerPeer) -> void:
 	multiplayer.multiplayer_peer = peer
 	active = true
 	is_host = false
 	seat = -1
-	_link(multiplayer.connection_failed, func(): _drop("No game answered at %s." % address))
-	_link(multiplayer.server_disconnected, func(): _drop("The host has left the game."))
-	return ""
+
+var _address := ""
+
+func _no_answer() -> void:
+	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+		_drop("No game answered at %s." % _address)
+
+func _host_left() -> void:
+	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+		_drop("The host has left the game.")
+
+## A text is a room code (3 to 8 letters and digits), else an address.
+static func is_room_code(text: String) -> bool:
+	var t := text.strip_edges().to_upper()
+	if t.length() < 3 or t.length() > 8 or t == "LOCALHOST":
+		return false
+	for c in t:
+		if not c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789":
+			return false
+	return true
 
 func leave() -> void:
 	if multiplayer.multiplayer_peer != null and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
@@ -70,6 +126,7 @@ func leave() -> void:
 	is_host = false
 	syncing = false
 	seat = -1
+	room = ""
 	peers = {}
 	_inbox = []
 	_battle_peer = -1

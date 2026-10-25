@@ -28,6 +28,7 @@ var _rclick_info := false      # the right button is held: its information panel
 var _pending_click := Vector2i(-1, -1)  # clicked while the hero was still moving: planned when it stops
 var _net_dirty := false  # online: another machine's command changed the world; redrawn once in the next frame
 const DRAG_START := 10.0
+var _mouse_in := true  # the cursor is over the window (in a browser: the page)
 const EDGE := 14.0           # edge-scroll band (screen pixels), also just outside the window
 var _cam_target := Vector2.ZERO
 var _follow := -1            # the walking hero the camera rides along with (its sprite, not its tile)
@@ -260,8 +261,9 @@ func _process(delta: float) -> void:
 		# glide with the figure as it walks: a target that moves smoothly, not one step a tile
 		var focus := hn.position - Vector2(0, TILE * 0.5 - 6)
 		var hero: Dictionary = world["heroes"].get(_follow, {})
-		# On entering sight, hold at the first visible tile until the sprite emerges from fog.
-		if not hero.is_empty() and (not rules.player_of(hero)["is_ai"] or _visible_to_human(Vector2i((focus / TILE).floor()))):
+		# On entering sight, hold at the first visible tile until the sprite emerges from fog (another player's hero,
+		# the computer's or, online, another person's: the camera must not show where it walks unseen).
+		if not hero.is_empty() and (rules.player_of(hero)["index"] == _human() or _visible_to_human(Vector2i((focus / TILE).floor()))):
 			center_on_world(focus)
 		cam.position = cam.position.lerp(_cam_target, minf(1.0, delta * 6.0))
 	else:
@@ -280,14 +282,22 @@ func _process(delta: float) -> void:
 
 ## Edge scrolling, measured on the screen: the cursor at a window edge, or anywhere past it, scrolls that way
 ## (while the window has the focus).
+## In a browser only the cursor over the page is known: there it scrolls at the page's edges, and not once it has left.
 func _edge_scroll() -> Vector2:
-	var m := DisplayServer.mouse_get_position() - DisplayServer.window_get_position()
+	var m := Vector2(DisplayServer.mouse_get_position() - DisplayServer.window_get_position())
 	var ws := Vector2(DisplayServer.window_get_size())
+	var edge := EDGE
+	if OS.has_feature("web"):
+		if not _mouse_in or _mouse.x < 0:
+			return Vector2.ZERO
+		m = _mouse
+		edge = EDGE * get_viewport().get_visible_rect().size.x / maxf(1.0, ws.x)
+		ws = get_viewport().get_visible_rect().size
 	var v := Vector2.ZERO
-	if m.x < EDGE: v.x -= 1
-	if m.x > ws.x - EDGE: v.x += 1
-	if m.y < EDGE: v.y -= 1
-	if m.y > ws.y - EDGE: v.y += 1
+	if m.x < edge: v.x -= 1
+	if m.x > ws.x - edge: v.x += 1
+	if m.y < edge: v.y -= 1
+	if m.y > ws.y - edge: v.y += 1
 	return v
 
 ## Map dragging: mouse motion over the map pans it (_unhandled_input); when the cursor goes over the side panel,
@@ -343,6 +353,9 @@ func _input(e: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_MOUSE_EXIT:
 		_mouse = Vector2(-1, -1)
+		_mouse_in = false
+	elif what == NOTIFICATION_WM_MOUSE_ENTER:
+		_mouse_in = true
 
 func _unhandled_input(e: InputEvent) -> void:
 	if _modal_open():
@@ -1231,7 +1244,7 @@ func _await_others() -> void:
 	busy = true
 	var cur: Dictionary = world["players"][world["current_player"]]
 	if Net.is_host and not cur["is_ai"] and not Net.joined(cur["index"]):
-		hud.set_turn_label("Waiting for %s to join..." % cur["name"])
+		hud.set_turn_label("Waiting for %s to join%s..." % [cur["name"], (" (room " + Net.room + ")") if Net.room != "" else ""])
 	else:
 		hud.set_turn_label("%s is moving..." % cur["name"])
 	hud.refresh()

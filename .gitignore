@@ -5,3 +5,6 @@ tools/**/__pycache__/
 tools/**/raw/
 
 imagegen/
+build/
+relay/.wrangler/
+relay/node_modules/

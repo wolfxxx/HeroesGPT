@@ -729,6 +729,8 @@ func open_system_menu() -> void:
 	var m := Modal.custom(adv, "Game Menu", 420)
 	for e in [["Save Game", "save"], ["Load Game", "load"], ["Main Menu", "menu"], ["Quit", "quit"], ["Return to Game", "close"]]:
 		var val: String = e[1]
+		if val == "quit" and OS.has_feature("web"):  # (in a browser the page is closed instead)
+			continue
 		var b := UI.button(e[0], func(): m.close(val), 24)
 		b.custom_minimum_size = Vector2(340, 56)
 		if val == "load":

@@ -12,7 +12,8 @@ Design resolution 1920x1080, stretch mode canvas_items/expand. All UI coordinate
   `save_game`, `load_game`, `has_save` accept an optional path for isolated tests; without one they use
   `GameState.save_path` (default `user://savegame.dat`; remote playtests point it at `user://playtest_save.dat`).
 - `Shot` — screenshot harness for automated visual review (see below).
-- `Net` — online play (session67, see "Online"): host or join, commands passed between machines.
+- `Net` — online play (session67, see "Online"): host or join (by address, or by room code through the relay with
+  `RelayPeer`, `scripts/core/relay_peer.gd`), commands passed between machines.
 
 ## Shared classes
 - `UI` (scripts/ui/ui.gd) — theme + widget factory. Set `theme = UI.theme()` on your root Control.
@@ -268,8 +269,10 @@ the worlds must match (set aside: the computer's notes `ai_day`/`ai_goal`/`yield
 second run of each seed must be identical. Anything that changes the game outside a command shows up there.
 
 ## Online
-`scripts/core/net.gd` (autoload `Net`, session67, phase 2's first version). One player hosts (`Net.host()`, ENet on
-port `Net.PORT` 24680) and the others join by address (`Net.join(addr)`). Every machine keeps a copy of the world.
+`scripts/core/net.gd` (autoload `Net`, session67, phase 2's first version). One player hosts and the others join,
+either by address (`Net.host()` / `Net.join(addr)`, ENet on port `Net.PORT` 24680) or by a room code through the
+relay (`Net.host_room()` gives the code in `Net.room` / `room_opened`; `Net.join_room(code)`), the only way from a
+browser and with no port to open. Every machine keeps a copy of the world.
 A command accepted on this machine's world (`Commands.run`, unless `Net.applying`) goes to `Net.send`: a joining
 machine's to the host (`_submit`), which checks that it is for that machine's player, applies it to its own world
 and passes it to the others; the host's own (its player's and the computer players') to everyone (`_apply`). Each
@@ -308,14 +311,27 @@ stack that has just acted, at once, before anything is animated (never after def
 copies of the heroes; its result carries `spell_points` and `machines`, applied by `AdvRules.apply_battle` (before,
 the battle changed the world's heroes directly). `setup["auto"]` starts in auto combat (tests). Harness: `--setup=duel` (with `--remote`) puts the second player's
 first hero two steps from the first player's, for a battle between two machines from the map. Sleep is the
-`sleep` command. Menu: Multiplayer (`main_menu._multiplayer`): Host a Game (`Net.host`, then the New Game screen with
-other human colours shown "Online", `_online`) or Join (`_join`: waits for the world, then the map). The game menu's
-Load Game is off online; the main menu leaves any online game.
+`sleep` command. Menu: Multiplayer (`main_menu._multiplayer`): Host Online Room (`_open_room`: the code shown large,
+also on the New Game screen and in "Waiting for <name> to join (room X)"), Host by Address (not in a browser), then
+the New Game screen with other human colours shown "Online", `_online`; or Join with a room code or an address
+(`Net.is_room_code`; `_join`: waits for the world, then the map). The game menu's Load Game is off online; the main
+menu leaves any online game. The camera follows another person's walking hero only where this player can see it.
+Relay (session67): `relay/src/index.js`, a Cloudflare Worker with one Durable Object per room (`Room`), deployed at
+`Net.RELAY` (wss://heroes-relay.shatteredcrown.workers.dev, the user's free Cloudflare account; `cd relay && npx
+wrangler deploy`). It runs no game: it passes binary frames between the host (peer 1) and the machines in its room,
+and sends its own notes as JSON text (room, id, join, leave, error, host_left). The game's side is
+`scripts/core/relay_peer.gd` (`RelayPeer`, a `MultiplayerPeerExtension` over a `WebSocketPeer`), in ENet's shape:
+joined machines talk to the host only and the host passes messages between them (server relay); long messages go in
+60 KB pieces. Everything above it (rpcs, `Net`) is the same for both ways of connecting.
+Browser version (session67): `export_presets.cfg` "Web" (single-threaded, so it needs no special page headers;
+`tools/`, `docs/`, `relay/` left out), built and published by `.github/workflows/pages.yml` on every push to main to
+https://wolfxxx.github.io/HeroesGPT/. In a browser: no Quit buttons, no hosting by address, edge scrolling only while
+the cursor is over the page (`adventure._edge_scroll`, `_mouse_in`); saves live in the browser's storage.
 Not yet: joining a saved online game, a lobby, fog filtered per player (each
 machine holds the whole world), turn timers, reconnecting a dropped player to their seat by name.
 Checked by `tools/net_test.tscn` (two processes: a joined player walks, computer players move on the host, a spoiled
 world is caught by the digest and put right, a computer player's attack is fought on the joined machine, the worlds
-match at the end) and `tools/net_battle_test.tscn` (one battle on two machines, each side in auto combat on its
+match at the end; `-- --relay` runs it through the live relay by room code, not in the suite) and `tools/net_battle_test.tscn` (one battle on two machines, each side in auto combat on its
 own machine: every action crosses and both reach the same result).
 
 ## Factions as data
@@ -535,6 +551,7 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   artifact and mine, redacted until met, revealed once in the first message.
 - `tools/net_test.tscn` — in the full suite: starts a second Godot process that joins the first over the network
   (port 24791) as Blue for four days with two computer players, one of whose heroes attacks Blue's (see "Online").
+  With `-- --relay` the same game goes through the live relay by room code (needs the internet; run by hand).
 - `tools/battle_morale_test.tscn` — in the full suite: two computer-led armies with Leadership 3 on the real
   battle screen; both sides win good morale, each time the stack that has just acted, never twice a round.
 - `tools/net_battle_test.tscn` — in the full suite: one battle fought by two processes (port 24792). `tools/net_diff.tscn` lists what
