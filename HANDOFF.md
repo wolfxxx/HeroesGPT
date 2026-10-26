@@ -16,6 +16,32 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session68 Agartha (2026-10-26), committed with this HANDOFF update:** the user ("lets do number 2", after playing a game with the
+  Illuminated: "it was nice"); answers: deeper theming (Troglodytes as Wells's Morlocks, Beholders as Watchers, the
+  rest HoMM3's names), add Subterranean, build it all. A fourth faction, id `dungeon` (HoMM3's Dungeon), designed in
+  the new `docs/AGARTHA.md`: twelve creatures with HoMM3's numbers plus the Red and Black Dragons as its seventh tier
+  (now `"faction": "dungeon"`, still met on the map), six heroes from Hollow Earth legend and novels (John Cleves
+  Symmes, Olaf Jansen, Niels Klim: Overlords; Edmond Halley, Arne Saknussemm, Vera Zarovitch: Warlocks), the town
+  (Warren ... Dragon Cave after Mage Guild 3, the Mana Vortex, the Portal of Summoning and the Battle Scholar Academy,
+  a Mage Guild to level 5, the Ballista), Subterranean its native ground. New rules: `blind_immune` (Morlocks: Blind and
+  stone gaze), `strike_and_return` (Harpies fly home), `stone_gaze` and `paralyze` (`BattleLogic.stone_or_venom`;
+  `_wake` now names what woke: stone takes half and does not strike back, paralysis strikes back at a quarter; Cure
+  ends paralysis; `spell_lost_turn` returns stone / paralyze / blind; a "status" battle event), `positive_morale`
+  (Minotaurs), the battle AI weighing them; the Vortex (`AdvRules.drink_vortex`), the Academy
+  (`AdvRules.attend_academy`, levels on the map before the town opens, `AdvAI.level_ups` for the computer) and the
+  Portal (`AdvRules.summon_portal` each week and when built, command `recruit_portal`, the town screen's
+  `_open_portal`, the computer recruits from it). Subterranean ground: the eighth terrain (`WorldGen.T_SUBTERRANEAN`,
+  index 7: the terrain shader takes 8), in Agartha's zones only, its decor, woods of giant mushrooms, battlefield and
+  obstacles. `tools/net_test.gd` pins its seats' factions (see the gotchas). The New Game screen's faction row takes four cards (short names, smaller pictures). Art, all painted:
+  the twelve creatures with poses and moves (the Harpy repainted with a vest: her feathered chest read as bare; a
+  loose bracer cut from the Minotaur King's frames; the Watcher's death repainted lying down, eye shut), six
+  portraits, the Overlord and Warlock on the map and in battle with idle and cast frames, the town screen in the
+  Order's layout (a cavern under the inner sun; the Portal of Summoning at a new front-right place), 29 build cards,
+  the map town in three levels, the siege (the Order's restyled in violet basalt on a cavern floor; the first take's
+  yellow earth patches repainted dark; all breaches and battered pieces, a Morlock archer crew), the Subterranean
+  tile, battlefield, eight obstacles and twelve map decor, town music (`town_dungeon`). A stack turned to stone is
+  drawn grey in battle (the figure shader's `corpse_tone`).
+  Checked: new `tools/agartha_test.tscn` (217 checks, in the suite), screenshots in ignored `shots/session68/`.
 - **Session67 the Illuminated (2026-10-25), committed with this HANDOFF update:** the user: "lets start with the illuminated"; answers: light
   theming (Gremlins as Homunculi, Mages as Magi, the rest HoMM3's names) and "build it all". A third faction, id
   `tower` (HoMM3's Tower), designed in the new `docs/ILLUMINATED.md`: twelve creatures with HoMM3's numbers plus Giants
@@ -1261,8 +1287,8 @@ Proposed path, discussed with the user (not yet approved as a plan):
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. Built: the
-   Illuminated (Tower, session67, `docs/ILLUMINATED.md`); next proposed: Agartha (Dungeon, with the Red and Black
-   Dragons already in), then Eridu. Not yet run: a tournament with the Illuminated. The user's own
+   Illuminated (Tower, session67, `docs/ILLUMINATED.md`), Agartha (Dungeon, session68, `docs/AGARTHA.md`); next
+   proposed: Eridu, or Town Portal (adventure-map casting). Not yet run: a tournament with the Illuminated and Agartha. The user's own
    idea, an alien faction themed on Sumerian myth, is in `docs/ERIDU_PROPOSAL.md`; the whole setting (a secret
    history of conspiracies) in `docs/SETTING.md` (both awaiting answers).
 4. **Hardening:** relay or dedicated server, lobby, fog filtered per player, version checks, turn timers.
@@ -1531,6 +1557,14 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Agartha (session68):** `GameData.FACTIONS["dungeon"]`, its creatures, classes, heroes and the `mana_vortex` /
+  `portal_of_summoning` / `battle_scholar_academy` buildings; `BattleLogic.stone_or_venom / _wake / spell_lost_turn`,
+  `strike_and_return` in `do_melee`, `positive_morale` in `morale`; `AdvRules.drink_vortex / attend_academy /
+  summon_portal`, `Commands._recruit_portal` and `_town_visit` (xp, vortex), `adventure._academy`, `AdvAI.level_ups`
+  and the Portal in `AdvAI._recruit`, `town_screen._open_portal`; the terrain `subterranean` (`WorldGen.TERRAIN_ORDER`,
+  `DECOR_KINDS`, forests; `battle.gd OBSTACLES`); art tools `ground_paint.py` (new), `decor_paint.py deep`,
+  `obstacle_paint.py deep`, `new_faction_town.py` (an `extra` special at a rect of its own); `tools/agartha_test.tscn`;
+  design in `docs/AGARTHA.md`.
 - **The Illuminated (session67):** `GameData.FACTIONS["tower"]`, its creatures, classes, heroes and the `library` /
   `wall_of_knowledge` buildings; `BattleLogic.living / spell_cost / genie_*`, `battle.gd` "genie" action;
   `TownLogic.learn_guild_spells` (+guild_spells), `AdvRules.study_wall`; art tools `new_faction_town.py`,
@@ -1631,6 +1665,13 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 10. Gotchas learned the hard way
 
+- A new terrain (session68): its index is the byte saved per tile, so it goes at the END of
+  `WorldGen.TERRAIN_ORDER`; the terrain shader sums weights in an array of 8 (`terrain.gdshader` `wsum[8]`): a ninth
+  terrain needs that array grown. Keep a new terrain out of the random zones' list, or every seeded map changes.
+- A new faction changes every seeded game that draws a computer's faction (`WorldGen`: `keys()[randi() % size]`):
+  `tools/net_test.gd` lost its scripted attack (both rivals became Agartha and Teal fell on day 2); it now pins the
+  seats' factions (`seat_faction`, `seat_ai_faction`). Pin them in any test that needs a particular scenario.
+- A GDScript test that fails to parse never quits: the suite's `timeout` ends it with no summary line (session68).
 - A new faction's art (session67): the art tools that loop over every faction or creature rewrite the older ones
   (pose, cycle, card, siege ingest): pass the new names, restore the rest from git, merge only the new anchors.
   Image-model calls can fail on a network hiccup ("getaddrinfo failed"): check every expected output exists.

@@ -16,6 +16,8 @@ const OBSTACLES := {
 	"snow": ["snow_boulders", "ice", "frozen_tree", "snow_boulders", "ice"],
 	"sand": ["sandstone", "cactus", "bones", "crater", "skull_pile"],
 	"swamp": ["swamp_tree", "rotten_log", "thorns", "dead_tree", "skull_pile"],
+	"subterranean": ["stalagmites", "cave_mushroom", "cave_crystals", "basalt_spire", "glow_mushrooms", "lava_rocks",
+		"fungus_stump", "cave_bones"],
 }
 ## Widest figure in hexes, wings and capes included: 1-hex and 2-hex units (a stack mustn't swallow its neighbours).
 const VIS_MAX_W := [1.1, 2.2]
@@ -171,7 +173,7 @@ func _demo_setup() -> Dictionary:
 	if Shot.setup.begins_with("siege"):  # Sir Aldric with all his machines before a Necropolis castle (--siege=1|2|3)
 		a["machines"] = GameData.WAR_MACHINES.duplicate()
 		out["siege"] = int(Shot.args.get("siege", "3"))
-		out["siege_faction"] = {"siege_haven": "haven", "siege_tower": "tower"}.get(Shot.setup, "necropolis")
+		out["siege_faction"] = {"siege_haven": "haven", "siege_tower": "tower", "siege_dungeon": "dungeon"}.get(Shot.setup, "necropolis")
 	return out
 
 # ---------------------------------------------------------------------------------------------
@@ -754,9 +756,11 @@ func _next() -> void:
 		await _play(L.machine_act(s))
 		_next()
 		return
-	if L.spell_lost_turn(s) == "blind":
-		_set_log("%s %s blinded and cannot act." % [L._name(s), "is" if s["count"] == 1 else "are"])
-		_float_text(Vector2(0, -_top(s) - 10), "Blinded", Color(0.85, 0.8, 0.95), 28, "", 0.0, _unit(s))
+	var lost := L.spell_lost_turn(s)
+	if lost != "":
+		var what: String = {"blind": "blinded", "paralyze": "paralyzed", "stone": "turned to stone"}[lost]
+		_set_log("%s %s %s and cannot act." % [L._name(s), "is" if s["count"] == 1 else "are", what])
+		_float_text(Vector2(0, -_top(s) - 10), what.capitalize() if lost != "stone" else "Stone", Color(0.85, 0.8, 0.95), 28, "", 0.0, _unit(s))
 		L.finish_turn(s)
 		await get_tree().create_timer(0.7).timeout
 		_next()
@@ -1043,7 +1047,8 @@ func _stat_grid() -> GridContainer:
 	g.add_theme_constant_override("v_separation", 1)
 	return g
 
-const _EFFECT_NAMES := {"disease": "Diseased", "bless": "Blessed", "curse": "Cursed", "blind": "Blinded"}
+const _EFFECT_NAMES := {"disease": "Diseased", "bless": "Blessed", "curse": "Cursed", "blind": "Blinded",
+	"paralyze": "Paralyzed", "stone": "Turned to stone"}
 const _SKILL_STEP := {"offense": 10, "archery": 15, "armorer": 7}
 
 func _stack_info(st: Dictionary) -> Control:
@@ -1409,6 +1414,10 @@ func _play(events: Array) -> void:
 			"heal":
 				_float_text(Vector2(0, -_top(ev["s"]) - 10), "+%d" % ev["amount"], Color(0.5, 1, 0.5), 30, "", 0.0, _unit(ev["s"]))
 				_refresh_badge(ev["s"])
+			"status":  # (turned to stone, paralyzed: by a Medusa's gaze or a Scorpicore's sting)
+				_flush_log(ev)
+				_float_text(Vector2(0, -_top(ev["s"]) - 10), ev["text"], Color(0.85, 0.85, 0.8), 28, "", 0.0, _unit(ev["s"]))
+				await get_tree().create_timer(0.35).timeout
 			"text":
 				_set_log(ev["text"])
 	for k in range(_log_seen, L.log_lines.size()):  # every line, not just the last (an attack before a spell)
@@ -1746,6 +1755,7 @@ const ARCHER_SPOTS := {
 	"haven": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},
 	"necropolis": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},
 	"tower": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},  # (the Temple's walls, restyled)
+	"dungeon": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},  # (the Order's walls, restyled)
 }
 
 func _build_walls() -> void:
@@ -2030,6 +2040,8 @@ func _see_through() -> void:
 		var m := n.get_node("Sprite").material as ShaderMaterial
 		if m == null:
 			continue
+		if alive:  # (turned to stone by a Medusa's gaze: grey stone, as the classic shows it)
+			m.set_shader_parameter("corpse_tone", 0.85 if n.get_node("Badge").st["effects"].has("stone") else 0.0)
 		# the stack whose turn it is: a bright halo pulsing outside its gold outline (as the classic's pulsing
 		# outline), so it stands out in a crowd too
 		var act: bool = alive and _acting_uid == k
@@ -2845,7 +2857,7 @@ class _Fallback extends Node2D:
 	var terrain := "grass"
 	func _draw() -> void:
 		var ground: Color = {"grass": Color(0.3, 0.45, 0.18), "dirt": Color(0.42, 0.33, 0.2), "sand": Color(0.75, 0.65, 0.42),
-			"snow": Color(0.85, 0.88, 0.92), "swamp": Color(0.26, 0.32, 0.2)}.get(terrain, Color(0.3, 0.45, 0.18))
+			"snow": Color(0.85, 0.88, 0.92), "swamp": Color(0.26, 0.32, 0.2), "subterranean": Color(0.3, 0.25, 0.28)}.get(terrain, Color(0.3, 0.45, 0.18))
 		for i in 40:
 			var y := i * 27.0
 			var c: Color = Color(0.45, 0.6, 0.85).lerp(Color(0.85, 0.75, 0.6), i / 10.0) if y < 260 else ground.darkened(0.15 - (y - 260) / 820.0 * 0.3)

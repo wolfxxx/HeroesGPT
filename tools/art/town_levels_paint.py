@@ -16,13 +16,15 @@ sys.path.insert(0, os.path.dirname(__file__))
 from pose_paint import key_out, drop_specks
 
 BATCH = "imagegen/batch29"
-FACTIONS = ["haven", "necropolis", "tower"]
+FACTIONS = ["haven", "necropolis", "tower", "dungeon"]
 MAGENTA = (255, 0, 255)
 W, H = 1920, 1080  # (16:9, as the model returns it)
 
 STYLE_OF = {"haven": "white limestone with blue slate roofs and gold trim, blue-and-gold banners",
             "necropolis": "black basalt and dark slate with bone ornaments, violet banners and green ghost-light in the "
                           "windows",
+            "dungeon": "dark violet-black basalt and obsidian with bronze trim, violet roofs, amber-lit windows and "
+                       "glowing violet crystals, on a dark rock base",
             "tower": "white marble with gold domes and trim, deep blue conical roofs and blue banners, light snow on the "
                      "roofs and a snowy rock base"}
 LEVEL = {

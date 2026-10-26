@@ -228,6 +228,24 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - Per-creature (optional): `sfx/<creature_id>_attack.mp3`, `sfx/<creature_id>_death.mp3`.
 - Voice (optional): `voice/<line_id>.mp3` narrator lines: intro, victory, defeat, new_week.
 
+## Agartha (session68, `dungeon`)
+Painted over existing art by the image model (docs/AGARTHA.md): creatures over the Skeleton (Morlock), Vampire
+(Harpy), Ghost (Watcher), Naga (Medusa), Swordsman (Minotaur) and Griffin (Manticore) with `new_creature_paint.py`,
+each upgrade over its new base; poses and moves as every creature. Hero portraits `legend_portraits.py`; the Overlord
+(`battle_dungeon`, `map_dungeon*`) and Warlock (`battle_warlock`, `map_warlock*`) over the Temple's horse. The town
+screen `town/dungeon_*.png` and `layout_dungeon.json` by `new_faction_town.py dungeon` (the Order's layout; the
+Portal of Summoning an `extra` over the Temple's Chapter House at its own rect, front right); the map town by its
+`map` step, its levels by `town_levels_paint.py`. Cards `building_cards.py cards dungeon`. The siege
+`battle/bg_siege_dungeon_*.png`, `siege_dungeon_*`, `siege_dungeon_archer.png` by `siege_levels_paint.py restyle
+dungeon` (the Order's Castle repainted in violet basalt on a cavern floor; the first take's bright yellow earth
+patches were repainted dark), then `paint`, `breach`, `damage`, `archer`, `ingest dungeon`. Music
+`audio/music/town_dungeon.mp3`. Subterranean ground: `terrain/subterranean.png` and `battle/bg_subterranean.png` by
+the new `tools/art/ground_paint.py` (imagegen/batch41, over the Dirt ones), obstacles `battle/obstacle_<stalagmites,
+cave_mushroom, cave_crystals, basalt_spire, glow_mushrooms, lava_rocks, fungus_stump, cave_bones>.png`
+(`obstacle_paint.py` sheet `deep`), map decor `map/decor_<stalagmite(s), glow_caps, cave_crystals, cave_boulders,
+mushroom_tree_1..3, cave_moss, lava_vent, cave_bones, shelf_fungus>.png` (`decor_paint.py` sheet `deep`; the
+mushroom trees are the cave's woods).
+
 ## The Illuminated (session67, `tower`)
 Everything painted over existing art by the image model (docs/ILLUMINATED.md): creatures over the Skeleton, Vampire,
 Swordsman, Chaplain Brother, Ghost and Cavalier (`new_creature_paint.py`), each upgrade over its base; poses and moves

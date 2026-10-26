@@ -581,6 +581,12 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/agartha_test.tscn` — in the full suite: Agartha's record, HoMM3 numbers and heroes; Morlocks immune to
+  Blind and stone gaze; the stone gaze and the venom (one in five, the same on every machine, who is spared, half
+  damage and no retaliation on stone, a quarter on paralysis, waking, Cure); Harpies' strike and return and the Hag's
+  no retaliation; Minotaurs' morale; the Vortex, the Academy, the Portal (built, weekly, adding up, recruiting, random
+  among the owner's dwellings) and the Dragon Cave's Mage Guild 3; the Subterranean ground around Agartha's towns; a
+  new game as Agartha; and every picture, frame, layout entry, obstacle, decor and the music the faction needs.
 - `tools/illuminated_test.tscn` — in the full suite: the Illuminated's record, HoMM3 numbers and heroes; the
   unliving (morale, Death Ripple, mind spells, Necromancy, the Golems' spell resistance); the Magi's spell discount
   and no wall penalty; Master Genies (three casts, allies only, a new spell each, the same on two machines, the

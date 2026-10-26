@@ -44,6 +44,28 @@ HEROES = {
     "cagliostro": ("vesna_nightshade", "Count Cagliostro, the eighteenth-century magician and adventurer: a plump, "
                    "charming man with dark lively eyes and a knowing smile, a powdered wig, a rich crimson coat "
                    "embroidered with gold, a large ring with an eye-shaped gem, holding a small glowing flask"),
+    # session68: Agartha (HoMM3's Dungeon), the legends of the Hollow Earth; their colours violet, black and bronze
+    "john_symmes": ("lord_gareth", "John Cleves Symmes, the American army captain who claimed the Earth is hollow with "
+                    "openings at the poles: a stern, square-jawed officer in his forties with short dark hair and long "
+                    "sideburns, a dark blue 1812-era officer's coat with a high collar and brass buttons, a rolled map "
+                    "of the polar openings under his arm"),
+    "olaf_jansen": ("sir_aldric", "Olaf Jansen, the old Norse sailor of The Smoky God who sailed through the north polar "
+                    "opening into the inner world: a weathered seaman with a white beard and a knitted cap, a thick dark "
+                    "wool sea-coat, a faint smoky-golden glow of the inner sun behind him"),
+    "niels_klim": ("lord_gareth", "Niels Klim, the Norwegian student who fell into the inner world and became its "
+                   "emperor: a young man with a bold, surprised face and fair hair, a dark violet imperial cloak over "
+                   "an eighteenth-century coat, a bronze crown slightly too big for him"),
+    "edmond_halley": ("brother_tomas", "Edmond Halley, the English astronomer who argued that the Earth is made of "
+                      "hollow shells lit from within: a thoughtful man in his fifties with a long curled grey "
+                      "periwig, a dark scholar's coat with a white cravat, holding a brass armillary of nested spheres"),
+    "arne_saknussemm": ("ilsa_grimveil", "Arne Saknussemm, Jules Verne's sixteenth-century Icelandic alchemist who first "
+                        "went down to the centre of the Earth: a gaunt, intense scholar with a long pale-blond beard, a "
+                        "dark fur-trimmed robe, an old runic manuscript in one hand and a lantern glowing amber in the "
+                        "other"),
+    "vera_zarovitch": ("vesna_nightshade", "Vera Zarovitch, the Russian noblewoman who found Mizora, the hidden kingdom "
+                       "of women inside the pole: a proud, clever woman in her thirties with dark hair pinned up, a "
+                       "fur-trimmed dark violet travelling coat, a small silver brooch, pale blue light of the inner "
+                       "world on her face"),
 }
 PROMPT = ("The image is a hero portrait from a hand-painted fantasy strategy game. Paint a NEW portrait of a different "
           "person in exactly the same style, framing (head and shoulders, centred), lighting and background (the same "

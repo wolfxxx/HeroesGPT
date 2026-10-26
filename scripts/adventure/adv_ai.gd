@@ -96,6 +96,7 @@ func run_turn(adv, player: Dictionary) -> String:
 					if town["pos"] == hero["pos"] and town["owner"] == hero["owner"]:
 						_reinforce(hero, town, player)
 						rules.do({"t": "town_visit", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})
+						level_ups(hero)  # (experience from Agartha's Battle Scholar Academy)
 	return ""
 
 ## Several same-day deliveries can unlock an assault even when no individual delivery does.
@@ -184,6 +185,27 @@ func _recruit(town: Dictionary, player: Dictionary, save: int) -> void:
 			n = mini(n, maxi(0, (player["resources"]["gold"] - save) / price))
 		if n > 0:
 			rules.do({"t": "recruit_town", "p": player["index"], "town": town["uid"], "tier": tier, "n": n, "into": "garrison"})
+	var pool: Dictionary = town.get("portal", {})  # (what Agartha's Portal of Summoning has called, after the town's own)
+	if not pool.is_empty() and int(pool["count"]) > 0:
+		var cost: Dictionary = GameData.CREATURES[pool["creature"]]["cost"]
+		var n := int(pool["count"])
+		for r in cost:
+			if cost[r] > 0:
+				n = mini(n, (player["resources"].get(r, 0) - (save if r == "gold" else 0)) / cost[r])
+		if n > 0:
+			rules.do({"t": "recruit_portal", "p": player["index"], "town": town["uid"], "n": n})
+
+## A computer hero's pending levels, chosen as adventure.gd's _handle_level_ups chooses for the computer.
+func level_ups(hero: Dictionary) -> void:
+	while int(hero.get("pending_levels", 0)) > 0:
+		var roll := rules.do({"t": "level_roll", "p": hero["owner"], "hero": hero["uid"]})
+		if not roll["ok"]:
+			break
+		var skill := ""
+		if roll["options"].size() > 0:
+			var pick := Dice.derived(world, ["skill pick", hero["uid"], hero["level"]])
+			skill = roll["options"][pick.randi() % roll["options"].size()]
+		rules.do({"t": "level_up", "p": hero["owner"], "hero": hero["uid"], "skill": skill})
 
 func hire_hero(player: Dictionary, town: Dictionary) -> Dictionary:
 	var cands := []

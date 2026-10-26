@@ -8,6 +8,7 @@ class_name Commands
 ## Each command names its player ("p": player index). The result is {"ok": bool, "reason": String, ...}.
 ##   recruit_town  {p, town: uid, tier: 1-7, n, into: "town" (its army: a garrison hero's, else the garrison) | "garrison"}
 ##   recruit_site  {p, hero: uid, object: uid, n}       a map dwelling, into the visiting hero's army
+##   recruit_portal {p, town: uid, n}                   what a Portal of Summoning has called, into the town's army
 ##   hire          {p, town: uid, hero_id}              a Tavern hero to the town's gate -> "hero": uid
 ##   trade         {p, give, get, n}                    at the market rate (TownLogic.market_rate) -> "got"
 ## Armies are named by reference: {"hero": uid} (its army) or {"town": uid} (its garrison). Two armies must stand
@@ -90,6 +91,8 @@ static func _run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _recruit_town(rules, player, cmd)
 		"recruit_site":
 			return _recruit_site(rules, player, cmd)
+		"recruit_portal":
+			return _recruit_portal(rules, player, cmd)
 		"hire":
 			return _hire(rules, player, cmd)
 		"trade":
@@ -153,6 +156,8 @@ static func _build(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dict
 	var why := TownLogic.build_block_reason(town, player, id)
 	if why != "" or not TownLogic.build(town, player, id):
 		return _no(why if why != "" else "Cannot build that.")
+	if TownLogic.effect(town, "portal") > 0 and town.get("portal", {}).is_empty():
+		rules.summon_portal(town)  # (a new Portal of Summoning calls its first creatures at once)
 	var learned := []
 	var vh := rules.visiting_hero(town)  # (a new Mage Guild teaches the hero visiting the town at once)
 	if id.begins_with("mage_guild") and not vh.is_empty():
@@ -165,9 +170,13 @@ static func _town_visit(rules: AdvRules, player: Dictionary, cmd: Dictionary) ->
 	if town.is_empty() or hero.is_empty() or hero["pos"] != town["pos"]:
 		return _no("The hero is not in the town.")
 	var knowledge := rules.study_wall(hero, town)  # (first: the spell points are restored to the new maximum)
+	var xp := rules.attend_academy(hero, town)
 	var mana: int = hero["mana"]
 	var learned := rules.hero_in_town(hero, town)
-	return {"ok": true, "reason": "", "learned": learned, "mana": hero["mana"] - mana, "knowledge": knowledge}
+	var restored: int = hero["mana"] - mana
+	var vortex := rules.drink_vortex(hero, town)  # (restored first, then doubled)
+	return {"ok": true, "reason": "", "learned": learned, "mana": restored, "knowledge": knowledge, "xp": xp,
+		"vortex": vortex}
 
 static func _garrison(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
 	var town := _own_town(rules, player, cmd)
@@ -505,6 +514,20 @@ static func _recruit_town(rules: AdvRules, player: Dictionary, cmd: Dictionary) 
 	if not TownLogic.recruit(town, player, tier, n, army):
 		return _no("Cannot recruit that many.")
 	return {"ok": true, "reason": "", "n": n, "creature": TownLogic.dwelling_creature(town, tier)}
+
+static func _recruit_portal(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
+	var town: Dictionary = rules.world["towns"].get(int(cmd.get("town", -1)), {})
+	if town.is_empty() or town["owner"] != player["index"]:
+		return _no("Not your town.")
+	var pool: Dictionary = town.get("portal", {})
+	var n := int(cmd.get("n", 0))
+	if pool.is_empty() or n <= 0 or n > int(pool["count"]) or not TownLogic.can_afford(player, GameData.CREATURES[pool["creature"]]["cost"], n):
+		return _no("Cannot recruit that many.")
+	if not GameState.add_to_army(rules.town_army(town), pool["creature"], n):
+		return _no("No room in the army.")
+	TownLogic.pay(player, GameData.CREATURES[pool["creature"]]["cost"], n)
+	pool["count"] = int(pool["count"]) - n
+	return {"ok": true, "reason": "", "n": n, "creature": pool["creature"]}
 
 static func _recruit_site(rules: AdvRules, player: Dictionary, cmd: Dictionary) -> Dictionary:
 	var hero: Dictionary = rules.world["heroes"].get(int(cmd.get("hero", -1)), {})

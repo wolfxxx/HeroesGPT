@@ -36,6 +36,11 @@ FIGS = {
     "wizard": ("a wizard in white-and-gold robes and a blue hooded mantle, holding a tall crystal-topped staff upright "
                "in the right hand in every frame (he never lets go of the staff)",
                "raises the crystal staff high overhead, the crystal blazing with pale-blue light"),
+    "dungeon": ("an overlord in dark violet-black plate armour with bronze trim and a horned helm, a war-axe resting "
+                "against the shoulder", "raises the war-axe high overhead, a dark violet glow along its blade"),
+    "warlock": ("a warlock in deep violet robes with bronze trim, holding a tall black staff topped with an amber crystal "
+                "upright in the right hand in every frame (he never lets go of the staff)",
+                "raises the black staff high overhead, the amber crystal blazing with fiery light"),
 }
 IDLE = ("The image shows the same mounted hero four times, {who}, from the battle screen of a hand-painted fantasy "
         "strategy game, side view facing right, on a flat magenta backdrop. Repaint the four cells as the four frames "

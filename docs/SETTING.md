@@ -42,7 +42,7 @@ Built so far: the weekly omens and Tavern rumours (`scripts/core/lore.gd`, below
 of Horus, the Ankh of Life, the Obelisk of Thoth). Then the declassified lines (below). Then HoMM3's Pyramid near the
 middle of medium and larger maps, guarded by the ushabti (HoMM3's Gold and Diamond Golems as Egyptian tomb figurines
 come to life: the Gilded and Crystal Ushabti), a spell of the highest level inside. Then HoMM3's Mummies (cursing what they strike) with their neutral dwelling, the Tomb of Curses.
-Then the Illuminated as a faction (`docs/ILLUMINATED.md`). Planned: more Egyptian relics and map objects, the
+Then the Illuminated as a faction (`docs/ILLUMINATED.md`) and Agartha (`docs/AGARTHA.md`). Planned: more Egyptian relics and map objects, the
 obelisk puzzle map and the dig for a Shard of the Crown, a story campaign in acts.
 
 ### Omens and rumours (built)

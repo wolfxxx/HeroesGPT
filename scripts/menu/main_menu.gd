@@ -279,14 +279,16 @@ func _build_setup() -> void:
 	var frow := HBoxContainer.new()
 	frow.add_theme_constant_override("separation", 20)
 	v.add_child(frow)
-	var nf := GameData.FACTIONS.size()  # (the row's 1010 px shared out: two cards wide, three narrower)
+	var nf := GameData.FACTIONS.size()  # (the row's 1010 px shared out: two cards wide, three or four narrower)
 	var fw := (1010.0 - 20.0 * (nf - 1)) / nf
 	for f in GameData.FACTIONS:
 		var b := Button.new()
 		b.toggle_mode = true
 		b.custom_minimum_size = Vector2(fw, 96)
-		_card(b, Assets.tex("map/town_%s.png" % f), 120 if nf <= 2 else 64, GameData.FACTIONS[f]["name"], GameData.FACTIONS[f]["desc"],
-			24 if nf <= 2 else 18, 19 if nf <= 2 else 15)
+		# (four and more: the short name, a smaller picture and text, so each description fits its card)
+		_card(b, Assets.tex("map/town_%s.png" % f), 120 if nf <= 2 else (64 if nf == 3 else 44),
+			GameData.FACTIONS[f]["name"] if nf <= 3 else GameData.FACTIONS[f]["short"], GameData.FACTIONS[f]["desc"],
+			24 if nf <= 2 else (18 if nf == 3 else 17), 19 if nf <= 2 else (15 if nf == 3 else 14))
 		b.pressed.connect(_select_faction.bind(f))
 		frow.add_child(b)
 		_faction_buttons[f] = b

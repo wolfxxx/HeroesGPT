@@ -39,6 +39,22 @@
 0.387,
 0.9076
 ],
+"decor_cave_bones.png": [
+0.4102,
+0.7063
+],
+"decor_cave_boulders.png": [
+0.3556,
+0.9084
+],
+"decor_cave_crystals.png": [
+0.371,
+0.9143
+],
+"decor_cave_moss.png": [
+0.4647,
+0.6795
+],
 "decor_dry_grass.png": [
 0.4332,
 0.6811
@@ -51,6 +67,10 @@
 0.404,
 0.9052
 ],
+"decor_glow_caps.png": [
+0.4772,
+0.6901
+],
 "decor_horn_skull.png": [
 0.6474,
 0.7013
@@ -58,6 +78,10 @@
 "decor_ice.png": [
 0.3781,
 0.9167
+],
+"decor_lava_vent.png": [
+0.4399,
+0.6974
 ],
 "decor_log.png": [
 0.6029,
@@ -71,6 +95,18 @@
 0.2367,
 0.9262
 ],
+"decor_mushroom_tree_1.png": [
+0.3957,
+0.9544
+],
+"decor_mushroom_tree_2.png": [
+0.4094,
+0.9562
+],
+"decor_mushroom_tree_3.png": [
+0.3902,
+0.9549
+],
 "decor_pillar.png": [
 0.3444,
 0.945
@@ -83,6 +119,10 @@
 0.3559,
 0.9018
 ],
+"decor_shelf_fungus.png": [
+0.3683,
+0.9127
+],
 "decor_snow_rock.png": [
 0.3951,
 0.9209
@@ -90,6 +130,14 @@
 "decor_snow_stump.png": [
 0.364,
 0.906
+],
+"decor_stalagmite.png": [
+0.3378,
+0.9421
+],
+"decor_stalagmites.png": [
+0.3878,
+0.9469
 ],
 "decor_stump.png": [
 0.3679,
@@ -250,6 +298,18 @@
 "sulfur_dune.png": [
 0.5,
 0.8624
+],
+"town_dungeon.png": [
+0.5,
+0.9565
+],
+"town_dungeon_fort.png": [
+0.5,
+0.9565
+],
+"town_dungeon_village.png": [
+0.5,
+0.9565
 ],
 "town_haven.png": [
 0.5,

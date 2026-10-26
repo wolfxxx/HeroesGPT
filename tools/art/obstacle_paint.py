@@ -35,6 +35,17 @@ SHEETS = {
         ("swamp_tree", "a twisted dark swamp tree with hanging grey moss and exposed roots", 140),
         ("rotten_log", "a rotten mossy log with pale swamp mushrooms growing on it", 160),
     ],
+    # (Agartha's Subterranean battlefields, session68)
+    "deep": [
+        ("stalagmites", "a cluster of three tall pointed grey-violet cave stalagmites", 130),
+        ("cave_mushroom", "a giant mushroom taller than a man, a thick pale stem and a broad brown-violet cap", 150),
+        ("cave_crystals", "a cluster of tall jagged violet crystals glowing faintly from within", 120),
+        ("basalt_spire", "a single tall dark basalt rock column with hexagonal facets", 110),
+        ("glow_mushrooms", "a clump of knee-high mushrooms with softly glowing pale-teal caps", 120),
+        ("lava_rocks", "a heap of black volcanic rocks with glowing orange cracks", 150),
+        ("fungus_stump", "a broken rock stump grown over with layered orange shelf fungus", 120),
+        ("cave_bones", "the huge skull and ribs of some great cave beast", 170),
+    ],
 }
 PROMPT = ("This is a blank sprite sheet for a fantasy strategy game's battlefield: a flat magenta (#FF00FF) background "
           "divided into a 4 x 2 grid of equal cells (4 columns, 2 rows). Paint exactly one battlefield obstacle in the "

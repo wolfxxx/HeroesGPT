@@ -1031,6 +1031,7 @@ func _interact_with(hero: Dictionary, occ: Dictionary, human: bool) -> String:
 			var town: Dictionary = world["towns"][occ["uid"]]
 			if town["owner"] == hero["owner"]:
 				var report := _enter_own_town(hero, town)
+				await _academy(hero, report)
 				if human:
 					open_town(town["uid"], report)  # (the town screen announces what the visit taught)
 				return ""
@@ -1214,14 +1215,25 @@ func open_town(uid: int, report := {}) -> void:
 	var visitor := rules.hero_at(town["pos"])
 	if not visitor.is_empty() and visitor["owner"] == town["owner"] and report.is_empty():
 		report = _enter_own_town(visitor, town)
+		await _academy(visitor, report)
 	GameState.pending_town = {"town_uid": uid, "hero_uid": visitor.get("uid", -1), "report": report}
 	GameState.change_scene(GameState.SCENE_TOWN)
+
+## Agartha's Battle Scholar Academy: the experience a visit gave, and its levels, on the map before the town opens.
+func _academy(hero: Dictionary, report: Dictionary) -> void:
+	if int(report.get("xp", 0)) <= 0:
+		return
+	if Net.mine(hero["owner"]) and not rules.player_of(hero)["is_ai"]:
+		await Modal.message(self, "Battle Scholar Academy", "%s studies at the Battle Scholar Academy: +%d experience."
+			% [hero["name"], report["xp"]], [[Assets.tex("icons/stat_xp.png"), "+%d" % report["xp"]]]).closed
+	await _handle_level_ups(hero)
 
 ## A hero in its own town learns the Mage Guild's spells and has its spell points restored: what it gained, for the
 ## town screen to announce ({hero, learned, mana}).
 func _enter_own_town(hero: Dictionary, town: Dictionary) -> Dictionary:
 	var r := rules.do({"t": "town_visit", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})
-	return {"hero": hero["uid"], "learned": r.get("learned", []), "mana": r.get("mana", 0), "knowledge": r.get("knowledge", 0)}
+	return {"hero": hero["uid"], "learned": r.get("learned", []), "mana": r.get("mana", 0), "knowledge": r.get("knowledge", 0),
+		"xp": r.get("xp", 0), "vortex": r.get("vortex", 0)}
 
 # ---------------------------------------------------------------------------------------------
 # Turns
@@ -1513,4 +1525,4 @@ func _update_music() -> void:
 	var t := "grass"
 	if not hero.is_empty():
 		t = WorldGen.TERRAIN_ORDER[rules.terrain_at(hero["pos"])]
-	Audio.music("adventure_dirt" if t in ["dirt", "swamp", "snow"] else "adventure_grass")
+	Audio.music("adventure_dirt" if t in ["dirt", "swamp", "snow", "subterranean"] else "adventure_grass")

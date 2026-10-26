@@ -6,7 +6,8 @@ painted from the new faction's base dwelling (prep them after ingesting the base
 python tools/art/new_faction_town.py prep <faction> [ids]    ->  imagegen/batch40/in/<faction>__<id>.png + town.json
 python tools/art/new_faction_town.py paint <faction> [ids]   ->  imagegen/batch40/out/<faction>__<id>.png
 python tools/art/new_faction_town.py ingest <faction> [ids]  ->  assets/town/<faction>_<id>.png + layout_<faction>.json
-(ids: "bg" the backdrop, building / sprite ids; none: every one of the faction's table)
+(ids: "bg" the backdrop, building / sprite ids; none: every one of the faction's table. A special the source town has
+no place for ("extra") is painted over another faction's sprite at a rect of its own.)
 python tools/art/new_faction_town.py map <faction> paint|ingest  ->  assets/map/town_<faction>.png (the full castle on
     the adventure map, painted over the source faction's on its canvas, the same anchor; then town_levels_paint.py
     derives the village and the walled town)"""
@@ -101,6 +102,91 @@ FACTIONS = {
                            "lightning flickering in small clouds close around the crag (well inside the frame)",
         },
     },
+    # session68: Agartha (HoMM3's Dungeon) in the Order of the Dragon's layout; the Portal of Summoning at the front
+    # right, where that town has no building
+    "dungeon": {
+        "src": "necropolis",
+        "specials": {"mana_vortex": "necromancy_amplifier", "battle_scholar_academy": "skeleton_transformer"},
+        "extra": {"portal_of_summoning": ("haven", "brotherhood", [1690, 560, 230, 250])},
+        "style": ("It belongs to the town of Agartha, the hidden kingdom inside the Hollow Earth: dark violet-black "
+                  "basalt and obsidian, dark bronze trim and fittings, dark violet roofs, warm amber lamplight in the "
+                  "windows, glowing violet and pale-teal crystals, a few giant mushrooms. Its banners are deep violet "
+                  "with a small bronze dragon's claw. No religious symbols: no crosses, crescents or six-pointed stars; "
+                  "no black suns or sun wheels."),
+        "map": ("the castle of Agartha on the adventure map: a fortress of dark violet-black basalt rising from a round "
+                "base of dark rock with glowing violet crystals, curtain walls with round towers under dark violet "
+                "conical roofs with bronze finials, a tall central keep with amber-lit windows, a few giant mushrooms "
+                "at its foot, violet banners, the gate at the front centre"),
+        "bg": ("a vast cavern inside the Hollow Earth: a high vaulted rock ceiling with hanging stalactites fading into a "
+               "warm amber haze, far off in the haze a small bright golden inner sun glowing softly (a bright warm orb "
+               "of light, never dark, no rays or wheel), distant cliffs with glowing violet crystal veins and thin "
+               "waterfalls, the town site itself a broad floor of dark grey-violet flagstones and rock with patches of "
+               "glowing pale-teal moss and a few giant mushrooms at the sides"),
+        "layers": {
+            "fort": "the town's fortifications: a long curtain wall of dark violet-black basalt across the back of the "
+                    "town with round towers under dark violet conical roofs, a great arched gate with bronze doors in "
+                    "the middle, all on a dark rock shelf",
+            "citadel": "the town's fortifications grown stronger: the long dark basalt curtain wall with round towers and "
+                       "violet conical roofs, a great bronze-doored gate, and behind it a tall square keep with amber-lit "
+                       "windows, on a dark rock shelf",
+            "castle": "the town's full castle: a long dark basalt curtain wall with tall towers under violet spires with "
+                      "bronze finials, a great bronze-doored gate, a tall keep crowned with glowing violet crystals, on a "
+                      "dark rock shelf",
+            "village_hall": "a small hall of dark stone with a violet roof, amber-lit windows and a violet banner",
+            "town_hall": "a larger hall of dark basalt with heavy square columns in front, a violet roof and bronze trim",
+            "city_hall": "a grand hall of dark basalt and obsidian with a portico of heavy columns, a bronze dome and "
+                         "violet banners",
+            "capitol": "a magnificent palace of black obsidian and bronze with a great bronze dome crowned by a glowing "
+                       "violet crystal, tall columns and violet and bronze banners",
+            "tavern": "a low inn of rough dark stone built half into a rock, a mushroom-shaped roof of violet slate, warm "
+                      "amber-lit windows and a hanging sign showing a bronze tankard",
+            "marketplace": "a market under violet and black striped awnings selling glowing crystals, mushrooms, ores "
+                           "and bronze wares, crates and barrels between the stalls",
+            "mage_guild_1": "a slender dark stone tower with a violet conical roof and a glowing violet crystal set on "
+                            "its tip",
+            "mage_guild_2": "a tall many-tiered dark stone sorcerer's tower with bronze balconies, a violet conical roof "
+                            "and a large glowing violet crystal floating above its tip",
+            "blacksmith": "a forge of dark stone with a tall chimney, a lava-red furnace glow at its open front, an anvil "
+                          "and a ballista standing outside",
+            "dwelling_1": "the Warren: a low rocky mound riddled with dark burrow holes and tunnel mouths, crude wooden "
+                          "props, a few glowing mushrooms around it",
+            "dwelling_2": "the Harpy Loft: a tall jagged spire of dark rock with ledges and big untidy nests of sticks "
+                          "and bones on its top and sides",
+            "dwelling_3": "the Pillar of Eyes: a tall pillar of dark violet stone carved with many staring eyes, a large "
+                          "glowing amber eye set at its top",
+            "dwelling_4": "the Chapel of Stilled Voices: a dark stone sanctum with a pointed arched doorway, stone "
+                          "statues of men frozen in terror around its steps, snake carvings on its columns",
+            "dwelling_5": "the Labyrinth: a squat round maze of high dark stone walls seen from above, a great horned "
+                          "bull's skull carved over its single entrance",
+            "dwelling_6": "the Manticore Lair: a craggy cave mouth in a tall rock, gnawed bones at its entrance and deep "
+                          "claw marks on the stone",
+            "dwelling_7": "the Dragon Cave: a huge dark cave mouth in a tall rocky crag with a red-orange glow and wisps "
+                          "of smoke inside, piles of gold glinting at its entrance (all well inside the frame)",
+            "mana_vortex": "the Mana Vortex: a round pool of dark stone ringed with glowing violet crystals, a swirling "
+                           "vortex of violet and blue magical light spinning up out of it",
+            "battle_scholar_academy": "the Battle Scholar Academy: a stern hall of dark stone with a bronze-roofed "
+                                      "porch, racks of weapons and shields along its walls and a training yard with "
+                                      "a straw target in front",
+            "portal_of_summoning": "the Portal of Summoning: a tall arch of dark standing stones carved with glowing "
+                                   "violet runes, a swirling violet portal of light inside the arch",
+        },
+        "upgrades": {
+            "dwelling_1u": "the upgraded Warren: a larger burrowed mound with a stone-framed tunnel gate, bronze lamps "
+                           "and red-glowing mushrooms around it",
+            "dwelling_2u": "the upgraded Harpy Loft: a taller, crueller rock spire, more nests of bones and dark violet "
+                           "feathers, iron spikes along its ledges",
+            "dwelling_3u": "the upgraded Pillar of Eyes: taller, its many carved eyes glowing red, a great blood-red eye "
+                           "at its top",
+            "dwelling_4u": "the upgraded Chapel of Stilled Voices: grander, with bronze serpent statues at its doors and "
+                           "more frozen stone figures on its steps",
+            "dwelling_5u": "the upgraded Labyrinth: larger, its walls topped with bronze spikes and a gold-capped bull's "
+                           "skull over the entrance",
+            "dwelling_6u": "the upgraded Manticore Lair: a bigger cave in the crag, a scorpion-tail carving over its "
+                           "mouth and green venom stains on the rock",
+            "dwelling_7u": "the upgraded Dragon Cave: a vast cavern mouth in a black crag, a fierce red glow and smoke "
+                           "within, great heaps of gold and black dragon scales at its entrance (all inside the frame)",
+        },
+    },
 }
 
 LAYER = ("This image shows one building of the town screen of a hand-painted fantasy strategy game (in the style of the "
@@ -129,6 +215,16 @@ def _src_id(fac, lid):
     return FACTIONS[fac]["specials"].get(lid, lid)
 
 
+def _source(fac, lid, lay):
+    """The rect and the sprite a layer is painted over: the source town's, or for an extra special another faction's
+    sprite at a rect of its own."""
+    f = FACTIONS[fac]
+    if lid in f.get("extra", {}):
+        sf, sid, rect = f["extra"][lid]
+        return rect, f"{D}/{sf}_{sid}.png"
+    return lay[_src_id(fac, lid)], f"{D}/{f['src']}_{_src_id(fac, lid)}.png"
+
+
 def prep(fac, ids):
     f = FACTIONS[fac]
     os.makedirs(f"{BATCH}/in", exist_ok=True)
@@ -147,7 +243,7 @@ def prep(fac, ids):
             nl = json.load(open(f"{D}/layout_{fac}.json"))
             rect, sprite = nl[base], f"{D}/{fac}_{base}.png"
         else:
-            rect, sprite = lay[_src_id(fac, lid)], f"{D}/{f['src']}_{_src_id(fac, lid)}.png"
+            rect, sprite = _source(fac, lid, lay)
         x, y, w, h = rect
         px, py = int(w * PAD), int(h * PAD)
         cw, ch = w + 2 * px, h + 2 * py

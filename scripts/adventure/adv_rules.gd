@@ -377,6 +377,49 @@ func study_wall(hero: Dictionary, town: Dictionary) -> int:
 	hero["knowledge"] += k
 	return k
 
+## Agartha's Battle Scholar Academy (HoMM3): +1000 experience to a hero the first time it visits the town; the
+## experience given (0 if none). Levels gained wait in the hero's pending_levels.
+func attend_academy(hero: Dictionary, town: Dictionary) -> int:
+	var xp := TownLogic.effect(town, "visit_xp")
+	var seen: Array = town.get("xp_given", [])
+	if xp <= 0 or hero["uid"] in seen:
+		return 0
+	seen.append(hero["uid"])
+	town["xp_given"] = seen
+	gain_xp(hero, xp)
+	return xp
+
+## Agartha's Mana Vortex (HoMM3): once a week the first hero to visit the town has its spell points restored, then
+## doubled; the points gained (0: no Vortex, or it was drunk already this week).
+func drink_vortex(hero: Dictionary, town: Dictionary) -> int:
+	var k := TownLogic.effect(town, "visit_mana")
+	var wk := week_of(world["day"])
+	if k <= 0 or int(town.get("vortex_week", 0)) == wk:
+		return 0
+	town["vortex_week"] = wk
+	var before: int = hero["mana"]
+	hero["mana"] = maxi(before, GameState.max_mana(hero) * k)
+	return hero["mana"] - before
+
+## Agartha's Portal of Summoning (HoMM3): each week it calls the creatures of one of the town owner's dwellings on the
+## map, picked at random; the same creature as before adds its week's growth, another replaces what was waiting.
+## Nothing changes while the owner holds no dwelling. `town["portal"]`: {creature, count}.
+func summon_portal(town: Dictionary) -> void:
+	if TownLogic.effect(town, "portal") <= 0 or town["owner"] < 0:
+		return
+	var mine := []
+	for o in world["objects"].values():
+		if o["type"] == "dwelling" and o.get("owner", -1) == town["owner"]:
+			mine.append(o)
+	if mine.is_empty():
+		return
+	mine.sort_custom(func(a, b): return a["uid"] < b["uid"])
+	var r := Dice.derived(world, ["portal", town["uid"], world["day"]])
+	var cid: String = mine[r.randi() % mine.size()]["creature"]
+	var pool: Dictionary = town.get("portal", {})
+	var had: int = int(pool.get("count", 0)) if pool.get("creature", "") == cid else 0
+	town["portal"] = {"creature": cid, "count": had + int(GameData.CREATURES[cid]["growth"])}
+
 # ---------------------------------------------------------------------------------------------
 # Visiting
 # ---------------------------------------------------------------------------------------------
@@ -997,6 +1040,7 @@ func new_day() -> Dictionary:
 	if new_week:
 		for t in world["towns"].values():
 			TownLogic.on_new_week(t)
+			summon_portal(t)
 		for p in world["players"]:  # (a muster banner worn by any of a player's heroes: more first-level recruits)
 			var extra := 0
 			for hid in p["heroes"]:

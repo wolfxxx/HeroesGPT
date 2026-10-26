@@ -28,14 +28,22 @@ from PIL import Image, ImageDraw, ImageFilter
 sys.path.insert(0, os.path.dirname(__file__))
 
 BATCH = "imagegen/batch28"
-FACTIONS = ["haven", "necropolis", "tower"]
+FACTIONS = ["haven", "necropolis", "tower", "dungeon"]
 # a faction whose siege is the restyle of another's finished Castle (the Illuminated: the Temple's white walls)
-RESTYLE_FROM = {"tower": "haven"}
+RESTYLE_FROM = {"tower": "haven", "dungeon": "necropolis"}
 RESTYLE = {"tower": ("the stronghold of the Illuminated, a hidden order of alchemists high in snowy mountains: the walls, "
                      "towers, gatehouse and keep of polished white marble with gold trim, their conical roofs deep blue "
                      "with gold finials, blue banners; the battlefield on the left now covered in snow with patches of "
                      "frozen earth, the mountains behind snowy, the sky cold and clear, the moat dark icy water, the "
-                     "courtyard and the town behind the wall white stone with snow on the roofs")}
+                     "courtyard and the town behind the wall white stone with snow on the roofs"),
+           "dungeon": ("the stronghold of Agartha, the kingdom inside the Hollow Earth: the walls, towers, gatehouse and "
+                       "keep of dark violet-black basalt with bronze trim, their conical roofs dark violet with bronze "
+                       "finials, amber light in the arrow slits; the battlefield on the left a dark cavern floor of grey-"
+                       "violet rock with patches of glowing pale-teal moss and a few small stalagmites (its bare earth "
+                       "patches dark grey-brown, never yellow or golden), the far distance "
+                       "a vast cavern lit warm amber by a small golden inner sun high in a hazy sky (a bright golden orb, "
+                       "never dark), the moat dark water with a violet sheen, the town behind the wall dark stone with "
+                       "violet roofs and glowing crystals")}
 LEVELS = {1: "fort", 2: "citadel", 3: "castle"}
 
 # battle.gd geometry (1920x1080)
@@ -201,13 +209,16 @@ SEG_WHAT = {
        "and rubble heaped at its foot{moat}",
 }
 MAT = {"haven": "pale cream limestone, blue slate roofs", "necropolis": "black basalt, dark violet roofs",
-       "tower": "white marble with gold trim, deep blue roofs, snow"}
+       "tower": "white marble with gold trim, deep blue roofs, snow",
+       "dungeon": "dark violet-black basalt with bronze trim, dark violet roofs"}
 RESTYLE_PROMPT = ("This is a castle siege battlefield from a fantasy strategy game. Paint EXACTLY the same picture, same "
                   "camera, every shape in exactly the same place and the same size (the wall, gatehouse, gate, the two "
                   "round towers, the keep, the moat, the drawbridge and the ground must line up with a game grid laid "
                   "over it later), restyled as {what}. {style}\nNo units, no people, no text.")
 ARCHER = {"tower": ("a marksman of the Illuminated: a crossbowman in a midnight-blue tabard with gold trim over mail and a "
-                    "polished steel cap, drawing a crossbow")}
+                    "polished steel cap, drawing a crossbow"),
+          "dungeon": ("a marksman of Agartha: a pale stooped Morlock archer with milky blind eyes in a dark violet "
+                      "leather jerkin and a bronze cap, drawing a short black recurve bow")}
 
 
 def restyle(fac):

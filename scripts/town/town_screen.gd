@@ -27,22 +27,25 @@ func _ready() -> void:
 	Audio.music("town_%s" % town["faction"])
 	var report: Dictionary = GameState.pending_town.get("report", {})
 	if not hero.is_empty() and report.get("hero", -1) == hero["uid"]:
-		_announce_learning.call_deferred(report.get("learned", []), int(report.get("mana", 0)), int(report.get("knowledge", 0)))
+		_announce_learning.call_deferred(report.get("learned", []), int(report.get("mana", 0)), int(report.get("knowledge", 0)),
+			int(report.get("vortex", 0)))
 
 ## What a visit (or a new Mage Guild level) taught the visiting hero: the new spells with their icons, and spell
 ## points restored. Nothing to say: no dialog.
-func _announce_learning(learned: Array, mana_gain := 0, knowledge := 0) -> void:
-	if learned.is_empty() and mana_gain <= 0 and knowledge <= 0:
+func _announce_learning(learned: Array, mana_gain := 0, knowledge := 0, vortex := 0) -> void:
+	if learned.is_empty() and mana_gain <= 0 and knowledge <= 0 and vortex <= 0:
 		return
-	var m := Modal.custom(self, "Mage Guild" if knowledge <= 0 else "Wall of Knowledge", 760)
+	var m := Modal.custom(self, "Wall of Knowledge" if knowledge > 0 else ("Mana Vortex" if vortex > 0 else "Mage Guild"), 760)
 	if knowledge > 0:
 		m.add_text("%s studies the Wall of Knowledge: +%d Knowledge." % [hero["name"], knowledge], 22)
 	if not learned.is_empty():
 		m.add_text("%s studies in the Mage Guild and learns %s:" % [hero["name"],
 			"a new spell" if learned.size() == 1 else "%d new spells" % learned.size()], 22)
 		m.add_icon_flow(learned.map(func(sp): return [Assets.spell_icon(sp), GameData.SPELLS[sp]["name"]]), Vector2(64, 64))
-	if mana_gain > 0:
+	if mana_gain > 0 and vortex <= 0:
 		m.add_text("%s's spell points are restored to %d." % [hero["name"], hero["mana"]], 22)
+	if vortex > 0:  # (Agartha's Mana Vortex: restored, then doubled)
+		m.add_text("%s bathes in the Mana Vortex: spell points doubled to %d." % [hero["name"], hero["mana"]], 22)
 	m.add_buttons([["OK", true]])
 	m.set_meta("default", true)
 	m.set_meta("cancel", true)
@@ -59,6 +62,9 @@ func _resolve_state() -> void:
 		if Shot.setup.contains("tower"):  # (tower, tower_rich: the Illuminated)
 			s["faction"] = "tower"
 			s["hero"] = "nicolas_flamel"
+		if Shot.setup.contains("dungeon"):  # (dungeon, dungeon_rich: Agartha)
+			s["faction"] = "dungeon"
+			s["hero"] = "edmond_halley"
 		GameState.world = WorldGen.generate(s)
 	world = GameState.world
 	var uid: int = GameState.pending_town.get("town_uid", -1)
@@ -560,7 +566,11 @@ func _building_info(id: String, in_town := false) -> Control:
 	else:
 		v = HoverInfo.box(GameData.building_name(town["faction"], id))
 		HoverInfo.line(v, b.get("desc", ""))
-		if built and in_town:
+		if built and b.get("effects", {}).has("portal"):
+			var pool: Dictionary = town.get("portal", {})
+			HoverInfo.line(v, "%d %s called this week.%s" % [pool["count"], GameData.CREATURES[pool["creature"]]["plural"],
+				" Click to recruit." if in_town else ""] if not pool.is_empty() and int(pool["count"]) > 0 else "None called yet.", UI.GOLD, 18)
+		elif built and in_town:
 			var into: String = b.get("effects", {}).get("transform_to", "")
 			HoverInfo.line(v, CLICK_HINT.get(TownLayout.slot_of(id), "") if into == "" else
 				"Click to turn a visiting hero's creatures into %s." % GameData.CREATURES[into]["plural"], UI.GOLD, 18)
@@ -585,6 +595,8 @@ func _open_building(id: String) -> void:
 		await _open_build()
 	elif b.get("effects", {}).has("transform_to"):
 		await _open_transformer(id)
+	elif b.get("effects", {}).has("portal"):
+		await _open_portal()
 	elif b.has("faction"):  # (a faction special that works on its own: what it does)
 		await Modal.message(self, GameData.BUILDINGS[id]["name"], GameData.BUILDINGS[id]["desc"]).closed
 	elif id in ["fort", "citadel", "castle"]:
@@ -777,6 +789,16 @@ func _recruit_tier(tier: int) -> void:
 	# (into the garrison hero's army when one is inside, as the classic: the town's own garrison row is its army)
 	await AdventureHUD.recruit_dialog(self, cid, town["available"][tier - 1], player, func(n): return _rules.do(
 		{"t": "recruit_town", "p": player["index"], "town": town["uid"], "tier": tier, "n": n, "into": "town"})["ok"])
+	refresh()
+
+## Agartha's Portal of Summoning: recruit what it has called from the owner's dwellings on the map this week.
+func _open_portal() -> void:
+	var pool: Dictionary = town.get("portal", {})
+	if pool.is_empty() or int(pool["count"]) <= 0:
+		await Modal.message(self, "Portal of Summoning", "No creatures answer the Portal yet. Each week it calls the creatures of one of your dwellings on the map.").closed
+		return
+	await AdventureHUD.recruit_dialog(self, pool["creature"], int(pool["count"]), player, func(n): return _rules.do(
+		{"t": "recruit_portal", "p": player["index"], "town": town["uid"], "n": n})["ok"])
 	refresh()
 
 func _open_recruit_all() -> void:

@@ -32,6 +32,9 @@ CLASSES = {
     # session67: the Illuminated: their faction figure (an Alchemist, map_tower*.png) and the Wizard
     "tower": ("haven", "an Alchemist of a secret order: a scholar-warrior in a long midnight-blue coat with gold trim over a light breastplate, a wide-brimmed dark hat, a leather bandolier of glowing glass flasks across the chest, holding the reins in the left hand and a short brass-tipped rod in the right hand resting on the thigh, sitting naturally in the saddle (NO lance, NO spear, NO helmet)"),
     "wizard": ("haven", "a Wizard: a bearded sage in flowing white-and-gold robes under a deep blue hooded mantle, holding upright a tall staff topped with a glowing pale-blue crystal in the right hand, the reins in the left (NO lance, NO armour, NO helmet)"),
+    # session68: Agartha: their faction figure (an Overlord, map_dungeon*.png) and the Warlock
+    "dungeon": ("haven", "an Overlord of the kingdom beneath the earth: a warlord in heavy dark violet-black plate armour with bronze trim, a horned bronze helm with the visor open, a short dark cape, holding the reins in the left hand and a heavy war-axe resting upright against the right shoulder (NO lance, NO spear)"),
+    "warlock": ("haven", "a Warlock of the inner world: a sorcerer in long deep violet robes with bronze trim and a hood thrown back, a pointed dark beard, holding upright a tall black staff topped with a glowing amber crystal in the right hand, the reins in the left (NO lance, NO armour, NO helmet)"),
 }
 PROMPT = ("The image shows the same mounted hero six times, standing and galloping, as small figures for the adventure "
           "map of a hand-painted fantasy strategy game, seen from a 3/4 top-down view, on a flat magenta backdrop. "

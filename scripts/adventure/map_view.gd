@@ -90,7 +90,8 @@ func _terrain_array() -> Texture2DArray:
 
 func _procedural_terrain(t: String) -> Image:
 	var base: Color = {"grass": Color(0.33, 0.52, 0.18), "dirt": Color(0.45, 0.35, 0.22), "sand": Color(0.82, 0.72, 0.48),
-		"snow": Color(0.88, 0.91, 0.96), "swamp": Color(0.28, 0.33, 0.2), "water": Color(0.13, 0.33, 0.5), "road": Color(0.55, 0.47, 0.35)}[t]
+		"snow": Color(0.88, 0.91, 0.96), "swamp": Color(0.28, 0.33, 0.2), "water": Color(0.13, 0.33, 0.5), "road": Color(0.55, 0.47, 0.35),
+		"subterranean": Color(0.33, 0.27, 0.32)}[t]
 	var n := FastNoiseLite.new()
 	n.seed = t.hash()
 	n.frequency = 0.02

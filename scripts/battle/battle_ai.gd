@@ -74,6 +74,9 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 		for h in L.attack_positions(s, e, reach):
 			var moved: int = reach.get(h, 0)
 			var dmg := _avg(L.damage_range(s, e, false, moved))
+			var held := L.spell_lost_turn(e)  # (struck, it wakes: stone takes half and cannot strike back)
+			if held == "stone":
+				dmg *= 0.5
 			var score := _value_of_damage(L, e, dmg)
 			if L.cdata(e)["shots"] > 0 and e["shots"] > 0:
 				score *= SHOOTER_BLOCK  # (a shooter held in melee shoots no more and strikes at half: block it)
@@ -85,7 +88,7 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 				# A wounded survivor still retaliates: floor(count * remaining_fraction)
 				# systematically discarded one living creature and encouraged costly attacks.
 				tmp["count"] = maxi(1, ceili((L.total_hp(e) - dmg) / float(L.max_hp(e))))
-				score -= RETALIATION * _value_of_damage(L, s, _avg(L.damage_range(tmp, s, false)))
+				score -= RETALIATION * {"stone": 0.0, "paralyze": 0.25, "blind": 0.5}.get(held, 1.0) 					* _value_of_damage(L, s, _avg(L.damage_range(tmp, s, false)))
 			# a dragon's breath also burns the stack behind: good on an enemy, bad on our own
 			if L.has_ab(s, "breath"):
 				var bv = L.breath_victim(s, e, h)
@@ -95,7 +98,8 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 			# prefer staying put when already adjacent
 			if h == s["hex"]:
 				score += 5.0
-			score -= _stage_cost(L, s, e, h)
+			if not L.has_ab(s, "strike_and_return"):  # (Harpies fly home after the strike: no spot to stand in)
+				score -= _stage_cost(L, s, e, h)
 			if score > best_score:
 				best_score = score
 				best_act = {"type": "melee", "target": e, "from": h}

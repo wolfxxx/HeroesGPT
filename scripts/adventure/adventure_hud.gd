@@ -16,7 +16,7 @@ const LIST_H := ARROW_H * 2 + SLOTS * SLOT_H + (SLOTS + 1) * 4
 const BTN := Vector2(51, 56)
 const STATUS_Y := LIST_Y + LIST_H + 10
 const TERRAIN_COLORS := [Color(0.30, 0.50, 0.17), Color(0.47, 0.37, 0.22), Color(0.85, 0.75, 0.48), Color(0.9, 0.92, 0.96),
-	Color(0.27, 0.33, 0.22), Color(0.12, 0.30, 0.52), Color(0.62, 0.52, 0.38)]
+	Color(0.27, 0.33, 0.22), Color(0.12, 0.30, 0.52), Color(0.62, 0.52, 0.38), Color(0.33, 0.27, 0.32)]
 
 var adv
 var world: Dictionary

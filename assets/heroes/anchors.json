@@ -27,6 +27,26 @@
 0.4215,
 0.9333
 ],
+"map_dungeon.png": [
+0.5,
+0.8495
+],
+"map_dungeon_run0.png": [
+0.4246,
+0.9355
+],
+"map_dungeon_run1.png": [
+0.4084,
+0.9381
+],
+"map_dungeon_run2.png": [
+0.4226,
+0.9391
+],
+"map_dungeon_run3.png": [
+0.4171,
+0.9333
+],
 "map_haven.png": [
 0.5,
 0.8495
@@ -104,6 +124,26 @@
 0.9391
 ],
 "map_tower_run3.png": [
+0.4171,
+0.9333
+],
+"map_warlock.png": [
+0.5,
+0.8495
+],
+"map_warlock_run0.png": [
+0.4246,
+0.9355
+],
+"map_warlock_run1.png": [
+0.4232,
+0.9381
+],
+"map_warlock_run2.png": [
+0.4226,
+0.9391
+],
+"map_warlock_run3.png": [
 0.4171,
 0.9333
 ],

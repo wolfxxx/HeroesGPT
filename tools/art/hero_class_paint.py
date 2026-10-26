@@ -28,6 +28,9 @@ CLASSES = {
     # session67: the Illuminated: their faction figure (an Alchemist, battle_tower.png) and the Wizard
     "tower": ("haven", "an Alchemist of a secret order: a scholar-warrior in a long midnight-blue coat with gold trim over a light breastplate, a wide-brimmed dark hat, a leather bandolier of glowing glass flasks across the chest, holding the reins in the left hand and a short brass-tipped rod in the right hand resting on the thigh, sitting naturally in the saddle (NO lance, NO spear, NO helmet)"),
     "wizard": ("haven", "a Wizard: a bearded sage in flowing white-and-gold robes under a deep blue hooded mantle, holding upright a tall staff topped with a glowing pale-blue crystal in the right hand, the reins in the left (NO lance, NO armour, NO helmet)"),
+    # session68: Agartha: their faction figure (an Overlord, battle_dungeon*.png) and the Warlock
+    "dungeon": ("haven", "an Overlord of the kingdom beneath the earth: a warlord in heavy dark violet-black plate armour with bronze trim, a horned bronze helm with the visor open, a short dark cape, holding the reins in the left hand and a heavy war-axe resting upright against the right shoulder (NO lance, NO spear)"),
+    "warlock": ("haven", "a Warlock of the inner world: a sorcerer in long deep violet robes with bronze trim and a hood thrown back, a pointed dark beard, holding upright a tall black staff topped with a glowing amber crystal in the right hand, the reins in the left (NO lance, NO armour, NO helmet)"),
 }
 PROMPT = ("The image shows a mounted hero beside a battlefield in a hand-painted fantasy strategy game, seen from the "
           "side, on a flat magenta backdrop. Repaint ONLY the rider as {who}. Keep the horse EXACTLY as it is (same "

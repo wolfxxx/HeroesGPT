@@ -6,7 +6,7 @@ class_name WorldGen
 ## footprint of blocked offsets. Sprites are anchored at the bottom-centre of the action tile.
 
 const TILE := 64
-const TERRAIN_ORDER := ["grass", "dirt", "sand", "snow", "swamp", "water", "road"]
+const TERRAIN_ORDER := ["grass", "dirt", "sand", "snow", "swamp", "water", "road", "subterranean"]  # (index = the byte saved per tile)
 const T_GRASS := 0
 const T_DIRT := 1
 const T_SAND := 2
@@ -14,6 +14,7 @@ const T_SNOW := 3
 const T_SWAMP := 4
 const T_WATER := 5
 const T_ROAD := 6
+const T_SUBTERRANEAN := 7
 
 const FOOT_BUILDING := [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1), Vector2i(-1, 0), Vector2i(1, 0)]
 const FOOT_SMALL := [Vector2i(-1, -1), Vector2i(0, -1), Vector2i(-1, 0)]
@@ -575,6 +576,7 @@ func _place_forests(kind_noise: FastNoiseLite) -> void:
 				T_SNOW: choices = ["snow_pine_1", "snow_pine_2", "tree_pine_1"]
 				T_SAND: choices = ["rock_1", "rock_2", "rock_3", "tree_dead_1"]
 				T_SWAMP: choices = ["tree_dead_1", "tree_dead_2", "tree_oak_3", "bush_2"]
+				T_SUBTERRANEAN: choices = ["decor_mushroom_tree_1", "decor_mushroom_tree_2", "decor_mushroom_tree_3", "decor_stalagmites"]
 				T_DIRT: choices = ["tree_dead_1", "tree_dead_2", "tree_pine_2", "rock_2"] if kind_noise.get_noise_2d(x, y) > 0.0 else ["tree_pine_1", "tree_pine_2", "tree_pine_3"]
 				_: choices = ["tree_oak_1", "tree_oak_2", "tree_oak_3", "tree_oak_4"] if kind_noise.get_noise_2d(x, y) > -0.1 else ["tree_pine_1", "tree_pine_2", "tree_pine_3"]
 			var count := 2 if rng.randf() < 0.6 else 1
@@ -583,6 +585,8 @@ func _place_forests(kind_noise: FastNoiseLite) -> void:
 				var s := rng.randf_range(0.55, 0.75)
 				if k.begins_with("rock"):
 					s = rng.randf_range(0.7, 0.95)
+				elif k.begins_with("decor_"):  # (the cave's woods: giant mushrooms, drawn by the decor's narrower width)
+					s = rng.randf_range(0.85, 1.1)
 				decor.append({"k": k, "p": Vector2((x + rng.randf_range(0.2, 0.8)) * TILE, (y + rng.randf_range(0.55, 1.0)) * TILE), "s": s, "m": rng.randf_range(0.8, 1.1), "flip": rng.randf() < 0.5})
 
 ## Ground details per terrain: [sprite, weight]. Upright ones are depth-sorted with trees and heroes.
@@ -598,9 +602,13 @@ const DECOR_KINDS := {
 	T_SNOW: [["rock_1", 0.4], ["rock_2", 0.4], ["decor_snow_rock", 1.2], ["decor_ice", 0.8], ["decor_snow_stump", 1.0], ["decor_frost_shrub", 1.2]],
 	T_SWAMP: [["bush_1", 0.6], ["bush_2", 0.6], ["decor_reeds", 2.0], ["decor_swamp_caps", 1.0], ["decor_mossy_log", 0.7], ["decor_swamp_shrub", 1.0],
 		["decor_toadstools", 0.4], ["decor_fern", 0.6], ["decor_tuft", 0.8]],
+	T_SUBTERRANEAN: [["decor_glow_caps", 1.4], ["decor_cave_crystals", 0.9], ["decor_stalagmite", 1.2], ["decor_cave_boulders", 0.9],
+		["decor_cave_moss", 1.2], ["decor_lava_vent", 0.4], ["decor_cave_bones", 0.5], ["decor_shelf_fungus", 0.8]],
 }
 const DECOR_UPRIGHT := ["decor_stump", "decor_log", "decor_boulders", "decor_thorns", "decor_menhir", "decor_pillar", "decor_cactus",
-	"decor_sandstone", "decor_snow_rock", "decor_ice", "decor_snow_stump", "decor_frost_shrub", "decor_reeds", "decor_mossy_log", "decor_swamp_shrub"]
+	"decor_sandstone", "decor_snow_rock", "decor_ice", "decor_snow_stump", "decor_frost_shrub", "decor_reeds", "decor_mossy_log", "decor_swamp_shrub",
+	"decor_cave_crystals", "decor_stalagmite", "decor_stalagmites", "decor_cave_boulders", "decor_shelf_fungus",
+	"decor_mushroom_tree_1", "decor_mushroom_tree_2", "decor_mushroom_tree_3"]
 
 func _pick_weighted(items: Array) -> String:
 	var total := 0.0

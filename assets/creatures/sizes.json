@@ -549,6 +549,46 @@
 488,
 435
 ],
+"evil_eye.png": [
+178,
+261,
+178
+],
+"evil_eye_attack.png": [
+320,
+204,
+320
+],
+"evil_eye_dead.png": [
+246,
+207,
+246
+],
+"evil_eye_hit.png": [
+244,
+230,
+244
+],
+"evil_eye_move0.png": [
+300,
+247,
+302
+],
+"evil_eye_move1.png": [
+173,
+252,
+174
+],
+"evil_eye_move2.png": [
+298,
+234,
+301
+],
+"evil_eye_move3.png": [
+172,
+252,
+174
+],
 "first_aid_tent.png": [
 292,
 257,
@@ -879,6 +919,86 @@
 293,
 175
 ],
+"harpy.png": [
+301,
+310,
+303
+],
+"harpy_attack.png": [
+395,
+246,
+397
+],
+"harpy_dead.png": [
+395,
+251,
+397
+],
+"harpy_hag.png": [
+327,
+333,
+329
+],
+"harpy_hag_attack.png": [
+358,
+324,
+321
+],
+"harpy_hag_dead.png": [
+457,
+181,
+462
+],
+"harpy_hag_hit.png": [
+336,
+295,
+337
+],
+"harpy_hag_move0.png": [
+315,
+327,
+312
+],
+"harpy_hag_move1.png": [
+320,
+343,
+322
+],
+"harpy_hag_move2.png": [
+327,
+330,
+326
+],
+"harpy_hag_move3.png": [
+325,
+333,
+328
+],
+"harpy_hit.png": [
+371,
+267,
+373
+],
+"harpy_move0.png": [
+277,
+308,
+274
+],
+"harpy_move1.png": [
+290,
+307,
+292
+],
+"harpy_move2.png": [
+318,
+306,
+319
+],
+"harpy_move3.png": [
+300,
+311,
+302
+],
 "homunculus.png": [
 196,
 307,
@@ -918,6 +1038,46 @@
 192,
 321,
 190
+],
+"infernal_morlock.png": [
+276,
+327,
+278
+],
+"infernal_morlock_attack.png": [
+346,
+290,
+342
+],
+"infernal_morlock_dead.png": [
+368,
+154,
+370
+],
+"infernal_morlock_hit.png": [
+260,
+331,
+261
+],
+"infernal_morlock_move0.png": [
+281,
+326,
+283
+],
+"infernal_morlock_move1.png": [
+285,
+341,
+286
+],
+"infernal_morlock_move2.png": [
+285,
+330,
+287
+],
+"infernal_morlock_move3.png": [
+283,
+334,
+285
 ],
 "iron_golem.png": [
 206,
@@ -1039,6 +1199,46 @@
 247,
 158
 ],
+"manticore.png": [
+539,
+300,
+541
+],
+"manticore_attack.png": [
+573,
+412,
+574
+],
+"manticore_dead.png": [
+620,
+357,
+622
+],
+"manticore_hit.png": [
+425,
+339,
+427
+],
+"manticore_move0.png": [
+533,
+298,
+538
+],
+"manticore_move1.png": [
+514,
+300,
+519
+],
+"manticore_move2.png": [
+513,
+313,
+517
+],
+"manticore_move3.png": [
+535,
+307,
+537
+],
 "marksman.png": [
 207,
 245,
@@ -1159,6 +1359,166 @@
 324,
 139
 ],
+"medusa.png": [
+406,
+525,
+407
+],
+"medusa_attack.png": [
+613,
+446,
+616
+],
+"medusa_dead.png": [
+674,
+261,
+676
+],
+"medusa_hit.png": [
+412,
+526,
+413
+],
+"medusa_move0.png": [
+746,
+492,
+748
+],
+"medusa_move1.png": [
+362,
+545,
+364
+],
+"medusa_move2.png": [
+704,
+492,
+706
+],
+"medusa_move3.png": [
+363,
+509,
+365
+],
+"medusa_queen.png": [
+433,
+567,
+433
+],
+"medusa_queen_attack.png": [
+530,
+544,
+532
+],
+"medusa_queen_dead.png": [
+749,
+270,
+751
+],
+"medusa_queen_hit.png": [
+422,
+557,
+420
+],
+"medusa_queen_move0.png": [
+559,
+528,
+560
+],
+"medusa_queen_move1.png": [
+563,
+559,
+565
+],
+"medusa_queen_move2.png": [
+469,
+571,
+470
+],
+"medusa_queen_move3.png": [
+560,
+587,
+562
+],
+"minotaur.png": [
+201,
+271,
+201
+],
+"minotaur_attack.png": [
+240,
+286,
+241
+],
+"minotaur_dead.png": [
+315,
+171,
+316
+],
+"minotaur_hit.png": [
+293,
+256,
+293
+],
+"minotaur_king.png": [
+202,
+275,
+202
+],
+"minotaur_king_attack.png": [
+231,
+290,
+229
+],
+"minotaur_king_dead.png": [
+322,
+200,
+324
+],
+"minotaur_king_hit.png": [
+293,
+262,
+292
+],
+"minotaur_king_move0.png": [
+290,
+261,
+291
+],
+"minotaur_king_move1.png": [
+204,
+282,
+204
+],
+"minotaur_king_move2.png": [
+204,
+274,
+204
+],
+"minotaur_king_move3.png": [
+206,
+280,
+208
+],
+"minotaur_move0.png": [
+202,
+273,
+202
+],
+"minotaur_move1.png": [
+202,
+275,
+202
+],
+"minotaur_move2.png": [
+202,
+273,
+203
+],
+"minotaur_move3.png": [
+203,
+275,
+203
+],
 "monk.png": [
 142,
 277,
@@ -1198,6 +1558,46 @@
 90,
 289,
 91
+],
+"morlock.png": [
+257,
+303,
+258
+],
+"morlock_attack.png": [
+366,
+270,
+367
+],
+"morlock_dead.png": [
+382,
+161,
+383
+],
+"morlock_hit.png": [
+237,
+287,
+239
+],
+"morlock_move0.png": [
+264,
+308,
+267
+],
+"morlock_move1.png": [
+268,
+317,
+269
+],
+"morlock_move2.png": [
+267,
+308,
+268
+],
+"morlock_move3.png": [
+270,
+318,
+271
 ],
 "mummy.png": [
 219,
@@ -1519,6 +1919,46 @@
 341,
 499
 ],
+"scorpicore.png": [
+565,
+320,
+569
+],
+"scorpicore_attack.png": [
+506,
+422,
+510
+],
+"scorpicore_dead.png": [
+584,
+357,
+584
+],
+"scorpicore_hit.png": [
+420,
+396,
+420
+],
+"scorpicore_move0.png": [
+563,
+325,
+565
+],
+"scorpicore_move1.png": [
+561,
+326,
+564
+],
+"scorpicore_move2.png": [
+568,
+327,
+571
+],
+"scorpicore_move3.png": [
+567,
+328,
+571
+],
 "skeleton.png": [
 175,
 287,
@@ -1798,6 +2238,46 @@
 439,
 307,
 442
+],
+"watcher.png": [
+168,
+235,
+169
+],
+"watcher_attack.png": [
+290,
+207,
+290
+],
+"watcher_dead.png": [
+263,
+199,
+260
+],
+"watcher_hit.png": [
+206,
+209,
+207
+],
+"watcher_move0.png": [
+221,
+226,
+201
+],
+"watcher_move1.png": [
+164,
+242,
+164
+],
+"watcher_move2.png": [
+189,
+226,
+190
+],
+"watcher_move3.png": [
+164,
+232,
+165
 ],
 "wraith.png": [
 197,

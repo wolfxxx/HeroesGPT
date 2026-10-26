@@ -78,6 +78,27 @@ const FACTIONS := {
 		"town_names": ["Ingolstadt", "Prague", "Kassel", "Tübingen", "Uraniborg"],
 		"classes": ["Alchemist", "Wizard"],
 	},
+	"dungeon": {
+		# (HoMM3's Dungeon as Agartha, the kingdom inside the Hollow Earth under its small inner sun: Wells's Morlocks,
+		# the harpies, medusas and minotaurs of the old underworlds, manticores and dragons; docs/AGARTHA.md)
+		"name": "Agartha",
+		"short": "Agartha",
+		"desc": "The kingdom beneath, under the inner sun.",
+		"creatures": ["morlock", "harpy", "watcher", "medusa", "minotaur", "manticore", "red_dragon"],
+		"upgrades": ["infernal_morlock", "harpy_hag", "evil_eye", "medusa_queen", "minotaur_king", "scorpicore", "black_dragon"],
+		"terrain": "subterranean",
+		"smith_machine": "ballista",
+		"specials": ["mana_vortex", "portal_of_summoning", "battle_scholar_academy"],
+		"requires": {"dwelling_7": ["mage_guild_3"]},  # (the Dragon Cave after the third Mage Guild level, as the classic Dungeon)
+		"mage_guild_levels": 5,
+		"dwelling_names": ["Warren", "Harpy Loft", "Pillar of Eyes", "Chapel of Stilled Voices", "Labyrinth", "Manticore Lair",
+			"Dragon Cave"],
+		# the Hollow Earth of legend: the kingdom's own name, Symmes's Symzonia, Mary E. Bradley Lane's Mizora, Holberg's
+		# inner world Nazar, and Sneffels, the Icelandic crater where Verne's travellers went down
+		"town_names": ["Agartha", "Symzonia", "Mizora", "Nazar", "Sneffels"],
+		"classes": ["Overlord", "Warlock"],
+		"battle_figure_lift": true,
+	},
 }
 
 ## Hero classes: their faction, might (Attack and Defense favoured at level-up) or magic, and the war machine a new
@@ -89,6 +110,8 @@ const CLASSES := {
 	"Necromancer": {"faction": "necropolis", "might": false, "machine": "first_aid_tent"},
 	"Alchemist": {"faction": "tower", "might": true, "machine": "ballista"},
 	"Wizard": {"faction": "tower", "might": false, "machine": "first_aid_tent"},
+	"Overlord": {"faction": "dungeon", "might": true, "machine": "ballista"},
+	"Warlock": {"faction": "dungeon", "might": false, "machine": "first_aid_tent"},
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -97,7 +120,10 @@ const CLASSES := {
 # abilities: flying, ranged, no_retaliation, double_strike, undead, no_melee_penalty,
 #            jousting, life_drain, breath, unlimited_retaliation, regenerate, fear, two_hex, mind_immune,
 #            unliving (HoMM3's non-living: no morale, mind spells, life drain, disease or Death Ripple),
-#            no_wall_penalty, spell_cost_down (its hero's spells cost 2 less), genie_spells (casts helpful spells)
+#            no_wall_penalty, spell_cost_down (its hero's spells cost 2 less), genie_spells (casts helpful spells),
+#            blind_immune (Blind and stone gaze pass it by), strike_and_return (flies back after striking), stone_gaze
+#            (20%: what it strikes in melee turns to stone), paralyze (20%: what it strikes is paralyzed),
+#            positive_morale (its morale never below +1)
 # hates: creature ids it deals +50% damage to (HoMM3's Titans and Black Dragons). spell_immunity: the highest spell
 # level that cannot touch it, its own side's spells too (HoMM3's Red Dragons 3, Black Dragons 5: every spell).
 # fig_scale: its battle figure taller than its tier's (HoMM3's Giants and Titans tower over men).
@@ -195,15 +221,34 @@ const CREATURES := {
 	"naga": {"name": "Naga", "plural": "Nagas", "faction": "tower", "tier": 6,
 		"attack": 16, "defense": 13, "dmg": [20, 20], "hp": 110, "speed": 5, "growth": 2, "shots": 0,
 		"cost": {"gold": 1100}, "abilities": ["no_retaliation", "two_hex"], "ai_value": 2016},
-	# HoMM3's Tower and Dungeon top creatures. Giants and Titans are the Illuminated's seventh tier, and are met on the
-	# map too (the Cloud Temple, wild Titans); Red and Black Dragons wait for their town (Agartha, docs/SETTING.md):
-	# Red Dragons recruited at their map dwellings, Black Dragons in the wild or upgraded at a Hill Fort.
+	# HoMM3's Tower and Dungeon top creatures. Giants and Titans are the Illuminated's seventh tier, Red and Black
+	# Dragons Agartha's, and all are met on the map too (the Cloud Temple and the Dragon Cave, wild Titans and Black
+	# Dragons, the Hill Fort's upgrades).
 	"giant": {"name": "Giant", "plural": "Giants", "faction": "tower", "tier": 7, "dwelling": "Cloud Temple",
 		"attack": 19, "defense": 16, "dmg": [40, 60], "hp": 150, "speed": 7, "growth": 1, "shots": 0,
 		"cost": {"gold": 2000, "gems": 1}, "abilities": ["mind_immune"], "fig_scale": 1.25, "ai_value": 3718},
-	"red_dragon": {"name": "Red Dragon", "plural": "Red Dragons", "faction": "neutral", "tier": 7, "dwelling": "Dragon Cave",
+	"red_dragon": {"name": "Red Dragon", "plural": "Red Dragons", "faction": "dungeon", "tier": 7, "dwelling": "Dragon Cave",
 		"attack": 19, "defense": 19, "dmg": [40, 50], "hp": 180, "speed": 9, "growth": 1, "shots": 0,
 		"cost": {"gold": 2500, "sulfur": 1}, "abilities": ["flying", "breath", "two_hex"], "spell_immunity": 3, "ai_value": 4702},
+	# ---------------- AGARTHA (HoMM3's Dungeon; Troglodytes as Wells's Morlocks, Beholders as Watchers) ----------------
+	"morlock": {"name": "Morlock", "plural": "Morlocks", "faction": "dungeon", "tier": 1,
+		"attack": 4, "defense": 3, "dmg": [1, 3], "hp": 5, "speed": 4, "growth": 14, "shots": 0,
+		"cost": {"gold": 50}, "abilities": ["blind_immune"], "ai_value": 59},
+	"harpy": {"name": "Harpy", "plural": "Harpies", "faction": "dungeon", "tier": 2,
+		"attack": 6, "defense": 5, "dmg": [1, 4], "hp": 14, "speed": 6, "growth": 8, "shots": 0,
+		"cost": {"gold": 130}, "abilities": ["flying", "strike_and_return"], "ai_value": 154},
+	"watcher": {"name": "Watcher", "plural": "Watchers", "faction": "dungeon", "tier": 3,
+		"attack": 9, "defense": 7, "dmg": [3, 5], "hp": 22, "speed": 5, "growth": 7, "shots": 12,
+		"cost": {"gold": 250}, "abilities": ["ranged", "no_melee_penalty"], "ai_value": 336},
+	"medusa": {"name": "Medusa", "plural": "Medusas", "faction": "dungeon", "tier": 4,
+		"attack": 9, "defense": 9, "dmg": [6, 8], "hp": 25, "speed": 5, "growth": 4, "shots": 4,
+		"cost": {"gold": 300}, "abilities": ["ranged", "no_melee_penalty", "stone_gaze", "two_hex"], "ai_value": 517},
+	"minotaur": {"name": "Minotaur", "plural": "Minotaurs", "faction": "dungeon", "tier": 5,
+		"attack": 14, "defense": 12, "dmg": [12, 20], "hp": 50, "speed": 6, "growth": 3, "shots": 0,
+		"cost": {"gold": 500}, "abilities": ["positive_morale"], "ai_value": 835},
+	"manticore": {"name": "Manticore", "plural": "Manticores", "faction": "dungeon", "tier": 6,
+		"attack": 15, "defense": 13, "dmg": [14, 20], "hp": 80, "speed": 7, "growth": 2, "shots": 0,
+		"cost": {"gold": 850}, "abilities": ["flying", "two_hex"], "ai_value": 1547},
 	# ---------------- UPGRADES (from an upgraded dwelling; "upgrade_of" names the base creature) ----------------
 	"halberdier": {"name": "Halberdier", "plural": "Halberdiers", "faction": "haven", "tier": 1, "upgrade_of": "pikeman",
 		"attack": 6, "defense": 5, "dmg": [2, 3], "hp": 10, "speed": 5, "growth": 14, "shots": 0,
@@ -269,10 +314,28 @@ const CREATURES := {
 		"attack": 24, "defense": 24, "dmg": [40, 60], "hp": 300, "speed": 11, "growth": 1, "shots": 24,
 		"cost": {"gold": 5000, "gems": 2}, "abilities": ["ranged", "no_melee_penalty", "mind_immune"], "hates": ["black_dragon"], "fig_scale": 1.25,
 		"ai_value": 7500},
-	"black_dragon": {"name": "Black Dragon", "plural": "Black Dragons", "faction": "neutral", "tier": 7, "upgrade_of": "red_dragon",
+	"black_dragon": {"name": "Black Dragon", "plural": "Black Dragons", "faction": "dungeon", "tier": 7, "upgrade_of": "red_dragon",
 		"attack": 25, "defense": 25, "dmg": [40, 50], "hp": 300, "speed": 15, "growth": 1, "shots": 0,
 		"cost": {"gold": 4000, "sulfur": 2}, "abilities": ["flying", "breath", "two_hex"], "hates": ["titan"], "spell_immunity": 5,
 		"ai_value": 8721},
+	"infernal_morlock": {"name": "Infernal Morlock", "plural": "Infernal Morlocks", "faction": "dungeon", "tier": 1, "upgrade_of": "morlock",
+		"attack": 5, "defense": 4, "dmg": [1, 3], "hp": 6, "speed": 5, "growth": 14, "shots": 0,
+		"cost": {"gold": 65}, "abilities": ["blind_immune"], "ai_value": 84},
+	"harpy_hag": {"name": "Harpy Hag", "plural": "Harpy Hags", "faction": "dungeon", "tier": 2, "upgrade_of": "harpy",
+		"attack": 6, "defense": 6, "dmg": [1, 4], "hp": 14, "speed": 9, "growth": 8, "shots": 0,
+		"cost": {"gold": 170}, "abilities": ["flying", "strike_and_return", "no_retaliation"], "ai_value": 238},
+	"evil_eye": {"name": "Evil Eye", "plural": "Evil Eyes", "faction": "dungeon", "tier": 3, "upgrade_of": "watcher",
+		"attack": 10, "defense": 8, "dmg": [3, 5], "hp": 22, "speed": 7, "growth": 7, "shots": 24,
+		"cost": {"gold": 280}, "abilities": ["ranged", "no_melee_penalty"], "ai_value": 367},
+	"medusa_queen": {"name": "Medusa Queen", "plural": "Medusa Queens", "faction": "dungeon", "tier": 4, "upgrade_of": "medusa",
+		"attack": 10, "defense": 10, "dmg": [6, 8], "hp": 30, "speed": 6, "growth": 4, "shots": 8,
+		"cost": {"gold": 330}, "abilities": ["ranged", "no_melee_penalty", "stone_gaze", "two_hex"], "ai_value": 577},
+	"minotaur_king": {"name": "Minotaur King", "plural": "Minotaur Kings", "faction": "dungeon", "tier": 5, "upgrade_of": "minotaur",
+		"attack": 15, "defense": 15, "dmg": [12, 20], "hp": 50, "speed": 8, "growth": 3, "shots": 0,
+		"cost": {"gold": 575}, "abilities": ["positive_morale"], "ai_value": 1068},
+	"scorpicore": {"name": "Scorpicore", "plural": "Scorpicores", "faction": "dungeon", "tier": 6, "upgrade_of": "manticore",
+		"attack": 16, "defense": 14, "dmg": [14, 20], "hp": 80, "speed": 11, "growth": 2, "shots": 0,
+		"cost": {"gold": 1050}, "abilities": ["flying", "paralyze", "two_hex"], "ai_value": 1589},
 }
 
 ## War machines a hero can own (bought at a Blacksmith); the catapult comes with every hero laying siege.
@@ -298,6 +361,11 @@ const ABILITY_TEXT := {
 	"unliving": "Not alive: no morale, immune to mind spells",
 	"no_wall_penalty": "No wall penalty when shooting", "spell_cost_down": "Its hero's spells cost 2 less",
 	"genie_spells": "Casts a random helpful spell on an ally (3 a battle)",
+	"blind_immune": "Immune to Blind and stone gaze",
+	"strike_and_return": "Strike and return",
+	"stone_gaze": "Stone gaze (20%: turns its target to stone)",
+	"paralyze": "Paralyzing venom (20%)",
+	"positive_morale": "Morale always positive",
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -350,6 +418,25 @@ const HEROES := {
 	"cagliostro": {"name": "Cagliostro", "faction": "tower", "class": "Wizard",
 		"attack": 1, "defense": 0, "power": 2, "knowledge": 3, "specialty": "Luck", "skills": {"wisdom": 1, "luck": 1},
 		"spells": ["bless", "curse"]},
+	# Agartha, from the legends of the Hollow Earth (docs/AGARTHA.md): the captain of "Symmes's Holes" at the poles,
+	# the Norse sailor of The Smoky God, Holberg's Niels Klim who fell into the inner world and was its emperor; the
+	# astronomer who argued the Earth was hollow shells lit within, Verne's Icelandic alchemist who went down first,
+	# and the traveller to Mizora, the women's kingdom inside the pole
+	"john_symmes": {"name": "John Cleves Symmes", "faction": "dungeon", "class": "Overlord",
+		"attack": 3, "defense": 1, "power": 1, "knowledge": 1, "specialty": "Offense", "skills": {"offense": 1}},
+	"olaf_jansen": {"name": "Olaf Jansen", "faction": "dungeon", "class": "Overlord",
+		"attack": 2, "defense": 2, "power": 1, "knowledge": 1, "specialty": "Logistics", "skills": {"logistics": 1}},
+	"niels_klim": {"name": "Niels Klim", "faction": "dungeon", "class": "Overlord",
+		"attack": 2, "defense": 2, "power": 1, "knowledge": 1, "specialty": "Leadership", "skills": {"leadership": 1}},
+	"edmond_halley": {"name": "Edmond Halley", "faction": "dungeon", "class": "Warlock",
+		"attack": 0, "defense": 0, "power": 2, "knowledge": 4, "specialty": "Wisdom", "skills": {"wisdom": 1},
+		"spells": ["magic_arrow", "haste"]},
+	"arne_saknussemm": {"name": "Arne Saknussemm", "faction": "dungeon", "class": "Warlock",
+		"attack": 0, "defense": 1, "power": 3, "knowledge": 2, "specialty": "Sorcery", "skills": {"wisdom": 1, "sorcery": 1},
+		"spells": ["magic_arrow", "curse"]},
+	"vera_zarovitch": {"name": "Vera Zarovitch", "faction": "dungeon", "class": "Warlock",
+		"attack": 1, "defense": 0, "power": 2, "knowledge": 3, "specialty": "Luck", "skills": {"wisdom": 1, "luck": 1},
+		"spells": ["bless", "slow"]},
 }
 
 const SKILLS := {
@@ -412,12 +499,14 @@ const BUILDINGS := {
 	"mage_guild_3": {"name": "Mage Guild Lv3", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 4, "sulfur": 4, "crystal": 4, "gems": 4}, "requires": ["mage_guild_2"], "replaces": "mage_guild_2", "desc": "Teaches level 3 spells."},
 	"mage_guild_4": {"name": "Mage Guild Lv4", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 6, "sulfur": 6, "crystal": 6, "gems": 6}, "requires": ["mage_guild_3"], "replaces": "mage_guild_3", "desc": "Teaches level 4 spells."},
 	"mage_guild_5": {"name": "Mage Guild Lv5", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 10, "sulfur": 10, "crystal": 10, "gems": 10}, "requires": ["mage_guild_4"], "replaces": "mage_guild_4", "desc": "Teaches level 5 spells."},
-	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's, an Ammo Cart in the Illuminated's."},
+	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's, an Ammo Cart in the Illuminated's, a Ballista in Agartha's."},
 	# faction special buildings ("faction": only that faction's towns can build them). "effects" are what they do, read
 	# by the rules (TownLogic.effect): start_day_movement (a hero starting the day in the town), siege_morale (the
 	# town's defenders), necromancy (+% raised by all the owner's heroes), transform_to (turns a visiting hero's
 	# living creatures into that creature), guild_spells (more spells per Mage Guild level), visit_knowledge (+Knowledge
-	# once to each visiting hero). "ai_after": the computer builds it right after that building.
+	# once to each visiting hero), visit_mana (the first hero visiting each week has its spell points restored, then
+	# doubled), visit_xp (experience once to each visiting hero), portal (recruits from one of the owner's map dwellings,
+	# picked each week). "ai_after": the computer builds it right after that building.
 	"stables": {"name": "Stables", "faction": "haven", "cost": {"gold": 2000, "wood": 10}, "requires": [],
 		"effects": {"start_day_movement": 400}, "ai_after": "city_hall", "desc": "Heroes who start the day in this town get +400 movement points."},
 	"brotherhood": {"name": "Chapter House", "faction": "haven", "cost": {"gold": 500, "wood": 5}, "requires": ["tavern"],
@@ -432,6 +521,15 @@ const BUILDINGS := {
 	"wall_of_knowledge": {"name": "Wall of Knowledge", "faction": "tower", "cost": {"gold": 1000, "ore": 5}, "requires": ["mage_guild_1"],
 		"effects": {"visit_knowledge": 1}, "ai_after": "mage_guild_1",
 		"desc": "+1 Knowledge, once, to each hero who visits the town."},
+	"mana_vortex": {"name": "Mana Vortex", "faction": "dungeon", "cost": {"gold": 1000}, "requires": ["mage_guild_1"],
+		"effects": {"visit_mana": 2}, "ai_after": "mage_guild_1",
+		"desc": "Once a week, the first hero to visit has its spell points restored and then doubled."},
+	"portal_of_summoning": {"name": "Portal of Summoning", "faction": "dungeon", "cost": {"gold": 2500, "ore": 5}, "requires": ["mage_guild_1"],
+		"effects": {"portal": 1}, "ai_after": "mage_guild_2",
+		"desc": "Each week calls creatures from one of your dwellings on the map, picked at random, to be recruited here."},
+	"battle_scholar_academy": {"name": "Battle Scholar Academy", "faction": "dungeon", "cost": {"gold": 1000, "wood": 5, "ore": 5}, "requires": [],
+		"effects": {"visit_xp": 1000}, "ai_after": "tavern",
+		"desc": "+1000 experience, once, to each hero who visits the town."},
 	"dwelling_1": {"name": "Dwelling I", "cost": {"gold": 1000, "ore": 5}, "dwelling_tier": 1, "requires": ["fort"]},
 	"dwelling_2": {"name": "Dwelling II", "cost": {"gold": 1000, "wood": 5, "ore": 5}, "dwelling_tier": 2, "requires": ["dwelling_1"]},
 	"dwelling_3": {"name": "Dwelling III", "cost": {"gold": 1500, "wood": 5, "ore": 5}, "dwelling_tier": 3, "requires": ["dwelling_1"]},
@@ -612,6 +710,7 @@ const TERRAINS := {
 	"swamp": {"name": "Swamp", "move_cost": 175},
 	"water": {"name": "Water", "move_cost": -1},
 	"road": {"name": "Road", "move_cost": 50},
+	"subterranean": {"name": "Subterranean", "move_cost": 100},  # (HoMM3's cave floor, Agartha's own ground)
 }
 
 const MINES := {

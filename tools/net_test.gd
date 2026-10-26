@@ -61,8 +61,9 @@ func _host() -> void:
 	else:
 		_ok(Net.host(PORT) == "", "the game is hosted")
 	GameState._uid = 1000
+	# (the seats' factions pinned: a new faction in GameData would change who plays what, and so the whole scenario)
 	var w := WorldGen.generate({"seed": 52001, "map_size": 36, "opponents": 2, "faction": "haven",
-		"seat_human": [true, true, false]})
+		"seat_human": [true, true, false], "seat_faction": ["", "necropolis", ""], "seat_ai_faction": ["", "", "necropolis"]})
 	w["players"][0]["is_ai"] = true  # (Red moves itself here; Blue is the person who joins)
 	for hid in w["players"][1]["heroes"]:  # (Blue strong enough to walk, and win its battle, for the whole test)
 		w["heroes"][hid]["army"][0] = {"id": GameData.FACTIONS[w["players"][1]["faction"]]["creatures"][6], "count": 40}

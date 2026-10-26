@@ -77,6 +77,41 @@ NEW = {
              "lying along the ground behind her, upright and poised to strike"),
     "naga_queen": ("naga", "a Naga Queen: the same six-armed serpent warrior woman, crowned with a tall gold crown, in "
                    "jewelled gold armour, her six curved swords gleaming, her long snake tail emerald and gold"),
+    # session68: Agartha (HoMM3's Dungeon), the kingdom inside the Hollow Earth: violet, black, bronze and amber
+    "morlock": ("skeleton", "a Morlock, one of H. G. Wells's pale folk of the underworld: a small stooped ape-like man "
+                "with greyish-white skin, long arms, a hunched back, a shock of pale hair, large milky-white blind eyes, "
+                "a ragged loincloth, holding a crude stone-tipped spear"),
+    "infernal_morlock": ("morlock", "an Infernal Morlock: the same small stooped pale underworld man, now his skin "
+                         "ashen red, small curved horns, a crude bronze collar and leather harness, milky-white blind "
+                         "eyes, holding a jagged black obsidian-tipped spear"),
+    "harpy": ("vampire", "a Harpy: a fierce winged woman of Greek myth, her upper body a wild-haired woman with a "
+              "snarling face, a dark leather harness and a feathered leather vest covering her chest, great brown-and-grey "
+              "eagle wings for arms spread wide, the lower body and legs of a bird of prey ending in big hooked talons"),
+    "harpy_hag": ("harpy", "a Harpy Hag: the same winged woman, older and crueller, with tangled black hair, dark "
+                  "violet-black feathered wings, a dark leather vest covering her chest, a necklace of small bones and longer, "
+                  "blood-red talons"),
+    "watcher": ("ghost", "a Watcher: a floating orb of mottled grey-green hide the size of a man, with ONE huge central "
+                "eye with an amber iris, a wide fanged mouth below it, a few smaller eyes set in the hide around it, and "
+                "short limp tentacles hanging underneath (NO eye stalks), hovering above the ground"),
+    "evil_eye": ("watcher", "an Evil Eye: the same floating orb, its hide dark violet and scarred, its great eye glowing "
+                 "blood-red, the smaller eyes glowing red too, longer barbed tentacles hanging underneath (NO eye "
+                 "stalks), hovering above the ground"),
+    "medusa": ("naga", "a Medusa: a serpent woman, her upper body a pale green-skinned woman with living green snakes "
+               "for hair, a bronze breastplate, holding a recurved bow with an arrow nocked, two arms only, her lower "
+               "body a long coiled dark-green snake tail lying along the ground behind her"),
+    "medusa_queen": ("medusa", "a Medusa Queen: the same serpent woman with living snakes for hair, crowned with a "
+                     "thin bronze crown, in a jewelled violet-and-bronze breastplate, holding a gilded recurved bow with "
+                     "an arrow nocked, her long snake tail dark green with violet bands"),
+    "minotaur": ("swordsman", "a Minotaur: a huge bull-headed man with a bull's head, long curved horns and a ring in its "
+                 "nose, a broad hairy chest, a bronze-studded leather kilt and bracers, hooved bull's legs, gripping a "
+                 "heavy double-bladed bronze axe in front of it where the knight holds his sword"),
+    "minotaur_king": ("minotaur", "a Minotaur King: the same bull-headed giant, with gold-capped horns and a gold crown "
+                      "between them, gold-trimmed black armour plates on its shoulders and chest, gripping a great "
+                      "gilded double-bladed axe"),
+    "manticore": ("griffin", "a Manticore: a great red-maned lion with a fierce bearded man-like face, huge leathery "
+                  "bat-like dark red wings, and a long tail ending in a cluster of sharp spikes"),
+    "scorpicore": ("manticore", "a Scorpicore: the same winged lion with a man-like face, its hide darker, its wings "
+                   "violet-black, its tail a segmented scorpion's tail with a glistening venomous sting"),
 }
 IDLE = ("This is a battle unit sprite from a fantasy strategy game. Redraw it as a DIFFERENT creature in exactly the same "
         "side view facing right, the same pose, the same size in the frame, standing on the same ground line at the same "

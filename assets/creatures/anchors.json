@@ -439,6 +439,38 @@
 0.4032,
 0.9718
 ],
+"evil_eye.png": [
+0.3629,
+0.9228
+],
+"evil_eye_attack.png": [
+0.3078,
+0.905
+],
+"evil_eye_dead.png": [
+0.45,
+0.902
+],
+"evil_eye_hit.png": [
+0.4352,
+0.9101
+],
+"evil_eye_move0.png": [
+0.4154,
+0.9493
+],
+"evil_eye_move1.png": [
+0.3621,
+0.9502
+],
+"evil_eye_move2.png": [
+0.3986,
+0.9502
+],
+"evil_eye_move3.png": [
+0.3645,
+0.9468
+],
 "first_aid_tent.png": [
 0.4419,
 0.9218
@@ -703,6 +735,70 @@
 0.3437,
 0.9573
 ],
+"harpy.png": [
+0.5868,
+0.931
+],
+"harpy_attack.png": [
+0.5653,
+0.9155
+],
+"harpy_dead.png": [
+0.3682,
+0.9201
+],
+"harpy_hag.png": [
+0.5912,
+0.9355
+],
+"harpy_hag_attack.png": [
+0.5768,
+0.9339
+],
+"harpy_hag_dead.png": [
+0.4493,
+0.8899
+],
+"harpy_hag_hit.png": [
+0.5473,
+0.9251
+],
+"harpy_hag_move0.png": [
+0.5837,
+0.9631
+],
+"harpy_hag_move1.png": [
+0.6159,
+0.9624
+],
+"harpy_hag_move2.png": [
+0.615,
+0.9582
+],
+"harpy_hag_move3.png": [
+0.6144,
+0.9587
+],
+"harpy_hit.png": [
+0.6475,
+0.918
+],
+"harpy_move0.png": [
+0.5792,
+0.9556
+],
+"harpy_move1.png": [
+0.5816,
+0.9612
+],
+"harpy_move2.png": [
+0.6028,
+0.9554
+],
+"harpy_move3.png": [
+0.5993,
+0.956
+],
 "homunculus.png": [
 0.2819,
 0.9302
@@ -734,6 +830,38 @@
 "homunculus_move3.png": [
 0.2548,
 0.957
+],
+"infernal_morlock.png": [
+0.3231,
+0.9341
+],
+"infernal_morlock_attack.png": [
+0.2324,
+0.9268
+],
+"infernal_morlock_dead.png": [
+0.4934,
+0.8743
+],
+"infernal_morlock_hit.png": [
+0.3666,
+0.9375
+],
+"infernal_morlock_move0.png": [
+0.3304,
+0.9606
+],
+"infernal_morlock_move1.png": [
+0.3232,
+0.9593
+],
+"infernal_morlock_move2.png": [
+0.3466,
+0.9582
+],
+"infernal_morlock_move3.png": [
+0.325,
+0.9587
 ],
 "iron_golem.png": [
 0.358,
@@ -831,6 +959,38 @@
 0.281,
 0.9491
 ],
+"manticore.png": [
+0.449,
+0.9288
+],
+"manticore_attack.png": [
+0.4656,
+0.9467
+],
+"manticore_dead.png": [
+0.4172,
+0.9392
+],
+"manticore_hit.png": [
+0.4775,
+0.9362
+],
+"manticore_move0.png": [
+0.456,
+0.9571
+],
+"manticore_move1.png": [
+0.4411,
+0.9632
+],
+"manticore_move2.png": [
+0.465,
+0.9561
+],
+"manticore_move3.png": [
+0.458,
+0.9612
+],
 "marksman.png": [
 0.3032,
 0.9149
@@ -927,6 +1087,134 @@
 0.2663,
 0.9576
 ],
+"medusa.png": [
+0.3814,
+0.9574
+],
+"medusa_attack.png": [
+0.2771,
+0.9526
+],
+"medusa_dead.png": [
+0.4377,
+0.9195
+],
+"medusa_hit.png": [
+0.3868,
+0.9594
+],
+"medusa_move0.png": [
+0.4167,
+0.9732
+],
+"medusa_move1.png": [
+0.2808,
+0.9773
+],
+"medusa_move2.png": [
+0.4114,
+0.9751
+],
+"medusa_move3.png": [
+0.3739,
+0.9741
+],
+"medusa_queen.png": [
+0.3838,
+0.9603
+],
+"medusa_queen_attack.png": [
+0.4097,
+0.9588
+],
+"medusa_queen_dead.png": [
+0.3972,
+0.9251
+],
+"medusa_queen_hit.png": [
+0.387,
+0.9597
+],
+"medusa_queen_move0.png": [
+0.4353,
+0.9734
+],
+"medusa_queen_move1.png": [
+0.3875,
+0.975
+],
+"medusa_queen_move2.png": [
+0.3582,
+0.9737
+],
+"medusa_queen_move3.png": [
+0.3863,
+0.9744
+],
+"minotaur.png": [
+0.2564,
+0.9253
+],
+"minotaur_attack.png": [
+0.407,
+0.9288
+],
+"minotaur_dead.png": [
+0.4701,
+0.8846
+],
+"minotaur_hit.png": [
+0.398,
+0.9181
+],
+"minotaur_king.png": [
+0.2602,
+0.9265
+],
+"minotaur_king_attack.png": [
+0.3333,
+0.9294
+],
+"minotaur_king_dead.png": [
+0.4699,
+0.8987
+],
+"minotaur_king_hit.png": [
+0.5176,
+0.9197
+],
+"minotaur_king_move0.png": [
+0.4081,
+0.9521
+],
+"minotaur_king_move1.png": [
+0.2337,
+0.9548
+],
+"minotaur_king_move2.png": [
+0.2836,
+0.9507
+],
+"minotaur_king_move3.png": [
+0.2331,
+0.9513
+],
+"minotaur_move0.png": [
+0.2676,
+0.9538
+],
+"minotaur_move1.png": [
+0.2484,
+0.9539
+],
+"minotaur_move2.png": [
+0.2626,
+0.9505
+],
+"minotaur_move3.png": [
+0.2345,
+0.9508
+],
 "monk.png": [
 0.5,
 0.9006
@@ -958,6 +1246,38 @@
 "monk_move3.png": [
 0.2282,
 0.953
+],
+"morlock.png": [
+0.3227,
+0.9294
+],
+"morlock_attack.png": [
+0.2118,
+0.9216
+],
+"morlock_dead.png": [
+0.4819,
+0.8794
+],
+"morlock_hit.png": [
+0.5013,
+0.9259
+],
+"morlock_move0.png": [
+0.349,
+0.9585
+],
+"morlock_move1.png": [
+0.302,
+0.9568
+],
+"morlock_move2.png": [
+0.3543,
+0.9556
+],
+"morlock_move3.png": [
+0.3331,
+0.9569
 ],
 "mummy.png": [
 0.3708,
@@ -1215,6 +1535,38 @@
 0.4815,
 0.881
 ],
+"scorpicore.png": [
+0.4326,
+0.9331
+],
+"scorpicore_attack.png": [
+0.5231,
+0.9478
+],
+"scorpicore_dead.png": [
+0.4972,
+0.9392
+],
+"scorpicore_hit.png": [
+0.4224,
+0.9447
+],
+"scorpicore_move0.png": [
+0.4392,
+0.9605
+],
+"scorpicore_move1.png": [
+0.4327,
+0.9605
+],
+"scorpicore_move2.png": [
+0.4213,
+0.9606
+],
+"scorpicore_move3.png": [
+0.4288,
+0.9609
+],
 "skeleton.png": [
 0.5,
 0.8678
@@ -1438,6 +1790,38 @@
 "vampire_move3.png": [
 0.576,
 0.9769
+],
+"watcher.png": [
+0.3613,
+0.9154
+],
+"watcher_attack.png": [
+0.2912,
+0.9053
+],
+"watcher_dead.png": [
+0.4096,
+0.9025
+],
+"watcher_hit.png": [
+0.3996,
+0.902
+],
+"watcher_move0.png": [
+0.3992,
+0.9412
+],
+"watcher_move1.png": [
+0.3594,
+0.9446
+],
+"watcher_move2.png": [
+0.4184,
+0.9449
+],
+"watcher_move3.png": [
+0.3714,
+0.9464
 ],
 "wraith.png": [
 0.3246,

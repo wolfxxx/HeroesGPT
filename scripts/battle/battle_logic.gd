@@ -165,6 +165,8 @@ func stack_immune(s: Dictionary, spell: String) -> bool:
 		return true
 	if int(GameData.SPELLS[spell]["level"]) <= int(cdata(s).get("spell_immunity", 0)):
 		return true
+	if spell == "blind" and has_ab(s, "blind_immune"):  # (Morlocks: eyes long given up to the dark)
+		return true
 	if GameData.SPELLS[spell].get("mind", false):
 		return not living(s) or has_ab(s, "golem") or has_ab(s, "mind_immune") or s.get("machine", false)
 	return false
@@ -456,6 +458,8 @@ func morale(side: int, s = null) -> int:
 		if not o.get("machine", false):  # (machines are no faction of their own)
 			factions[cdata(o).get("faction", "")] = true
 	v -= maxi(0, factions.size() - 1)
+	if s != null and has_ab(s, "positive_morale"):  # (Minotaurs: never below +1)
+		v = maxi(v, 1)
 	return clampi(v, -3, 3)
 
 ## Bad morale: a stack may freeze and lose its turn (1 in 12 per point below zero).
@@ -777,6 +781,7 @@ func do_move(s: Dictionary, target: Vector2i) -> Array:
 func do_melee(s: Dictionary, target: Dictionary, from_hex: Vector2i) -> Array:
 	var ev := []
 	var moved := 0
+	var start: Vector2i = s["hex"]
 	if from_hex != s["hex"]:
 		var path := path_to(s, from_hex)
 		if path.is_empty():
@@ -785,19 +790,24 @@ func do_melee(s: Dictionary, target: Dictionary, from_hex: Vector2i) -> Array:
 		s["hex"] = from_hex
 		ev.append({"t": "move", "s": s, "path": path})
 	var woke := _wake(target)
-	ev += _strike(s, target, false, moved, false)
-	if target["alive"] and s["alive"] and not target.get("machine", false) and target["retaliations"] > 0 and not has_ab(s, "no_retaliation") and _can_act(target):
+	ev += _strike(s, target, false, moved, false, 0.5 if woke == "stone" else 1.0)  # (stone takes half, and wakes)
+	if target["alive"] and s["alive"] and not target.get("machine", false) and target["retaliations"] > 0 and not has_ab(s, "no_retaliation") \
+			and _can_act(target) and woke != "stone":
 		target["retaliations"] -= 1
-		ev += _strike(target, s, false, 0, true, 0.5 if woke else 1.0)  # (a blinded stack, struck, wakes at half)
+		# (a blinded stack, struck, wakes and strikes back at half; a paralyzed one at a quarter)
+		ev += _strike(target, s, false, 0, true, {"blind": 0.5, "paralyze": 0.25}.get(woke, 1.0))
 	if s["alive"] and has_ab(s, "double_strike") and target["alive"]:
 		ev += _strike(s, target, false, 0, false)
+	if s["alive"] and has_ab(s, "strike_and_return") and s["hex"] != start and fits(s, start):  # (Harpies fly home)
+		ev.append({"t": "move", "s": s, "path": [s["hex"], start]})
+		s["hex"] = start
 	s["effects"].erase("berserk")  # (Berserk ends once the stack has attacked)
 	finish_turn(s)
 	return ev
 
 func do_shoot(s: Dictionary, target: Dictionary) -> Array:
-	_wake(target)
-	var ev := _strike(s, target, true, 0, false)
+	var woke := _wake(target)
+	var ev := _strike(s, target, true, 0, false, 0.5 if woke == "stone" else 1.0)
 	var cart := false
 	for o in alive_stacks(s["side"]):
 		if o["id"] == "ammo_cart":
@@ -831,9 +841,25 @@ func do_shoot(s: Dictionary, target: Dictionary) -> Array:
 func _can_act(s: Dictionary) -> bool:
 	return s["alive"]
 
-## An attack ends Blind on the stack it strikes (HoMM3); true if it was blinded.
-func _wake(s: Dictionary) -> bool:
-	return s["effects"].erase("blind")
+## An attack ends Blind, paralysis and stone on the stack it strikes (HoMM3): which it was in ("" if none).
+func _wake(s: Dictionary) -> String:
+	for k in ["stone", "paralyze", "blind"]:
+		if s["effects"].erase(k):
+			return k
+	return ""
+
+## Medusas' stone gaze and Scorpicores' venom (HoMM3): one in five melee strikes, retaliations too, that the target
+## survives turns it to stone (it stands three rounds, takes half damage and wakes when struck; Morlocks and war
+## machines are spared) or paralyzes it (it stands three rounds and wakes when struck, striking back at a quarter;
+## war machines and Black Dragons are spared).
+func stone_or_venom(a: Dictionary, d: Dictionary) -> String:
+	if not d["alive"] or d.get("machine", false) or cdata(d).get("machine", false) or d.get("tower", false):
+		return ""
+	if has_ab(a, "stone_gaze") and not has_ab(d, "blind_immune"):
+		return "stone"
+	if has_ab(a, "paralyze") and int(cdata(d).get("spell_immunity", 0)) < 5:
+		return "paralyze"
+	return ""
 
 func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation: bool, mult := 1.0) -> Array:
 	var dmg := _roll_damage(a, d, ranged, moved)
@@ -863,6 +889,14 @@ func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation
 	if has_ab(a, "curse_strike") and d["alive"] and not immune(d["side"], "curse") and rng.randf() < 0.25:
 		d["effects"].erase("bless")  # (the Mummy's curse, as the spell: minimum damage for 3 rounds)
 		d["effects"]["curse"] = 3
+	var gaze := stone_or_venom(a, d) if not ranged else ""
+	if gaze != "" and rng.randf() < 0.2:
+		d["effects"][gaze] = 3
+		d["effects"].erase("berserk")
+		var plural: bool = d["count"] != 1
+		log_lines.append("%s %s." % [_name(d), ("turn" if plural else "turns") + " to stone" if gaze == "stone"
+			else ("are" if plural else "is") + " paralyzed"])
+		ev.append({"t": "status", "s": d, "text": "Stone" if gaze == "stone" else "Paralyzed", "log": log_lines.size()})
 	if not d["alive"]:
 		ev.append({"t": "death", "s": d})
 	if not ranged and has_ab(a, "breath"):
@@ -947,9 +981,13 @@ func genie_cast(s: Dictionary, t: Dictionary) -> Array:
 	finish_turn(s)
 	return [ev]
 
-## A stack that loses its turn to a spell: "blind" (it stands until struck or the spell ends), else "".
+## A stack that loses its turn to a spell or a strike: "blind", "paralyze" or "stone" (it stands until struck or
+## the effect ends), else "".
 func spell_lost_turn(s: Dictionary) -> String:
-	return "blind" if s["effects"].has("blind") else ""
+	for k in ["stone", "paralyze", "blind"]:
+		if s["effects"].has(k):
+			return k
+	return ""
 
 ## A berserk stack's action, as the rules decide it (HoMM3): it goes for the nearest stack, friend or foe (the
 ## nearer by hexes, then the earlier on the field); a shooter with nothing beside it shoots it, others strike it if
@@ -1122,7 +1160,7 @@ func cast(side: int, spell: String, hex: Vector2i) -> Array:
 						s["effects"].erase("haste")
 					s["effects"][spell] = dur
 				"cure":
-					for k in ["curse", "slow", "weakness", "disease"]:
+					for k in ["curse", "slow", "weakness", "disease", "paralyze"]:
 						s["effects"].erase(k)
 					var g := heal(s, 10 + 5 * spell_power(side), false)
 					out.append({"t": "heal", "s": s, "amount": g})

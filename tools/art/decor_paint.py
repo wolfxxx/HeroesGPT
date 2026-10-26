@@ -47,6 +47,21 @@ SHEETS = {
         ("mossy_log", "a rotten log covered in thick green moss", 160, True),
         ("swamp_shrub", "a twisted dark swamp shrub with hanging grey moss", 112, True),
     ],
+    # (Agartha's Subterranean ground, session68: the cave floor of the Hollow Earth; the giant mushrooms are its woods)
+    "deep": [
+        ("stalagmite", "a single tall pointed grey-violet cave stalagmite", 80, True),
+        ("stalagmites", "a cluster of three grey-violet cave stalagmites of different heights", 150, True),
+        ("glow_caps", "a little cluster of small mushrooms with softly glowing pale-teal caps", 84, False),
+        ("cave_crystals", "a cluster of jagged violet crystals glowing faintly from within", 100, True),
+        ("cave_boulders", "three dark basalt boulders grouped together", 130, True),
+        ("mushroom_tree_1", "a giant mushroom as tall as a tree, a thick pale stem and a broad brown-violet cap", 200, True),
+        ("mushroom_tree_2", "a pair of giant mushrooms as tall as trees, slender stems and wide teal-grey caps", 210, True),
+        ("mushroom_tree_3", "a giant toadstool as tall as a tree with a dome-shaped dusky red cap and pale spots", 190, True),
+        ("cave_moss", "a flat patch of dark green cave moss with a few tiny pale sprouts", 110, False),
+        ("lava_vent", "a small crack in dark rock glowing orange with lava, a wisp of smoke", 110, False),
+        ("cave_bones", "the skull and scattered bones of some great cave beast", 104, False),
+        ("shelf_fungus", "a broken rock stump grown over with layered orange shelf fungus", 104, True),
+    ],
 }
 
 PROMPT = ("This is a blank sprite sheet for a fantasy strategy game's adventure map: a flat magenta (#FF00FF) "
