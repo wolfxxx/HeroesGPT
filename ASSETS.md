@@ -228,6 +228,21 @@ Measure with `python tools/art/sprite_sizes.py <id>_dead.png` to preserve unrela
 - Per-creature (optional): `sfx/<creature_id>_attack.mp3`, `sfx/<creature_id>_death.mp3`.
 - Voice (optional): `voice/<line_id>.mp3` narrator lines: intro, victory, defeat, new_week.
 
+## Eridu (session68, `eridu`)
+Painted over existing art by the image model (docs/ERIDU.md): creatures over the Sergeant (Lulu), Archer (Igigi),
+Swordsman (Scorpion Man), Ghost (Sharur), Monk (Apkallu), Cavalier (Lamassu) and Red Dragon (Anzu) with
+`new_creature_paint.py`, each upgrade over its new base; poses and moves as every creature (`vertex_paint.py`
+CREATURE_NOTES / POSE_NOTES). Hero portraits `legend_portraits.py`; the Lugal (`battle_eridu`, `map_eridu*`) and Keeper
+(`battle_keeper`, `map_keeper*`) over the Temple's horse in a lapis caparison. The town screen `town/eridu_*.png` and
+`layout_eridu.json` by `new_faction_town.py eridu` (the Temple's layout; the House of the Me and Dur-An-Ki at the
+Stables' and Chapter House's places), the map town by its `map` step, its levels by `town_levels_paint.py`. Cards
+`building_cards.py cards eridu`. The siege `battle/bg_siege_eridu_*.png`, `siege_eridu_*`, `siege_eridu_archer.png` by
+`siege_levels_paint.py restyle eridu` (the Temple's Castle restyled; Eridu's Citadel prompt `CITADEL_FOR`), then
+`paint`, `breach`, `damage`, `archer`, `ingest eridu`. Its heroes' spell effects `battle/fx_<arcane|spark|fire|frost|holy|
+dark>_eridu.png` by `vfx_paint.py` (names `<kind>_eridu`). The Shaping icon `icons/skill_shaping.png`, take c of
+`button_icons_paint.py paint shaping` (eight takes in `imagegen/batch20/out/shaping_*.png`). Music
+`audio/music/town_eridu.mp3`. Its ground is the existing swamp.
+
 ## Agartha (session68, `dungeon`)
 Painted over existing art by the image model (docs/AGARTHA.md): creatures over the Skeleton (Morlock), Vampire
 (Harpy), Ghost (Watcher), Naga (Medusa), Swordsman (Minotaur) and Griffin (Manticore) with `new_creature_paint.py`,

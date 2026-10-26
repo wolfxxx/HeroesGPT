@@ -581,6 +581,15 @@ Every scene also works when launched DIRECTLY (for screenshots): missing state -
   and centres, a click on the selected one opens its screen; a town and a hero are never selected together; the
   status window shows the selected town; the town stays selected on the way back from its screen).
   `-- --capture=shots/dir` in a window saves the panel with the town selected.
+- `tools/eridu_test.tscn` — in the full suite: Eridu's record, numbers and heroes; Shaping (rates, the health cap,
+  no undead or constructs, Adamu, the report); venom, deflector, dispel and sweep (only the target strikes back, the
+  AI's view); constructs; the House of the Me (prices, set pieces and combinations refused, the computer's spares);
+  the Dur-An-Ki (needs the Citadel, a free gate, movement kept, sight, the computer passing to hold a town); the
+  Ziggurat's name; the spell look; and every picture, frame, layout entry and the music the faction needs.
+- `tools/faction_balance.tscn` — not in the suite: each creature of a faction against the same tier of every other,
+  armies of equal AI value (`--by=value`, how the computer values them) or equal weeks of growth (`--by=growth`, how
+  strong in play), sides swapped, battle rules and AI on both sides; prints win shares per tier and for the faction
+  (`-- --faction=eridu --seeds=8`).
 - `tools/agartha_test.tscn` — in the full suite: Agartha's record, HoMM3 numbers and heroes; Morlocks immune to
   Blind and stone gaze; the stone gaze and the venom (one in five, the same on every machine, who is spared, half
   damage and no retaliation on stone, a quarter on paralysis, waking, Cure); Harpies' strike and return and the Hag's

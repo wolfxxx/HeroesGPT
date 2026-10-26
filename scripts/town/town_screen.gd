@@ -25,6 +25,10 @@ func _ready() -> void:
 	_build()
 	refresh()
 	Audio.music("town_%s" % town["faction"])
+	if Shot.args.has("open"):  # (shots of a building's dialog: --open=house_of_me; --artifacts=a,b for the visiting hero)
+		if not hero.is_empty() and Shot.args.has("artifacts"):
+			hero["backpack"] = Array(str(Shot.args["artifacts"]).split(","))
+		_open_building.call_deferred(str(Shot.args["open"]))
 	var report: Dictionary = GameState.pending_town.get("report", {})
 	if not hero.is_empty() and report.get("hero", -1) == hero["uid"]:
 		_announce_learning.call_deferred(report.get("learned", []), int(report.get("mana", 0)), int(report.get("knowledge", 0)),
@@ -35,7 +39,7 @@ func _ready() -> void:
 func _announce_learning(learned: Array, mana_gain := 0, knowledge := 0, vortex := 0) -> void:
 	if learned.is_empty() and mana_gain <= 0 and knowledge <= 0 and vortex <= 0:
 		return
-	var m := Modal.custom(self, "Wall of Knowledge" if knowledge > 0 else ("Mana Vortex" if vortex > 0 else "Mage Guild"), 760)
+	var m := Modal.custom(self, "Wall of Knowledge" if knowledge > 0 else ("Mana Vortex" if vortex > 0 else GameData.building_name(town["faction"], "mage_guild_1")), 760)
 	if knowledge > 0:
 		m.add_text("%s studies the Wall of Knowledge: +%d Knowledge." % [hero["name"], knowledge], 22)
 	if not learned.is_empty():
@@ -65,6 +69,9 @@ func _resolve_state() -> void:
 		if Shot.setup.contains("dungeon"):  # (dungeon, dungeon_rich: Agartha)
 			s["faction"] = "dungeon"
 			s["hero"] = "edmond_halley"
+		if Shot.setup.contains("eridu"):  # (eridu, eridu_rich: Eridu)
+			s["faction"] = "eridu"
+			s["hero"] = "enki"
 		GameState.world = WorldGen.generate(s)
 	world = GameState.world
 	var uid: int = GameState.pending_town.get("town_uid", -1)
@@ -282,7 +289,7 @@ func refresh() -> void:
 	var gl := TownLogic.mage_guild_level(town)
 	var entries := [["Tavern", "tavern", _open_tavern, TownLogic.has_building(town, "tavern"), "Hire heroes"],
 		["Market", "marketplace", _open_market, TownLogic.has_building(town, "marketplace"), "Trade resources"],
-		["Mage Guild", "mage_guild_%d" % maxi(1, gl), _open_guild, gl > 0, "Spells of the guild"]]
+		[GameData.building_name(town["faction"], "mage_guild_1"), "mage_guild_%d" % maxi(1, gl), _open_guild, gl > 0, "Spells of the guild"]]
 	for e in entries:
 		var b := _pic_button(_building_pic(e[1]), e[0], e[4] if e[3] else "%s: not built yet" % e[0], e[2], Vector2(132, 76))
 		b.disabled = not e[3]
@@ -570,6 +577,10 @@ func _building_info(id: String, in_town := false) -> Control:
 			var pool: Dictionary = town.get("portal", {})
 			HoverInfo.line(v, "%d %s called this week.%s" % [pool["count"], GameData.CREATURES[pool["creature"]]["plural"],
 				" Click to recruit." if in_town else ""] if not pool.is_empty() and int(pool["count"]) > 0 else "None called yet.", UI.GOLD, 18)
+		elif built and in_town and b.get("effects", {}).has("artifact_tribute"):
+			HoverInfo.line(v, "Click to give up an artifact of a hero in the town.", UI.GOLD, 18)
+		elif built and in_town and b.get("effects", {}).has("gate"):
+			HoverInfo.line(v, "Click to send the hero at the gate to another of your towns with a Dur-An-Ki.", UI.GOLD, 18)
 		elif built and in_town:
 			var into: String = b.get("effects", {}).get("transform_to", "")
 			HoverInfo.line(v, CLICK_HINT.get(TownLayout.slot_of(id), "") if into == "" else
@@ -597,6 +608,10 @@ func _open_building(id: String) -> void:
 		await _open_transformer(id)
 	elif b.get("effects", {}).has("portal"):
 		await _open_portal()
+	elif b.get("effects", {}).has("artifact_tribute"):
+		await _open_house_of_me()
+	elif b.get("effects", {}).has("gate"):
+		await _open_gate()
 	elif b.has("faction"):  # (a faction special that works on its own: what it does)
 		await Modal.message(self, GameData.BUILDINGS[id]["name"], GameData.BUILDINGS[id]["desc"]).closed
 	elif id in ["fort", "citadel", "castle"]:
@@ -801,6 +816,79 @@ func _open_portal() -> void:
 		{"t": "recruit_portal", "p": player["index"], "town": town["uid"], "n": n})["ok"])
 	refresh()
 
+## Eridu's House of the Me: a hero in the town gives up an artifact for crystal and gold by its class.
+func _open_house_of_me() -> void:
+	while true:
+		var m := Modal.custom(self, "House of the Me", 1180)
+		m.body.add_child(UI.label("An artifact given up is read into new Me: treasure 2 crystal and 500 gold, minor 4 and 1000, major 6 and 2000, relic 10 and 4000.", 19))
+		var row := HFlowContainer.new()
+		row.add_theme_constant_override("h_separation", 12)
+		row.add_theme_constant_override("v_separation", 10)
+		row.custom_minimum_size.x = 1120
+		m.body.add_child(row)
+		var any := false
+		var heroes := []
+		if not hero.is_empty():
+			heroes.append(hero)
+		var gh := _rules.garrison_hero(town)
+		if not gh.is_empty() and not gh in heroes:
+			heroes.append(gh)
+		for h in heroes:
+			for a in h.get("artifacts", []) + h.get("backpack", []):
+				var pay := AdvRules.me_tribute(a)
+				if pay.is_empty():
+					continue
+				any = true
+				var v := VBoxContainer.new()
+				var ic := UI.icon(Assets.artifact_icon(a), Vector2(96, 96))
+				ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+				v.add_child(ic)
+				var t := UI.label("%s
+%s: %d crystal, %d gold" % [GameData.ARTIFACTS[a]["name"], h["name"], pay["crystal"], pay["gold"]], 16)
+				t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				t.custom_minimum_size.x = 172
+				t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				v.add_child(t)
+				var pick := [h["uid"], a]
+				v.add_child(UI.button("Give up", func(): m.close(pick), 18))
+				row.add_child(v)
+		if not any:
+			row.add_child(UI.label("No hero in the town carries an artifact that can be given up (combination artifacts and their pieces cannot).", 19, Color(0.8, 0.7, 0.6)))
+		m.add_buttons([["Close", ""]])
+		m.set_meta("cancel", "")
+		var r = await m.closed
+		if not r is Array:
+			break
+		if _rules.do({"t": "offer_me", "p": player["index"], "hero": r[0], "town": town["uid"], "artifact": r[1]})["ok"]:
+			Audio.sfx("bless")
+		refresh()
+
+## Eridu's Dur-An-Ki (HoMM3's Castle Gate): the hero at the gate passes to another of the player's towns with one, and
+## that town's screen opens.
+func _open_gate() -> void:
+	if hero.is_empty():
+		await Modal.message(self, "Dur-An-Ki", "There is no hero at the town's gate to send.").closed
+		return
+	var dests := _rules.gate_towns(hero, town)
+	if dests.is_empty():
+		await Modal.message(self, "Dur-An-Ki", "You have no other town with a Dur-An-Ki whose gate is free.").closed
+		return
+	var opts := []
+	for t in dests:
+		opts.append([t["name"], t["uid"], Assets.tex("map/town_%s.png" % t["faction"])])
+	opts.append(["Cancel", -1, null])
+	var mc := Modal.choice(self, "Dur-An-Ki", "Where shall %s pass?" % hero["name"], opts)
+	mc.set_meta("cancel", -1)
+	var to = await mc.closed
+	if not to is int or to < 0:
+		return
+	if not _rules.do({"t": "gate", "p": player["index"], "hero": hero["uid"], "town": town["uid"], "to": to})["ok"]:
+		return
+	Audio.sfx("spell_cast")
+	var report := _rules.do({"t": "town_visit", "p": player["index"], "hero": hero["uid"], "town": to})
+	GameState.pending_town = {"town_uid": to, "hero_uid": hero["uid"], "report": report if report["ok"] else {}}
+	GameState.change_scene(GameState.SCENE_TOWN)
+
 func _open_recruit_all() -> void:
 	var m := Modal.custom(self, "Creature Dwellings", 1560)
 	var g := GridContainer.new()
@@ -992,7 +1080,7 @@ func _open_market() -> void:
 		await _open_market()
 
 func _open_guild() -> void:
-	var m := Modal.custom(self, "Mage Guild (level %d)" % TownLogic.mage_guild_level(town), 1100)
+	var m := Modal.custom(self, "%s (level %d)" % [GameData.building_name(town["faction"], "mage_guild_1"), TownLogic.mage_guild_level(town)], 1100)
 	for lvl in range(1, 5):
 		var spells: Array = town["mage_spells"].filter(func(s): return GameData.SPELLS[s]["level"] == lvl)
 		if spells.is_empty():

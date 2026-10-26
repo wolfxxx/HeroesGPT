@@ -76,6 +76,30 @@ CREATURE_NOTES = {
                   "lying dead: limp and sprawled, its head flat on the ground, eyes closed, jaws slack, wings crumpled.",
     "black_dragon": "A living black dragon of glossy jet-black scales, black wings, red-tipped horns and red eyes. When "
                     "lying dead: limp and sprawled, its head flat on the ground, eyes closed, jaws slack, wings crumpled.",
+    # session68: Eridu (docs/ERIDU.md)
+    "lulu": "A lean bare-chested tattooed man in a short white fringed kilt with a bronze spear; keep him lean and small.",
+    "adamu": "A lean tattooed man with faintly glowing blue tattoos, a blue fringed kilt, a round bronze shield and spear.",
+    "igigi": "A bearded sky-watcher in a tall conical cap and a pale blue fringed robe with a short curved bow.",
+    "igigi_skywatcher": "A bearded sky-watcher in a tall gold-banded cap and a lapis-blue fringed robe with a gilded bow.",
+    "scorpion_man": "A bearded man above the waist, a giant dark-brown scorpion below with six legs and a curled "
+                    "stinging tail: keep the scorpion body exactly, no human legs.",
+    "scorpion_guardian": "A bearded armoured man above the waist, a glossy black gold-banded scorpion below with six "
+                         "legs and a curled glowing sting: keep the scorpion body exactly, no human legs.",
+    "sharur": "A flying winged mace-head of bronze and lapis with a glowing blue crystal band: no handle, no body, no "
+              "face, no arms. When lying dead: fallen on the ground, its wings crumpled, the crystal band dark.",
+    "shargaz": "A flying winged mace-head of gilded bronze with flanges and a blazing crystal band: no handle, no body, "
+               "no face, no arms. When lying dead: fallen on the ground, its wings crumpled, the crystal band dark.",
+    "apkallu": "A bearded sage in a fringed robe under a fish-skin cloak whose fish head is his hood, with a bucket "
+               "and a glowing pine cone.",
+    "abgal": "An eagle-headed winged sage in a white and lapis fringed robe, with a golden bucket and a glowing cone.",
+    "lamassu": "A colossal winged bull of pale carved stone with a crowned bearded human head: four hooves, it moves "
+               "heavily like a statue. When lying dead: toppled on its side, cracked stone, the eyes dark.",
+    "shedu": "A colossal winged bull of dark basalt and gold with a crowned bearded human head: four hooves, it moves "
+             "heavily like a statue. When lying dead: toppled on its side, cracked stone, the eyes dark.",
+    "anzu": "A gigantic eagle with a roaring lion's head and mane, great brown-gold eagle wings and taloned feet. When "
+            "lying dead: limp and sprawled, the lion head flat on the ground, eyes closed, wings crumpled.",
+    "imdugud": "A gigantic storm-grey and lapis eagle with a black-maned lion's head and crackling lightning. When "
+               "lying dead: limp and sprawled, the lion head flat on the ground, eyes closed, wings crumpled.",
     "diamond_golem": "It is a living statue of clear glowing rock crystal: it moves stiffly and heavily, like a statue, "
                      "never bending like flesh; it keeps its headdress, gold inlay and shield exactly.",
     "zombie": "Make it a medieval fantasy zombie: dress it in torn, rotting peasant rags and a ragged tunic (no modern "
@@ -170,6 +194,21 @@ POSE_NOTES = {  # how each creature attacks
     "scorpicore": "For the attack: rearing up with wings spread, the scorpion sting striking forward over its head.",
     "red_dragon": "For the attack: rearing up with wings spread, breathing a roaring gout of fire forward to the right.",
     "black_dragon": "For the attack: rearing up with wings spread, breathing a roaring gout of fire forward to the right.",
+    # session68: Eridu
+    "lulu": "For the attack: lunging forward and thrusting the bronze spear to the right.",
+    "adamu": "For the attack: lunging forward behind the shield, thrusting the bronze spear to the right.",
+    "igigi": "For the attack: drawing the bow and loosing an arrow of pale blue light to the right.",
+    "igigi_skywatcher": "For the attack: drawing the gilded bow and loosing a bright arrow of blue-white light to the right.",
+    "scorpion_man": "For the attack: thrusting the spear to the right while the scorpion tail strikes forward over his head.",
+    "scorpion_guardian": "For the attack: thrusting the spear to the right while the glowing sting strikes forward over his head.",
+    "sharur": "For the attack: diving forward to the right and smashing down, its crystal band flaring bright.",
+    "shargaz": "For the attack: diving forward to the right, a beam of blue-white light bursting from its crystal band.",
+    "apkallu": "For the attack: thrusting the glowing pine cone forward and loosing a bolt of cold blue light to the right.",
+    "abgal": "For the attack: wings half spread, thrusting the glowing cone forward and loosing a bolt of blue-white light.",
+    "lamassu": "For the attack: rearing up on its hind hooves and stamping down to the right with its great forelegs.",
+    "shedu": "For the attack: rearing up on its hind hooves and stamping down to the right with its great forelegs.",
+    "anzu": "For the attack: rearing up with wings spread wide, roaring a whirling gust of storm wind forward to the right.",
+    "imdugud": "For the attack: rearing up with wings spread wide, roaring a storm of wind and lightning forward to the right.",
     "archer": "For the attack: drawing the bow and loosing an arrow to the right.",
     "monk": "For the attack: thrusting both hands forward, casting a bolt of holy light.",
     "lich": "For the attack: raising the staff and hurling a green necrotic bolt from its hand.",

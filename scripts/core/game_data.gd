@@ -21,7 +21,8 @@ const PLAYER_COLOR_NAMES := ["Red", "Blue", "Green", "Gold"]
 ##   specials: its own buildings (the Town Hall's second row); requires: extra prerequisites in its towns;
 ##   mage_guild_levels: how high its Mage Guild goes (HoMM3: the Castle's 4, the Necropolis's 5);
 ##   dwelling_names, town_names; classes: [might, magic] (see CLASSES); battle_figure_lift: its battle hero figures
-##   are brightened with a rim light (dark figures before dark siege towers).
+##   are brightened with a rim light (dark figures before dark siege towers); building_names: its own names for
+##   shared buildings (Eridu's Ziggurat); spell_look: its heroes' spells drawn with battle/fx_<kind>_<look>.png.
 const FACTIONS := {
 	"haven": {
 		"name": "Temple",
@@ -99,6 +100,30 @@ const FACTIONS := {
 		"classes": ["Overlord", "Warlock"],
 		"battle_figure_lift": true,
 	},
+	"eridu": {
+		# (the user's own faction, no HoMM3 town: the Anunnaki of Sumerian myth, whose city stands over Alalu's ship
+		# fallen in the marshes; docs/ERIDU.md)
+		"name": "Eridu",
+		"short": "Eridu",
+		"desc": "The sky-gods' city over the fallen ship.",
+		"creatures": ["lulu", "igigi", "scorpion_man", "sharur", "apkallu", "lamassu", "anzu"],
+		"upgrades": ["adamu", "igigi_skywatcher", "scorpion_guardian", "shargaz", "abgal", "shedu", "imdugud"],
+		"terrain": "swamp",
+		"smith_machine": "ammo_cart",
+		"specials": ["house_of_me", "dur_an_ki"],
+		"requires": {},
+		"mage_guild_levels": 4,
+		# (its Mage Guild is the Ziggurat, a terrace for each level)
+		"building_names": {"mage_guild_1": "Ziggurat", "mage_guild_2": "Ziggurat Lv2", "mage_guild_3": "Ziggurat Lv3",
+			"mage_guild_4": "Ziggurat Lv4"},
+		"dwelling_names": ["Bit-Shimti", "Skywatch", "Gate of Mashu", "Armory of Ninurta", "House of the Sages",
+			"Gate of the Guardians", "Anzu's Eyrie"],
+		# the oldest cities of Sumer
+		"town_names": ["Eridu", "Ur", "Uruk", "Nippur", "Lagash"],
+		"classes": ["Lugal", "Keeper"],
+		# (its heroes' spells look their own: battle/fx_<kind>_eridu.png)
+		"spell_look": "eridu",
+	},
 }
 
 ## Hero classes: their faction, might (Attack and Defense favoured at level-up) or magic, and the war machine a new
@@ -112,6 +137,8 @@ const CLASSES := {
 	"Wizard": {"faction": "tower", "might": false, "machine": "first_aid_tent"},
 	"Overlord": {"faction": "dungeon", "might": true, "machine": "ballista"},
 	"Warlock": {"faction": "dungeon", "might": false, "machine": "first_aid_tent"},
+	"Lugal": {"faction": "eridu", "might": true, "machine": "ballista"},
+	"Keeper": {"faction": "eridu", "might": false, "machine": "first_aid_tent"},
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -123,7 +150,9 @@ const CLASSES := {
 #            no_wall_penalty, spell_cost_down (its hero's spells cost 2 less), genie_spells (casts helpful spells),
 #            blind_immune (Blind and stone gaze pass it by), strike_and_return (flies back after striking), stone_gaze
 #            (20%: what it strikes in melee turns to stone), paralyze (20%: what it strikes is paralyzed),
-#            positive_morale (its morale never below +1)
+#            positive_morale (its morale never below +1), venom (each melee strike takes 2 from the target's Defense
+#            for the battle, to -6), deflector (half damage from shots), dispel (its shot ends the target's helpful
+#            spells), sweep (strikes every adjacent enemy at once)
 # hates: creature ids it deals +50% damage to (HoMM3's Titans and Black Dragons). spell_immunity: the highest spell
 # level that cannot touch it, its own side's spells too (HoMM3's Red Dragons 3, Black Dragons 5: every spell).
 # fig_scale: its battle figure taller than its tier's (HoMM3's Giants and Titans tower over men).
@@ -336,6 +365,50 @@ const CREATURES := {
 	"scorpicore": {"name": "Scorpicore", "plural": "Scorpicores", "faction": "dungeon", "tier": 6, "upgrade_of": "manticore",
 		"attack": 16, "defense": 14, "dmg": [14, 20], "hp": 80, "speed": 11, "growth": 2, "shots": 0,
 		"cost": {"gold": 1050}, "abilities": ["flying", "paralyze", "two_hex"], "ai_value": 1589},
+	# ---------------- ERIDU (the user's own faction, no HoMM3 town: first-pass numbers, docs/ERIDU.md) ----------------
+	# constructs are `unliving` (no morale, not living, as the Golems); beam is `breath` (the Dragons')
+	"lulu": {"name": "Lulu", "plural": "Lulu", "faction": "eridu", "tier": 1,
+		"attack": 4, "defense": 3, "dmg": [1, 3], "hp": 7, "speed": 5, "growth": 14, "shots": 0,
+		"cost": {"gold": 60}, "abilities": [], "ai_value": 72},
+	"igigi": {"name": "Igigi", "plural": "Igigi", "faction": "eridu", "tier": 2,
+		"attack": 5, "defense": 4, "dmg": [2, 3], "hp": 10, "speed": 4, "growth": 9, "shots": 10,
+		"cost": {"gold": 100}, "abilities": ["ranged"], "ai_value": 145},
+	"scorpion_man": {"name": "Scorpion Man", "plural": "Scorpion Men", "faction": "eridu", "tier": 3,
+		"attack": 8, "defense": 6, "dmg": [3, 6], "hp": 22, "speed": 7, "growth": 7, "shots": 0,
+		"cost": {"gold": 200}, "abilities": ["venom"], "ai_value": 300},
+	"sharur": {"name": "Sharur", "plural": "Sharurs", "faction": "eridu", "tier": 4,
+		"attack": 10, "defense": 11, "dmg": [6, 8], "hp": 35, "speed": 7, "growth": 4, "shots": 0,
+		"cost": {"gold": 340}, "abilities": ["flying", "unliving", "deflector"], "ai_value": 600},
+	"apkallu": {"name": "Apkallu", "plural": "Apkallu", "faction": "eridu", "tier": 5,
+		"attack": 12, "defense": 9, "dmg": [9, 13], "hp": 34, "speed": 6, "growth": 3, "shots": 12,
+		"cost": {"gold": 500}, "abilities": ["ranged"], "ai_value": 775},
+	"lamassu": {"name": "Lamassu", "plural": "Lamassu", "faction": "eridu", "tier": 6,
+		"attack": 15, "defense": 15, "dmg": [15, 25], "hp": 100, "speed": 6, "growth": 2, "shots": 0,
+		"cost": {"gold": 1100}, "abilities": ["two_hex", "unliving", "sweep"], "ai_value": 2050},
+	"anzu": {"name": "Anzu", "plural": "Anzu", "faction": "eridu", "tier": 7,
+		"attack": 20, "defense": 20, "dmg": [35, 45], "hp": 200, "speed": 11, "growth": 1, "shots": 0,
+		"cost": {"gold": 2500, "crystal": 1}, "abilities": ["flying", "breath", "two_hex"], "ai_value": 4700},
+	"adamu": {"name": "Adamu", "plural": "Adamu", "faction": "eridu", "tier": 1, "upgrade_of": "lulu",
+		"attack": 5, "defense": 4, "dmg": [1, 3], "hp": 8, "speed": 6, "growth": 14, "shots": 0,
+		"cost": {"gold": 75}, "abilities": [], "ai_value": 97},
+	"igigi_skywatcher": {"name": "Igigi Skywatcher", "plural": "Igigi Skywatchers", "faction": "eridu", "tier": 2, "upgrade_of": "igigi",
+		"attack": 6, "defense": 5, "dmg": [2, 3], "hp": 12, "speed": 6, "growth": 9, "shots": 20,
+		"cost": {"gold": 150}, "abilities": ["ranged", "no_melee_penalty"], "ai_value": 185},
+	"scorpion_guardian": {"name": "Scorpion Guardian", "plural": "Scorpion Guardians", "faction": "eridu", "tier": 3, "upgrade_of": "scorpion_man",
+		"attack": 9, "defense": 7, "dmg": [3, 6], "hp": 24, "speed": 9, "growth": 7, "shots": 0,
+		"cost": {"gold": 240}, "abilities": ["venom", "two_retaliations"], "ai_value": 360},
+	"shargaz": {"name": "Shargaz", "plural": "Shargaz", "faction": "eridu", "tier": 4, "upgrade_of": "sharur",
+		"attack": 11, "defense": 12, "dmg": [7, 9], "hp": 40, "speed": 9, "growth": 4, "shots": 0,
+		"cost": {"gold": 450}, "abilities": ["flying", "unliving", "deflector", "breath"], "ai_value": 760},
+	"abgal": {"name": "Abgal", "plural": "Abgal", "faction": "eridu", "tier": 5, "upgrade_of": "apkallu",
+		"attack": 13, "defense": 10, "dmg": [10, 14], "hp": 35, "speed": 7, "growth": 3, "shots": 24,
+		"cost": {"gold": 600}, "abilities": ["ranged", "dispel"], "ai_value": 950},
+	"shedu": {"name": "Shedu", "plural": "Shedu", "faction": "eridu", "tier": 6, "upgrade_of": "lamassu",
+		"attack": 17, "defense": 17, "dmg": [20, 25], "hp": 110, "speed": 7, "growth": 2, "shots": 0,
+		"cost": {"gold": 1400}, "abilities": ["two_hex", "unliving", "sweep"], "ai_value": 2750},
+	"imdugud": {"name": "Imdugud", "plural": "Imdugud", "faction": "eridu", "tier": 7, "upgrade_of": "anzu",
+		"attack": 26, "defense": 24, "dmg": [40, 50], "hp": 280, "speed": 15, "growth": 1, "shots": 0,
+		"cost": {"gold": 4000, "crystal": 2}, "abilities": ["flying", "breath", "two_hex", "fear"], "ai_value": 7900},
 }
 
 ## War machines a hero can own (bought at a Blacksmith); the catapult comes with every hero laying siege.
@@ -366,6 +439,10 @@ const ABILITY_TEXT := {
 	"stone_gaze": "Stone gaze (20%: turns its target to stone)",
 	"paralyze": "Paralyzing venom (20%)",
 	"positive_morale": "Morale always positive",
+	"venom": "Venom (-2 Defense per strike, to -6)",
+	"deflector": "Deflector: half damage from shots",
+	"dispel": "Its shots dispel helpful spells",
+	"sweep": "Strikes every adjacent enemy",
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -437,6 +514,24 @@ const HEROES := {
 	"vera_zarovitch": {"name": "Vera Zarovitch", "faction": "dungeon", "class": "Warlock",
 		"attack": 1, "defense": 0, "power": 2, "knowledge": 3, "specialty": "Luck", "skills": {"wisdom": 1, "luck": 1},
 		"spells": ["bless", "slow"]},
+	# Eridu, the Anunnaki of Sumerian myth (docs/ERIDU.md): the exiled king of Nibiru who came first, the war god who
+	# wielded Sharur, the lord of the wind; the lord of Eridu and the Me, the mother who shaped the workers, and the
+	# goddess who carried the Me away to Uruk
+	"alalu": {"name": "Alalu", "faction": "eridu", "class": "Lugal",
+		"attack": 2, "defense": 2, "power": 1, "knowledge": 1, "specialty": "Shaping", "skills": {"shaping": 1}},
+	"ninurta": {"name": "Ninurta", "faction": "eridu", "class": "Lugal",
+		"attack": 3, "defense": 2, "power": 0, "knowledge": 1, "specialty": "Offense", "skills": {"shaping": 1, "offense": 1}},
+	"enlil": {"name": "Enlil", "faction": "eridu", "class": "Lugal",
+		"attack": 2, "defense": 2, "power": 1, "knowledge": 1, "specialty": "Leadership", "skills": {"shaping": 1, "leadership": 1}},
+	"enki": {"name": "Enki", "faction": "eridu", "class": "Keeper",
+		"attack": 0, "defense": 1, "power": 3, "knowledge": 2, "specialty": "Sorcery", "skills": {"shaping": 1},
+		"spells": ["magic_arrow", "haste"]},
+	"ninhursag": {"name": "Ninhursag", "faction": "eridu", "class": "Keeper",
+		"attack": 0, "defense": 1, "power": 2, "knowledge": 3, "specialty": "Knowledge", "skills": {"shaping": 1},
+		"spells": ["shield", "cure"]},
+	"inanna": {"name": "Inanna", "faction": "eridu", "class": "Keeper",
+		"attack": 1, "defense": 0, "power": 2, "knowledge": 2, "specialty": "Wisdom", "skills": {"shaping": 1, "wisdom": 1},
+		"spells": ["bless", "slow"]},
 }
 
 const SKILLS := {
@@ -449,6 +544,8 @@ const SKILLS := {
 	"logistics": {"name": "Logistics", "desc": "+10% movement per level."},
 	"luck": {"name": "Luck", "desc": "+1 luck per level."},
 	"sorcery": {"name": "Sorcery", "desc": "+10% spell damage per level."},
+	# (Eridu's Necromancy, docs/ERIDU.md: the living slain remade as the Anunnaki's clay workers)
+	"shaping": {"name": "Shaping", "raise": {"creature": "lulu", "living_only": true}, "desc": "After victory, remake slain living enemies as Lulu: Basic 10%, Advanced 20%, Expert 30%. Undead and constructs cannot be shaped. Requires army space or a Lulu stack; a full army with Adamu receives two thirds as many Adamu."},
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -499,14 +596,16 @@ const BUILDINGS := {
 	"mage_guild_3": {"name": "Mage Guild Lv3", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 4, "sulfur": 4, "crystal": 4, "gems": 4}, "requires": ["mage_guild_2"], "replaces": "mage_guild_2", "desc": "Teaches level 3 spells."},
 	"mage_guild_4": {"name": "Mage Guild Lv4", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 6, "sulfur": 6, "crystal": 6, "gems": 6}, "requires": ["mage_guild_3"], "replaces": "mage_guild_3", "desc": "Teaches level 4 spells."},
 	"mage_guild_5": {"name": "Mage Guild Lv5", "cost": {"gold": 1000, "wood": 5, "ore": 5, "mercury": 10, "sulfur": 10, "crystal": 10, "gems": 10}, "requires": ["mage_guild_4"], "replaces": "mage_guild_4", "desc": "Teaches level 5 spells."},
-	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's, an Ammo Cart in the Illuminated's, a Ballista in Agartha's."},
+	"blacksmith": {"name": "Blacksmith", "cost": {"gold": 1000, "wood": 5}, "requires": [], "desc": "Sells the town's war machine to a visiting hero: a Ballista in the Temple's towns, a First Aid Tent in the Order of the Dragon's, an Ammo Cart in the Illuminated's, a Ballista in Agartha's, an Ammo Cart in Eridu's."},
 	# faction special buildings ("faction": only that faction's towns can build them). "effects" are what they do, read
 	# by the rules (TownLogic.effect): start_day_movement (a hero starting the day in the town), siege_morale (the
 	# town's defenders), necromancy (+% raised by all the owner's heroes), transform_to (turns a visiting hero's
 	# living creatures into that creature), guild_spells (more spells per Mage Guild level), visit_knowledge (+Knowledge
 	# once to each visiting hero), visit_mana (the first hero visiting each week has its spell points restored, then
 	# doubled), visit_xp (experience once to each visiting hero), portal (recruits from one of the owner's map dwellings,
-	# picked each week). "ai_after": the computer builds it right after that building.
+	# picked each week), artifact_tribute (a hero may give up artifacts for crystal and gold: AdvRules.offer_me),
+	# gate (passes the hero at the gate to another such town: AdvRules.gate_jump). "ai_after": the computer builds it
+	# right after that building.
 	"stables": {"name": "Stables", "faction": "haven", "cost": {"gold": 2000, "wood": 10}, "requires": [],
 		"effects": {"start_day_movement": 400}, "ai_after": "city_hall", "desc": "Heroes who start the day in this town get +400 movement points."},
 	"brotherhood": {"name": "Chapter House", "faction": "haven", "cost": {"gold": 500, "wood": 5}, "requires": ["tavern"],
@@ -530,6 +629,12 @@ const BUILDINGS := {
 	"battle_scholar_academy": {"name": "Battle Scholar Academy", "faction": "dungeon", "cost": {"gold": 1000, "wood": 5, "ore": 5}, "requires": [],
 		"effects": {"visit_xp": 1000}, "ai_after": "tavern",
 		"desc": "+1000 experience, once, to each hero who visits the town."},
+	"house_of_me": {"name": "House of the Me", "faction": "eridu", "cost": {"gold": 1000, "crystal": 5}, "requires": ["mage_guild_1"],
+		"effects": {"artifact_tribute": 1}, "ai_after": "mage_guild_1",
+		"desc": "A hero in the town may give up an artifact to be read into new Me, for crystal and gold by its class: treasure 2 crystal and 500 gold, minor 4 and 1000, major 6 and 2000, relic 10 and 4000. Combination artifacts and their parts cannot be given up."},
+	"dur_an_ki": {"name": "Dur-An-Ki", "faction": "eridu", "cost": {"gold": 10000, "wood": 5, "ore": 5}, "requires": ["citadel"],
+		"effects": {"gate": 1}, "ai_after": "castle",
+		"desc": "The hero at the town's gate may pass at once, at no cost in movement, to any other of your Eridu towns with a Dur-An-Ki whose gate is free."},
 	"dwelling_1": {"name": "Dwelling I", "cost": {"gold": 1000, "ore": 5}, "dwelling_tier": 1, "requires": ["fort"]},
 	"dwelling_2": {"name": "Dwelling II", "cost": {"gold": 1000, "wood": 5, "ore": 5}, "dwelling_tier": 2, "requires": ["dwelling_1"]},
 	"dwelling_3": {"name": "Dwelling III", "cost": {"gold": 1500, "wood": 5, "ore": 5}, "dwelling_tier": 3, "requires": ["dwelling_1"]},
@@ -770,4 +875,4 @@ static func building_name(faction: String, id: String) -> String:
 	var b: Dictionary = BUILDINGS[id]
 	if b.has("dwelling_tier"):
 		return dwelling_name(faction, b["dwelling_tier"], b.has("replaces"))
-	return b["name"]
+	return FACTIONS.get(faction, {}).get("building_names", {}).get(id, b["name"])  # (Eridu's Ziggurat)

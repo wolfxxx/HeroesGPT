@@ -29,6 +29,8 @@ const POS := {
 	"mana_vortex": [Vector2(700, 800), 220.0, 7],
 	"battle_scholar_academy": [Vector2(1220, 800), 220.0, 7],
 	"portal_of_summoning": [Vector2(1800, 800), 220.0, 7],
+	"house_of_me": [Vector2(700, 800), 220.0, 7],
+	"dur_an_ki": [Vector2(1220, 800), 220.0, 7],
 }
 
 ## Which layout slot + sprite id a built building uses (upgrades share the base slot).

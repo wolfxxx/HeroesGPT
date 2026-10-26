@@ -95,6 +95,10 @@ static func decide(L: BattleLogic, s: Dictionary) -> Dictionary:
 				if bv != null:
 					var burn := _value_of_damage(L, bv, _avg(L.damage_range(s, bv, false, moved)))
 					score += burn if bv["side"] != s["side"] else -1.2 * burn
+			# a Lamassu's sweep strikes every enemy beside it there too (none of them strikes back)
+			if L.has_ab(s, "sweep"):
+				for o in L.sweep_victims(s, e, h):
+					score += _value_of_damage(L, o, _avg(L.damage_range(s, o, false, moved)))
 			# prefer staying put when already adjacent
 			if h == s["hex"]:
 				score += 5.0

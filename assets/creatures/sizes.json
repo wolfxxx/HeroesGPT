@@ -1,4 +1,84 @@
 {
+"abgal.png": [
+162,
+241,
+163
+],
+"abgal_attack.png": [
+255,
+220,
+256
+],
+"abgal_dead.png": [
+251,
+162,
+251
+],
+"abgal_hit.png": [
+191,
+266,
+192
+],
+"abgal_move0.png": [
+158,
+239,
+159
+],
+"abgal_move1.png": [
+163,
+247,
+165
+],
+"abgal_move2.png": [
+159,
+241,
+161
+],
+"abgal_move3.png": [
+164,
+248,
+164
+],
+"adamu.png": [
+199,
+397,
+201
+],
+"adamu_attack.png": [
+327,
+292,
+327
+],
+"adamu_dead.png": [
+331,
+174,
+332
+],
+"adamu_hit.png": [
+185,
+351,
+186
+],
+"adamu_move0.png": [
+202,
+387,
+197
+],
+"adamu_move1.png": [
+205,
+414,
+207
+],
+"adamu_move2.png": [
+196,
+389,
+198
+],
+"adamu_move3.png": [
+182,
+413,
+207
+],
 "ammo_cart.png": [
 376,
 217,
@@ -48,6 +128,86 @@
 550,
 386,
 551
+],
+"anzu.png": [
+462,
+508,
+463
+],
+"anzu_attack.png": [
+714,
+478,
+717
+],
+"anzu_dead.png": [
+647,
+389,
+648
+],
+"anzu_hit.png": [
+466,
+588,
+468
+],
+"anzu_move0.png": [
+476,
+506,
+478
+],
+"anzu_move1.png": [
+483,
+515,
+484
+],
+"anzu_move2.png": [
+467,
+505,
+469
+],
+"anzu_move3.png": [
+471,
+511,
+474
+],
+"apkallu.png": [
+163,
+239,
+147
+],
+"apkallu_attack.png": [
+255,
+196,
+256
+],
+"apkallu_dead.png": [
+243,
+129,
+244
+],
+"apkallu_hit.png": [
+198,
+197,
+186
+],
+"apkallu_move0.png": [
+167,
+231,
+151
+],
+"apkallu_move1.png": [
+165,
+240,
+148
+],
+"apkallu_move2.png": [
+162,
+234,
+144
+],
+"apkallu_move3.png": [
+163,
+242,
+147
 ],
 "arch_lich.png": [
 217,
@@ -1039,6 +1199,126 @@
 321,
 190
 ],
+"igigi.png": [
+156,
+294,
+156
+],
+"igigi_attack.png": [
+231,
+291,
+221
+],
+"igigi_dead.png": [
+313,
+138,
+314
+],
+"igigi_hit.png": [
+164,
+282,
+164
+],
+"igigi_move0.png": [
+176,
+301,
+169
+],
+"igigi_move1.png": [
+170,
+313,
+167
+],
+"igigi_move2.png": [
+177,
+298,
+171
+],
+"igigi_move3.png": [
+169,
+316,
+171
+],
+"igigi_skywatcher.png": [
+166,
+327,
+165
+],
+"igigi_skywatcher_attack.png": [
+251,
+300,
+236
+],
+"igigi_skywatcher_dead.png": [
+334,
+142,
+335
+],
+"igigi_skywatcher_hit.png": [
+188,
+300,
+185
+],
+"igigi_skywatcher_move0.png": [
+193,
+329,
+187
+],
+"igigi_skywatcher_move1.png": [
+176,
+351,
+178
+],
+"igigi_skywatcher_move2.png": [
+191,
+333,
+182
+],
+"igigi_skywatcher_move3.png": [
+184,
+345,
+184
+],
+"imdugud.png": [
+500,
+547,
+501
+],
+"imdugud_attack.png": [
+782,
+515,
+783
+],
+"imdugud_dead.png": [
+782,
+454,
+784
+],
+"imdugud_hit.png": [
+546,
+538,
+548
+],
+"imdugud_move0.png": [
+529,
+540,
+531
+],
+"imdugud_move1.png": [
+521,
+533,
+524
+],
+"imdugud_move2.png": [
+514,
+548,
+516
+],
+"imdugud_move3.png": [
+524,
+550,
+526
+],
 "infernal_morlock.png": [
 276,
 327,
@@ -1119,6 +1399,46 @@
 283,
 207
 ],
+"lamassu.png": [
+350,
+395,
+346
+],
+"lamassu_attack.png": [
+435,
+423,
+436
+],
+"lamassu_dead.png": [
+530,
+310,
+523
+],
+"lamassu_hit.png": [
+430,
+412,
+430
+],
+"lamassu_move0.png": [
+355,
+400,
+347
+],
+"lamassu_move1.png": [
+347,
+403,
+346
+],
+"lamassu_move2.png": [
+350,
+399,
+347
+],
+"lamassu_move3.png": [
+350,
+399,
+347
+],
 "lich.png": [
 199,
 287,
@@ -1158,6 +1478,46 @@
 193,
 307,
 195
+],
+"lulu.png": [
+165,
+351,
+165
+],
+"lulu_attack.png": [
+294,
+290,
+296
+],
+"lulu_dead.png": [
+341,
+141,
+336
+],
+"lulu_hit.png": [
+224,
+344,
+224
+],
+"lulu_move0.png": [
+165,
+336,
+167
+],
+"lulu_move1.png": [
+172,
+371,
+174
+],
+"lulu_move2.png": [
+166,
+343,
+168
+],
+"lulu_move3.png": [
+168,
+368,
+172
 ],
 "magus.png": [
 163,
@@ -1958,6 +2318,206 @@
 567,
 328,
 571
+],
+"scorpion_guardian.png": [
+239,
+315,
+219
+],
+"scorpion_guardian_attack.png": [
+335,
+320,
+337
+],
+"scorpion_guardian_dead.png": [
+447,
+137,
+447
+],
+"scorpion_guardian_hit.png": [
+239,
+297,
+232
+],
+"scorpion_guardian_move0.png": [
+276,
+326,
+242
+],
+"scorpion_guardian_move1.png": [
+221,
+322,
+222
+],
+"scorpion_guardian_move2.png": [
+261,
+329,
+245
+],
+"scorpion_guardian_move3.png": [
+216,
+327,
+218
+],
+"scorpion_man.png": [
+230,
+304,
+208
+],
+"scorpion_man_attack.png": [
+316,
+300,
+318
+],
+"scorpion_man_dead.png": [
+404,
+158,
+405
+],
+"scorpion_man_hit.png": [
+267,
+272,
+268
+],
+"scorpion_man_move0.png": [
+283,
+313,
+244
+],
+"scorpion_man_move1.png": [
+210,
+314,
+211
+],
+"scorpion_man_move2.png": [
+265,
+318,
+224
+],
+"scorpion_man_move3.png": [
+235,
+312,
+219
+],
+"shargaz.png": [
+219,
+267,
+208
+],
+"shargaz_attack.png": [
+294,
+249,
+275
+],
+"shargaz_dead.png": [
+342,
+215,
+341
+],
+"shargaz_hit.png": [
+252,
+240,
+253
+],
+"shargaz_move0.png": [
+290,
+294,
+291
+],
+"shargaz_move1.png": [
+294,
+213,
+291
+],
+"shargaz_move2.png": [
+192,
+245,
+193
+],
+"shargaz_move3.png": [
+282,
+292,
+282
+],
+"sharur.png": [
+208,
+254,
+199
+],
+"sharur_attack.png": [
+263,
+235,
+263
+],
+"sharur_dead.png": [
+321,
+199,
+300
+],
+"sharur_hit.png": [
+271,
+240,
+271
+],
+"sharur_move0.png": [
+196,
+254,
+189
+],
+"sharur_move1.png": [
+263,
+208,
+262
+],
+"sharur_move2.png": [
+243,
+218,
+240
+],
+"sharur_move3.png": [
+209,
+256,
+200
+],
+"shedu.png": [
+376,
+425,
+372
+],
+"shedu_attack.png": [
+377,
+459,
+374
+],
+"shedu_dead.png": [
+607,
+312,
+609
+],
+"shedu_hit.png": [
+428,
+396,
+429
+],
+"shedu_move0.png": [
+379,
+432,
+375
+],
+"shedu_move1.png": [
+373,
+430,
+374
+],
+"shedu_move2.png": [
+380,
+431,
+375
+],
+"shedu_move3.png": [
+378,
+427,
+376
 ],
 "skeleton.png": [
 175,

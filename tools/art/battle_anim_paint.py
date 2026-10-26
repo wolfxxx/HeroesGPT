@@ -41,6 +41,13 @@ FIGS = {
     "warlock": ("a warlock in deep violet robes with bronze trim, holding a tall black staff topped with an amber crystal "
                 "upright in the right hand in every frame (he never lets go of the staff)",
                 "raises the black staff high overhead, the amber crystal blazing with fiery light"),
+    "eridu": ("a Lugal, a bearded Sumerian warrior-king in a gold horned crown-helmet and bronze scale over lapis blue, a "
+              "crystal-inlaid bronze war-mace resting against the shoulder", "raises the war-mace high overhead, its "
+              "crystal inlay blazing with cold blue-white light"),
+    "keeper": ("a Keeper of the Me, a bearded Sumerian priest-sage in a white and lapis fringed robe and a gold horned "
+               "crown, holding a tall gilded staff topped with a glowing crystal tablet upright in the right hand in "
+               "every frame (he never lets go of the staff)", "raises the staff high overhead, the crystal tablet "
+               "blazing with cold blue-white light"),
 }
 IDLE = ("The image shows the same mounted hero four times, {who}, from the battle screen of a hand-painted fantasy "
         "strategy game, side view facing right, on a flat magenta backdrop. Repaint the four cells as the four frames "

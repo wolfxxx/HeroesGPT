@@ -25,6 +25,7 @@ static func build_order(faction: String) -> Array:
 var rules: AdvRules
 var world: Dictionary
 var holding := -1  # the hero whose last choice was to hold its town's gate (run_turn moves it into the garrison)
+var _gated := {}  # hero uid -> the day it last passed a Dur-An-Ki (once a day, so it never shuttles back)
 
 func _init(r: AdvRules) -> void:
 	rules = r
@@ -64,6 +65,9 @@ func run_turn(adv, player: Dictionary) -> String:
 					var meeting := rules.plan(hero, leader["pos"])
 					if not meeting["path"].is_empty() and meeting["reach"] == meeting["path"].size() - 1:
 						choice = meeting
+			if choice.is_empty() and _gate_defense(hero):
+				adv.view.rebuild_objects()  # (it passed a Dur-An-Ki to hold a threatened town)
+				continue
 			if choice.is_empty(): choice = choose(hero)
 			if choice.is_empty() and holding == hid and _garrison(hero):
 				adv.view.rebuild_objects()  # (it went into the garrison to hold the town)
@@ -97,7 +101,39 @@ func run_turn(adv, player: Dictionary) -> String:
 						_reinforce(hero, town, player)
 						rules.do({"t": "town_visit", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"]})
 						level_ups(hero)  # (experience from Agartha's Battle Scholar Academy)
+						offer_spares(hero, town)
 	return ""
+
+## Eridu's House of the Me: the computer gives up what its hero only carries in the backpack (what it wears it keeps).
+func offer_spares(hero: Dictionary, town: Dictionary) -> void:
+	if TownLogic.effect(town, "artifact_tribute") <= 0:
+		return
+	for a in hero.get("backpack", []).duplicate():
+		if not AdvRules.me_tribute(a).is_empty():
+			rules.do({"t": "offer_me", "p": hero["owner"], "hero": hero["uid"], "town": town["uid"], "artifact": a})
+
+## Eridu's Dur-An-Ki: a hero at the gate of a town with one passes, once a day, to another of its towns with one that
+## is threatened and that its army can hold (as _defense judges a rescue); true if it went.
+func _gate_defense(hero: Dictionary) -> bool:
+	if int(_gated.get(hero["uid"], -1)) == world["day"]:
+		return false
+	var here := {}
+	for t in world["towns"].values():  # (not town_at: the hero standing in the gate covers it)
+		if t["pos"] == hero["pos"]:
+			here = t
+	if here.is_empty() or here["owner"] != hero["owner"] or TownLogic.effect(here, "gate") <= 0:
+		return false
+	if _town_threat(here) > _town_hold(here) / 1.4:  # (not when the town it stands in needs it)
+		return false
+	for t in rules.gate_towns(hero, here):
+		var threat := _town_threat(t)
+		var hold := _town_hold(t)
+		if threat > 0.0 and hold < threat * 1.4 and _strength(hero) + hold >= threat * 1.1:
+			if rules.do({"t": "gate", "p": hero["owner"], "hero": hero["uid"], "town": here["uid"], "to": t["uid"]})["ok"]:
+				_gated[hero["uid"]] = world["day"]
+				rules.do({"t": "town_visit", "p": hero["owner"], "hero": hero["uid"], "town": t["uid"]})
+				return true
+	return false
 
 ## Several same-day deliveries can unlock an assault even when no individual delivery does.
 ## Preview sequentially on copies so seven slots and the donor's last creature are respected.

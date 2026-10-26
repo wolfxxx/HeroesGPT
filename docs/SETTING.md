@@ -12,7 +12,7 @@ spells, artifact rules); the setting changes the names, the texts, the lore and,
 orders have fought for ages over what the old kings hid.
 
 The **Shattered Crown** of the game's title was never a king's crown. It was forged from the crystal heart of a
-ship that fell from the sky, Alalu's ship (see `docs/ERIDU_PROPOSAL.md`): the Me that taught men kingship. Whoever
+ship that fell from the sky, Alalu's ship (see `docs/ERIDU.md`): the Me that taught men kingship. Whoever
 wore it ruled. When it shattered, its shards scattered across the world, and every secret order hunts them: the
 Templars to guard them, the Order of the Dragon to use them, the Anunnaki to take back what is theirs, and the Iron Order to build
 an empire with them.
@@ -42,7 +42,7 @@ Built so far: the weekly omens and Tavern rumours (`scripts/core/lore.gd`, below
 of Horus, the Ankh of Life, the Obelisk of Thoth). Then the declassified lines (below). Then HoMM3's Pyramid near the
 middle of medium and larger maps, guarded by the ushabti (HoMM3's Gold and Diamond Golems as Egyptian tomb figurines
 come to life: the Gilded and Crystal Ushabti), a spell of the highest level inside. Then HoMM3's Mummies (cursing what they strike) with their neutral dwelling, the Tomb of Curses.
-Then the Illuminated as a faction (`docs/ILLUMINATED.md`) and Agartha (`docs/AGARTHA.md`). Planned: more Egyptian relics and map objects, the
+Then the Illuminated as a faction (`docs/ILLUMINATED.md`), Agartha (`docs/AGARTHA.md`) and Eridu (`docs/ERIDU.md`). Planned: more Egyptian relics and map objects, the
 obelisk puzzle map and the dig for a Shard of the Crown, a story campaign in acts.
 
 ### Omens and rumours (built)
@@ -124,7 +124,7 @@ Order. (Named in place of "the Lodge", which is the Freemasons' word: see the li
 
 ### Eridu: the Anunnaki
 
-The sky-gods of Nibiru who came for gold and crashed in the marshes (`docs/ERIDU_PROPOSAL.md`). The Shattered Crown
+The sky-gods of Nibiru who came for gold and crashed in the marshes (`docs/ERIDU.md`). The Shattered Crown
 was theirs.
 
 ### Future factions: HoMM3's towns, each as a secret history

@@ -87,6 +87,16 @@ SHEETS = {"adventure": [
     ("necromancy", "a pale skull wreathed in swirling green ghostly flame, drawn large and bold"),
     ("sorcery", "a glowing violet crystal orb on a gold claw stand, magic sparks around it, drawn large and bold"),
     ("wisdom", "an open ancient tome with a lit candle beside it and a feather quill, drawn large and bold"),
+], "shaping": [  # (session68: Eridu's Shaping, eight takes in the skills' style; the best kept as icons/skill_shaping.png)
+    (f"shaping_{k}", d) for k, d in zip("abcdefgh", [
+        "a small human figure of reddish clay standing on an open palm, a soft pale-blue glow rising from it, drawn large and bold",
+        "a lump of red clay half-shaped into a man, a faint pale-blue light breathing into it, drawn large and bold",
+        "a small clay figure of a man with a glowing pale-blue crystal at its heart, drawn large and bold",
+        "two hands shaping a small clay man from wet red clay, a cold blue glow between them, drawn large and bold",
+        "a small human figure of reddish clay standing on an open palm, a soft pale-blue glow rising from it, drawn large and bold",
+        "a lump of red clay half-shaped into a man, a faint pale-blue light breathing into it, drawn large and bold",
+        "a small clay figure of a man with a glowing pale-blue crystal at its heart, drawn large and bold",
+        "two hands shaping a small clay man from wet red clay, a cold blue glow between them, drawn large and bold"])
 ], "stats": [  # (the four primary stats and morale, in the style of the new skill icons)
     (f"attack_{k}", "a gleaming steel longsword held point up, with a gold crossguard and a red leather grip, drawn "
      "large and bold") for k in "ab"
@@ -177,7 +187,7 @@ def ingest(sheet):
         dst = {"skills": f"assets/icons/skill_{name}.png", "stats": f"assets/icons/stat_{name}.png",
                "knowledge": f"assets/icons/stat_{name}.png", "misc_stats": f"assets/icons/stat_{name}.png",
                "tome": f"assets/icons/{name}.png",
-               "sulfur": f"imagegen/batch20/out/{name}.png"}.get(sheet, f"assets/ui/btn_{name}.png")
+               "sulfur": f"imagegen/batch20/out/{name}.png", "shaping": f"imagegen/batch20/out/{name}.png"}.get(sheet, f"assets/ui/btn_{name}.png")
         out.save(dst)
         print(f"  {dst}")
 

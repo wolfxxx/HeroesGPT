@@ -2,20 +2,51 @@
 
 Read this first, then `ARCHITECTURE.md` (code map), `ASSETS.md` (every asset path and the art pipeline) and
 `CREDITS.md`. This file is written so that another person or another AI assistant can pick the work up exactly
-where it stopped. Last updated 2026-10-24 (HeroesGPT repository continuation; latest visual review: judge 47,
+where it stopped. Last updated 2026-10-26 (HeroesGPT repository continuation; latest visual review: judge 47,
 overall 9.4), branch `main`, remote `https://github.com/wolfxxx/HeroesGPT.git` (public repo).
 
 ## 1. The project in one paragraph
 
 "Heroes of the Shattered Crown" is a Heroes of Might and Magic III–style game in Godot 4.7 (GDScript): a random
-adventure map with heroes, mines, monsters and fog; two factions (Haven, Necropolis) with painted town screens,
-building and recruiting; hex battles with 14 creatures, war machines, spells and sieges; a computer opponent;
+adventure map with heroes, mines, monsters and fog; five factions (the Temple, the Order of the Dragon, the
+Illuminated, Agartha and the user's own Eridu; ids haven, necropolis, tower, dungeon, eridu) with painted town screens,
+building and recruiting; hex battles with each faction's 14 creatures and neutrals, war machines, spells and sieges; a computer opponent;
 music and sound. All art is 3D library models rendered in Blender and then painted over by an image model, plus
 painted icons and UI. The work has gone in **rounds**: an independent judge agent scores 33 screenshots against
 the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session68 Eridu (2026-10-26), committed with this HANDOFF update:** the user ("Lets do the Eridu now"); answers to the proposal's
+  questions: Anzu at the top, Shaping, the House of the Me pays crystal and gold, the rest as proposed, and Eridu's
+  heroes' spells get their own look. A fifth faction, id `eridu`, the user's own (no HoMM3 town), designed in
+  `docs/ERIDU.md` (the proposal file renamed): fourteen creatures (Lulu ... Anzu / Imdugud) with the proposal's
+  numbers tuned by the new `tools/faction_balance.tscn`, six heroes of Sumerian myth (Alalu, Ninurta, Enlil: Lugal;
+  Enki, Ninhursag, Inanna: Keepers), all with Basic Shaping; the town (Bit-Shimti ... Anzu's Eyrie, the Mage Guild
+  named the Ziggurat to level 4 via the faction's `building_names`, the Ammo Cart), swamp its ground. New rules:
+  `venom` (-2 Defense a melee strike for the battle, to -6, living targets, Cure ends it; `stack["venom"]`),
+  `deflector` (shots at it halved, in `_mult`), `dispel` (a shot ends Bless, Haste, Shield, Stone Skin;
+  `BattleLogic.DISPELLED`), `sweep` (`BattleLogic.sweep_victims`: every adjacent enemy struck, only the target strikes
+  back; the battle AI counts them; the screen shows those blows landing, `"sweep"` on the attack event);
+  constructs are `unliving`, the beam is the Dragons' `breath`. Shaping (`SKILLS["shaping"]`, raise rule
+  `living_only`) runs through `Necromancy.calculate`, which now picks the skill ("raise_skill"); the Amplifier and the
+  Necromancy artifacts help Necromancy alone. The House of the Me (`AdvRules.me_tribute / offer_me_reason /
+  offer_me`, command `offer_me`, `town_screen._open_house_of_me`, the computer gives up its backpack's artifacts:
+  `AdvAI.offer_spares`) and the Dur-An-Ki (HoMM3's Castle Gate: `AdvRules.gate_towns / gate_jump`, command `gate`,
+  no movement spent, as the Heroes 3 wiki says, the proposal said otherwise; `town_screen._open_gate` opens the other
+  town; the computer passes to hold a threatened town once a day: `AdvAI._gate_defense`). Spell looks:
+  `FACTIONS[...]["spell_look"]`, `battle.gd spell_look / SPELL_GLOW`, `battle/fx_<kind>_eridu.png`, the bolt and arc
+  take a glow colour. The New Game faction row with five factions stacks each card's picture over its short name,
+  the description on hover. `WorldGen._guard` now takes a crowded spot rather than leave a site unguarded (the
+  pyramid test's seeded Tomb of Curses lost its guard when Eridu changed the map). Screenshot options: battle
+  `--cast=<spell> --cast_at=<s>`, town `--open=<building> --artifacts=a,b`. Art, all painted: the fourteen creatures
+  with poses and moves (a ghost copy cut from the Abgal's hit frame), six portraits, the Lugal and Keeper on the map
+  and in battle with idle and cast frames, the town screen in the Temple's layout, 28 build cards, the map town in
+  three levels, the siege (the Temple's restyled; the first take moved the wall off the grid and the second built a
+  wall across the courtyard: repainted; the Citadel lost its keep until it got its own prompt, `CITADEL_FOR`), six
+  spell effects, the Shaping icon, town music (`town_eridu`). Checked: new `tools/eridu_test.tscn` (235 checks, in
+  the suite); balance figures in `docs/ERIDU.md`; screenshots in ignored `shots/session68/` (town_eridu*,
+  map_eridu, battle_eridu, siege_eridu, cast_*, house_of_me, dur_an_ki, newgame5).
 - **Session68 Agartha (2026-10-26), committed with this HANDOFF update:** the user ("lets do number 2", after playing a game with the
   Illuminated: "it was nice"); answers: deeper theming (Troglodytes as Wells's Morlocks, Beholders as Watchers, the
   rest HoMM3's names), add Subterranean, build it all. A fourth faction, id `dungeon` (HoMM3's Dungeon), designed in
@@ -423,7 +454,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 - **Session67 Eridu proposal (2026-10-24), committed with this HANDOFF update:** the user's idea of an alien faction (a crash-landed
   ship as the castle, strange creatures, magic that is science), a deliberate deviation from HoMM3 they raised
   themselves, themed on the Sumerian / Nibiru ancient-astronaut lore they chose (their notes:
-  `C:/Users/PC/Documents/factionname.pdf`, outside the repo). `docs/ERIDU_PROPOSAL.md`: the Anunnaki of Eridu,
+  `C:/Users/PC/Documents/factionname.pdf`, outside the repo). `docs/ERIDU_PROPOSAL.md` (since session68 `docs/ERIDU.md`): the Anunnaki of Eridu,
   a town built over Alalu's crashed ship in the marshes; 7 tiers of mythic creatures (Lulu, Igigi, Scorpion Men,
   Sharur, Apkallu, Lamassu, Anzu) with first-pass stats and 7 new abilities; Lugal / Keeper heroes (Alalu,
   Ninurta, Enki, Ninhursag); Shaping as its Necromancy; House of the Me and Dur-An-Ki; artifacts and spells
@@ -1287,10 +1318,11 @@ Proposed path, discussed with the user (not yet approved as a plan):
 2. **Online first version** with the two factions: one player hosts the real game, others send commands; turns one
    after another as HoMM3; human battles live on both screens; direct address first; rejoin from the host's state.
 3. **More factions** one at a time through the art pipeline, each checked with the tournament tools. Built: the
-   Illuminated (Tower, session67, `docs/ILLUMINATED.md`), Agartha (Dungeon, session68, `docs/AGARTHA.md`); next
-   proposed: Eridu, or Town Portal (adventure-map casting). Not yet run: a tournament with the Illuminated and Agartha. The user's own
-   idea, an alien faction themed on Sumerian myth, is in `docs/ERIDU_PROPOSAL.md`; the whole setting (a secret
-   history of conspiracies) in `docs/SETTING.md` (both awaiting answers).
+   Illuminated (Tower, session67, `docs/ILLUMINATED.md`), Agartha (Dungeon, session68, `docs/AGARTHA.md`), Eridu (the
+   user's own, session68, `docs/ERIDU.md`, measured with `tools/faction_balance.tscn`); next proposed: Town Portal
+   (adventure-map casting), a faction tournament on whole games (the adventure tournament compares AI versions with
+   fixed factions: it needs a faction option), or the next secret history (`docs/SETTING.md`: the Hidden Folk, Lemuria,
+   Atlantis).
 4. **Hardening:** relay or dedicated server, lobby, fog filtered per player, version checks, turn timers.
 Decisions open with the user: which HoMM3 factions and in what order, how players will connect, and whether to keep
 HoMM3's one-after-another turns.
@@ -1557,6 +1589,13 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 
 ## 9. Where the recent systems live
 
+- **Eridu (session68):** `GameData.FACTIONS["eridu"]` (`building_names`, `spell_look`), its creatures, classes,
+  heroes, `SKILLS["shaping"]` and the `house_of_me` / `dur_an_ki` buildings; `Necromancy.calculate` (Shaping);
+  `BattleLogic.sweep_victims / DISPELLED`, venom and dispel in `_strike`, deflector in `_mult`, venom in
+  `defense_stat`; `AdvRules.me_tribute / offer_me / gate_towns / gate_jump`, commands `offer_me` and `gate`,
+  `AdvAI.offer_spares / _gate_defense`, `town_screen._open_house_of_me / _open_gate`, `battle.gd spell_look /
+  SPELL_GLOW`; `tools/faction_balance.tscn` (tier battles at equal value or growth); `tools/eridu_test.tscn`; design
+  in `docs/ERIDU.md`.
 - **Agartha (session68):** `GameData.FACTIONS["dungeon"]`, its creatures, classes, heroes and the `mana_vortex` /
   `portal_of_summoning` / `battle_scholar_academy` buildings; `BattleLogic.stone_or_venom / _wake / spell_lost_turn`,
   `strike_and_return` in `do_melee`, `positive_morale` in `morale`; `AdvRules.drink_vortex / attend_academy /
@@ -1671,6 +1710,13 @@ Suggested order remains **artifacts → AI → hot-seat multiplayer**, with the 
 - A new faction changes every seeded game that draws a computer's faction (`WorldGen`: `keys()[randi() % size]`):
   `tools/net_test.gd` lost its scripted attack (both rivals became Agartha and Teal fell on day 2); it now pins the
   seats' factions (`seat_faction`, `seat_ai_faction`). Pin them in any test that needs a particular scenario.
+- A restyled siege (session68): the image model may move the wall off the battle grid or add walls in the
+  courtyard; overlay each take on its source (`Image.blend`) before going on. The Citadel prompt names "round"
+  towers and keep: with square towers it took the keep away too (Eridu has its own, `CITADEL_FOR`); the Fort is
+  painted from the Citadel, so check the Citadel first.
+- Equal-value creature battles flip all at once (`tools/faction_balance.tscn`): a single matchup is 0% or 100%, and
+  a small change of a value can swing a tier from 77% to 0%. Settle between two runs, and judge the faction against
+  the HoMM3 factions on the same yardstick, not against 50%.
 - A GDScript test that fails to parse never quits: the suite's `timeout` ends it with no summary line (session68).
 - A new faction's art (session67): the art tools that loop over every faction or creature rewrite the older ones
   (pose, cycle, card, siege ingest): pass the new names, restore the rest from git, merge only the new anchors.

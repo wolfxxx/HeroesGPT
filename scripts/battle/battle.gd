@@ -123,6 +123,8 @@ func _ready() -> void:
 						st["effects"][e] = 2
 				k += 1
 	_build_scene()
+	if Shot.args.has("cast"):  # (shots of a spell's look: --cast=lightning_bolt, cast by the attacker's hero at once)
+		_shot_cast.call_deferred(str(Shot.args["cast"]), float(Shot.args.get("cast_at", "2.2")))
 	if L.siege > 0 and Shot.args.has("broken"):  # (shots of a siege some turns in: --broken=1,3 breaches those segments)
 		for t in str(Shot.args["broken"]).split(","):
 			var i := int(t)
@@ -173,7 +175,8 @@ func _demo_setup() -> Dictionary:
 	if Shot.setup.begins_with("siege"):  # Sir Aldric with all his machines before a Necropolis castle (--siege=1|2|3)
 		a["machines"] = GameData.WAR_MACHINES.duplicate()
 		out["siege"] = int(Shot.args.get("siege", "3"))
-		out["siege_faction"] = {"siege_haven": "haven", "siege_tower": "tower", "siege_dungeon": "dungeon"}.get(Shot.setup, "necropolis")
+		out["siege_faction"] = {"siege_haven": "haven", "siege_tower": "tower", "siege_dungeon": "dungeon",
+			"siege_eridu": "eridu"}.get(Shot.setup, "necropolis")
 	return out
 
 # ---------------------------------------------------------------------------------------------
@@ -1104,6 +1107,8 @@ func _stack_info(st: Dictionary) -> Control:
 		var nm: String = _EFFECT_NAMES.get(e, GameData.SPELLS[e]["name"] if GameData.SPELLS.has(e) else String(e).capitalize())
 		var n: int = st["effects"][e]
 		why.append("%s (%d round%s left)" % [nm, n, "" if n == 1 else "s"])
+	if int(st.get("venom", 0)) > 0:
+		why.append("Venom: -%d Defense for the battle" % (2 * int(st["venom"])))
 	if st["defending"]:
 		why.append("Defending: +20% Defense")
 	if c["shots"] > 0:
@@ -1391,7 +1396,17 @@ func _play(events: Array) -> void:
 				_grid.active = keep
 				_grid.queue_redraw()
 			"attack":
-				await _anim_attack(ev)
+				if ev.get("sweep", false):  # (a Lamassu's blow landing on another stack beside it)
+					var o: Dictionary = ev["d"]
+					_flush_log(ev)
+					_hit_flash(o)
+					_damage_text(o, "-%d" % ev["dmg"], ev["killed"], ev["lucky"], 0.0)
+					_refresh_badge(o)
+					if not o["alive"]:
+						_anim_death(o)
+					await get_tree().create_timer(0.3).timeout
+				else:
+					await _anim_attack(ev)
 			"spell":
 				await _anim_spell(ev)
 			"breath":  # (a dragon's breath past its target: fire on the stack behind)
@@ -1510,7 +1525,8 @@ func _anim_attack(ev: Dictionary) -> void:
 	if ev["ranged"]:
 		_pose(a, "attack", 0.55)
 		var proj := _Projectile.new()
-		proj.kind = {"monk": "magic", "lich": "magic", "magus": "magic", "titan": "lightning", "master_homunculus": "flask"}.get(
+		proj.kind = {"monk": "magic", "lich": "magic", "magus": "magic", "titan": "lightning", "master_homunculus": "flask",
+			"igigi": "magic", "apkallu": "magic"}.get(
 			GameData.base_of(a["id"]), "arrow")
 		proj.from = na.position + Vector2(0, -_top(a) * 0.6)
 		proj.to = nd.position + Vector2(0, -60)
@@ -1659,6 +1675,11 @@ func _anim_spell(ev: Dictionary) -> void:
 		for t in targets:
 			centers.append(_unit(t).position + Vector2(0, -70))
 	var fx: String = FX_OF.get(sp, "arcane")
+	# (a faction's own look for its heroes' spells: Eridu's crystal light, docs/ERIDU.md)
+	var look := spell_look(ev["side"]) if not ev.get("genie", false) and sp != "death_cloud" else ""
+	if look != "" and Assets.has("battle/fx_%s_%s.png" % [fx, look]):
+		fx = "%s_%s" % [fx, look]
+	var glow: Color = SPELL_GLOW.get(look, Color(0.45, 0.65, 1.0))
 	if sp == "armageddon":  # (the sky burns: the whole field flushes red under the falling fire)
 		var flash := ColorRect.new()
 		flash.color = Color(1.0, 0.3, 0.05, 0.0)
@@ -1677,14 +1698,16 @@ func _anim_spell(ev: Dictionary) -> void:
 			var arc := _Arc.new()
 			arc.a = centers[i - 1] + Vector2(0, 30)
 			arc.b = c + Vector2(0, 30)
+			arc.glow = glow
 			_fx.add_child(arc)
 		if sp == "lightning_bolt" or (sp == "chain_lightning" and i == 0):
 			var burst := _Burst.new()  # the bolt from the sky; the painted sparks are the impact, at the feet
 			burst.bolt = true
+			burst.glow = glow
 			burst.position = c + Vector2(0, 62)
 			_rings.add_child(burst)  # (behind the figures: the bolt passes behind the stacks between it and the sky)
 			p = c + Vector2(0, 40)
-		if fx == "holy":
+		if fx.begins_with("holy"):
 			p += Vector2(0, -20)  # a column rising from the feet: its ring sits at the bottom of the frame
 		if area:
 			# in the field's depth order, just in front of the blast's last row: stacks further forward stand over it
@@ -1694,8 +1717,9 @@ func _anim_spell(ev: Dictionary) -> void:
 			_play_fx(fx, p - layer.position, Vector2(1.3, 0.95), 1.1, 1.0, layer)
 			get_tree().create_timer(1.3).timeout.connect(layer.queue_free)
 		else:
-			var size := 1.25 if sp == "implosion" else (0.75 if fx == "spark" else 0.95)
-			_play_fx(fx, p, Vector2.ONE * size, 0.8, 0.5 if fx == "spark" else 1.0)
+			var spark := fx.begins_with("spark")
+			var size := 1.25 if sp == "implosion" else (0.75 if spark else 0.95)
+			_play_fx(fx, p, Vector2.ONE * size, 0.8, 0.5 if spark else 1.0)
 	await get_tree().create_timer(0.35).timeout
 	_flush_log(ev)
 	for t in targets:
@@ -1712,7 +1736,26 @@ func _anim_spell(ev: Dictionary) -> void:
 			tw.tween_property(s, "modulate", Color.WHITE, 0.4)
 	await get_tree().create_timer(0.45).timeout
 
-## Painted spell effects (assets/battle/fx_<name>.png, 4x4 flipbooks on black, drawn additively).
+func _shot_cast(spell: String, at: float) -> void:
+	await get_tree().create_timer(at).timeout
+	var enemies := L.alive_stacks(1).filter(func(e): return not e.get("machine", false))
+	enemies.sort_custom(func(x, y): return L.distance(x["hex"], Vector2i(7, 5)) < L.distance(y["hex"], Vector2i(7, 5)))
+	if not enemies.is_empty():
+		var t: Dictionary = enemies[0] if GameData.SPELLS[spell]["target"] != "ally" else L.alive_stacks(0)[0]
+		_play(L.cast(0, spell, t["hex"]))
+
+## The look of a side's hero's spells: its faction's "spell_look" ("" for the common one).
+func spell_look(side: int) -> String:
+	var h = L.heroes[side] if side >= 0 and side < L.heroes.size() else null
+	if h == null:
+		return ""
+	return GameData.FACTIONS.get(h.get("faction", ""), {}).get("spell_look", "")
+
+## The bolts' and arcs' outer light by spell look (Eridu: cold crystal blue-green).
+const SPELL_GLOW := {"eridu": Color(0.3, 0.95, 0.9)}
+
+## Painted spell effects (assets/battle/fx_<name>.png, 4x4 flipbooks on black, drawn additively; a faction's own look
+## battle/fx_<name>_<look>.png).
 const FX_OF := {"fireball": "fire", "meteor_shower": "fire", "frost_ring": "frost", "ice_bolt": "frost",
 	"lightning_bolt": "spark", "magic_arrow": "arcane", "bless": "holy", "cure": "holy", "resurrection": "holy",
 	"shield": "holy", "stone_skin": "holy", "haste": "holy", "curse": "dark", "slow": "dark", "weakness": "dark",
@@ -1756,6 +1799,7 @@ const ARCHER_SPOTS := {
 	"necropolis": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},
 	"tower": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},  # (the Temple's walls, restyled)
 	"dungeon": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},  # (the Order's walls, restyled)
+	"eridu": {0: Vector2(1334, 226), 6: Vector2(1352, 968), -1: Vector2(1742, 660)},  # (the Temple's walls, restyled)
 }
 
 func _build_walls() -> void:
@@ -2773,6 +2817,7 @@ class _Moat extends Node2D:
 class _Arc extends Node2D:
 	var a := Vector2.ZERO
 	var b := Vector2.ZERO
+	var glow := Color(0.45, 0.65, 1.0)  # (its outer light: Eridu's heroes cast a cold crystal blue-green, SPELL_GLOW)
 	var t := 0.0
 	var _pts := PackedVector2Array()
 	func _ready() -> void:
@@ -2790,14 +2835,15 @@ class _Arc extends Node2D:
 		queue_redraw()
 	func _draw() -> void:
 		var al := 1.0 - t
-		draw_polyline(_pts, Color(0.45, 0.65, 1.0, 0.25 * al), 18.0)
-		draw_polyline(_pts, Color(0.7, 0.85, 1.0, 0.6 * al), 8.0)
+		draw_polyline(_pts, Color(glow, 0.25 * al), 18.0)
+		draw_polyline(_pts, Color(glow.lerp(Color.WHITE, 0.45), 0.6 * al), 8.0)
 		draw_polyline(_pts, Color(1, 1, 1, al), 3.0)
 
 class _Burst extends Node2D:
 	var color := Color.WHITE
 	var radius := 70.0
 	var bolt := false
+	var glow := Color(0.45, 0.65, 1.0)  # (the bolt's outer light, as _Arc)
 	var t := 0.0
 	var _seeds := []
 	func _ready() -> void:
@@ -2817,8 +2863,8 @@ class _Burst extends Node2D:
 				Vector2(12, -162), Vector2(-7, -132), Vector2(10, -104),
 				Vector2(-8, -76), Vector2(6, -42), Vector2.ZERO])
 			var a2 := maxf(0.0, 1.0 - t * 2.0)
-			draw_polyline(pts, Color(0.45, 0.65, 1.0, 0.22 * a2), 22.0)
-			draw_polyline(pts, Color(0.6, 0.8, 1.0, 0.55 * a2), 10.0)
+			draw_polyline(pts, Color(glow, 0.22 * a2), 22.0)
+			draw_polyline(pts, Color(glow.lerp(Color.WHITE, 0.3), 0.55 * a2), 10.0)
 			draw_polyline(pts, Color(0.88, 0.96, 1.0, a2), 5.0)
 			draw_polyline(pts, Color(1, 1, 1, a2), 2.5)
 			draw_set_transform(Vector2.ZERO, 0, Vector2(1, 0.35))

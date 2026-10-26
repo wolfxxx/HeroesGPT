@@ -31,6 +31,9 @@ CLASSES = {
     # session68: Agartha: their faction figure (an Overlord, battle_dungeon*.png) and the Warlock
     "dungeon": ("haven", "an Overlord of the kingdom beneath the earth: a warlord in heavy dark violet-black plate armour with bronze trim, a horned bronze helm with the visor open, a short dark cape, holding the reins in the left hand and a heavy war-axe resting upright against the right shoulder (NO lance, NO spear)"),
     "warlock": ("haven", "a Warlock of the inner world: a sorcerer in long deep violet robes with bronze trim and a hood thrown back, a pointed dark beard, holding upright a tall black staff topped with a glowing amber crystal in the right hand, the reins in the left (NO lance, NO armour, NO helmet)"),
+    # session68: Eridu: their faction figure (a Lugal, battle_eridu*.png) and the Keeper
+    "eridu": ("haven", "a Lugal, a warrior-king of ancient Sumer: a bearded king with long curled black hair and a curled beard, a tall gold horned crown-helmet, a bronze scale cuirass over a fringed kilt of deep lapis blue, a gold-studded belt, a short cloak of blue wool, holding the reins in the left hand and a bronze war-mace with a crystal-inlaid head resting upright against the right shoulder (NO lance, NO spear); the horse in a caparison of lapis blue with gold rosettes"),
+    "keeper": ("haven", "a Keeper of the Me, a priest-sage of ancient Sumer: a bearded man in a long fringed robe of white and lapis blue wool, a tall horned crown of gold, a gold collar, holding upright in the right hand a tall gilded staff topped with a glowing pale-blue crystal tablet, the reins in the left (NO lance, NO armour, NO helmet); the horse in a caparison of lapis blue with gold rosettes"),
 }
 PROMPT = ("The image shows a mounted hero beside a battlefield in a hand-painted fantasy strategy game, seen from the "
           "side, on a flat magenta backdrop. Repaint ONLY the rider as {who}. Keep the horse EXACTLY as it is (same "

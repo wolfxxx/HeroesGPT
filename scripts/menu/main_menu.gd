@@ -285,10 +285,15 @@ func _build_setup() -> void:
 		var b := Button.new()
 		b.toggle_mode = true
 		b.custom_minimum_size = Vector2(fw, 96)
-		# (four and more: the short name, a smaller picture and text, so each description fits its card)
-		_card(b, Assets.tex("map/town_%s.png" % f), 120 if nf <= 2 else (64 if nf == 3 else 44),
-			GameData.FACTIONS[f]["name"] if nf <= 3 else GameData.FACTIONS[f]["short"], GameData.FACTIONS[f]["desc"],
-			24 if nf <= 2 else (18 if nf == 3 else 17), 19 if nf <= 2 else (15 if nf == 3 else 14))
+		# (four: the short name, a smaller picture and text, so each description fits its card; five and more: the
+		# picture over the short name, the description when the pointer rests on the card)
+		if nf >= 5:
+			_card(b, Assets.tex("map/town_%s.png" % f), 50, GameData.FACTIONS[f]["short"], "", 18, 14, true, true)
+			b.tooltip_text = GameData.FACTIONS[f]["desc"]
+		else:
+			_card(b, Assets.tex("map/town_%s.png" % f), 120 if nf <= 2 else (64 if nf == 3 else 44),
+				GameData.FACTIONS[f]["name"] if nf <= 3 else GameData.FACTIONS[f]["short"], GameData.FACTIONS[f]["desc"],
+				24 if nf <= 2 else (18 if nf == 3 else 17), 19 if nf <= 2 else (15 if nf == 3 else 14))
 		b.pressed.connect(_select_faction.bind(f))
 		frow.add_child(b)
 		_faction_buttons[f] = b
@@ -652,27 +657,29 @@ func _ink(b: Button) -> void:
 
 ## A big choice card (faction, hero): picture + gold title + wrapped text. The selected card keeps light text on a
 ## dark panel and is marked by a bright gold frame and glow (dark ink on the gold toggle texture read poorly).
-func _card(b: Button, tex: Texture2D, pic_w: float, title: String, sub: String, title_size := 25, sub_size := 19, caps := true) -> void:
+## `stacked`: the picture (pic_w tall) over a centred title, for narrow cards; an empty `sub` shows no second line.
+func _card(b: Button, tex: Texture2D, pic_w: float, title: String, sub: String, title_size := 25, sub_size := 19, caps := true,
+		stacked := false) -> void:
 	b.focus_mode = Control.FOCUS_NONE
 	var on := UI.selected_plate()
 	on.set_border_width_all(4)
 	on.shadow_size = 10
 	for st in ["pressed", "hover_pressed"]:
 		b.add_theme_stylebox_override(st, on)
-	var h := HBoxContainer.new()
+	var h: BoxContainer = VBoxContainer.new() if stacked else HBoxContainer.new()
 	h.set_anchors_preset(Control.PRESET_FULL_RECT)
-	h.offset_left = 12
-	h.offset_right = -12
-	h.offset_top = 8
-	h.offset_bottom = -8
-	h.add_theme_constant_override("separation", 14)
+	h.offset_left = 12 if not stacked else 4
+	h.offset_right = -12 if not stacked else -4
+	h.offset_top = 8 if not stacked else 6
+	h.offset_bottom = -8 if not stacked else -4
+	h.add_theme_constant_override("separation", 14 if not stacked else 2)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(h)
 	var pic := TextureRect.new()
 	pic.texture = tex
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.custom_minimum_size = Vector2(pic_w, 0)
+	pic.custom_minimum_size = Vector2(0, pic_w) if stacked else Vector2(pic_w, 0)
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(pic)
 	var v := VBoxContainer.new()
@@ -687,7 +694,11 @@ func _card(b: Button, tex: Texture2D, pic_w: float, title: String, sub: String, 
 	t.add_theme_constant_override("outline_size", clampi(title_size / 3, 4, 8))
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if stacked:
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
+	if sub == "":
+		return
 	var d := UI.label(sub, sub_size, UI.TEXT)
 	d.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.02, 0.85))
 	d.add_theme_constant_override("outline_size", 3)

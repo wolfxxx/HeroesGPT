@@ -50,6 +50,10 @@ class_name Commands
 ##   buy_machine   {p, hero, machine, town | object}    at the town's Blacksmith (its own machine) or a War Machine
 ##                                                      Factory the hero stands at (GameState.war_machine_reason)
 ##   transform     {p, town, army, si}                  the town's transforming building on a stack in it
+##   offer_me      {p, hero, town, artifact}            Eridu's House of the Me: a hero in the town gives the artifact
+##                                                      up for crystal and gold (AdvRules.offer_me) -> "paid"
+##   gate          {p, hero, town, to: uid}             Eridu's Dur-An-Ki: the hero at the town's gate passes to the
+##                                                      other town's (AdvRules.gate_jump), its movement kept
 ##   level_roll    {p, hero}                            the rules roll a pending level's stat and skill options (kept
 ##                                                      on the hero until chosen) -> "stat", "options"
 ##   level_up      {p, hero, skill}                     the rolled level taken, with one of its offered skills
@@ -138,6 +142,21 @@ static func _run(rules: AdvRules, cmd: Dictionary) -> Dictionary:
 			return _hill_fort(rules, player, cmd)
 		"transform":
 			return _transform(rules, player, cmd)
+		"offer_me":
+			var town := _own_town(rules, player, cmd)
+			var hero := _hero_of(rules, player, cmd)
+			if town.is_empty() or hero.is_empty():
+				return _no("Not your town.")
+			var a: String = cmd.get("artifact", "")
+			var why := rules.offer_me_reason(hero, town, a)
+			return _no(why) if why != "" else {"ok": true, "reason": "", "paid": rules.offer_me(hero, town, a)}
+		"gate":
+			var town := _own_town(rules, player, cmd)
+			var hero := _hero_of(rules, player, cmd)
+			var to: Dictionary = rules.world["towns"].get(int(cmd.get("to", -1)), {})
+			if town.is_empty() or hero.is_empty() or to.is_empty() or not rules.gate_jump(hero, town, to):
+				return _no("The hero cannot pass there.")
+			return {"ok": true, "reason": ""}
 		"level_roll":
 			return _level_roll(rules, player, cmd)
 		"level_up":

@@ -66,6 +66,26 @@ HEROES = {
                        "of women inside the pole: a proud, clever woman in her thirties with dark hair pinned up, a "
                        "fur-trimmed dark violet travelling coat, a small silver brooch, pale blue light of the inner "
                        "world on her face"),
+    # session68: Eridu, the Anunnaki of Sumerian myth (docs/ERIDU.md): gods of the old tablets, painted as people
+    "alalu": ("lord_gareth", "Alalu, the exiled king of distant Nibiru who first came down to Earth in a fallen sky-ship: "
+              "a proud, weathered old king with a long curled grey beard and fierce eyes, a battered gold horned crown, "
+              "a cloak of deep blue wool over bronze scale, a faint cold-blue crystal glow behind him like a distant star"),
+    "ninurta": ("sir_aldric", "Ninurta, the war god of Sumerian myth: a powerful bearded warrior in his prime with a "
+                "long curled black beard, a gold horned helmet, a bronze scale cuirass, holding the winged mace Sharur "
+                "of bronze and glowing crystal over his shoulder"),
+    "enlil": ("hugues_de_payens", "Enlil, lord of the wind and giver of commands in Sumerian myth: a stern, majestic "
+              "bearded king with a long curled beard bound in gold, a tall horned crown of gold, a fringed robe of "
+              "white and gold, wind stirring his cloak, an air of command"),
+    "enki": ("brother_tomas", "Enki, lord of Eridu, the deep waters and the Me in Sumerian myth: a wise, kindly bearded "
+             "sage with a long white-streaked curled beard, a horned crown, a fringed robe of lapis blue, streams of "
+             "water with fish flowing from his shoulders, holding a glowing pale-blue crystal tablet"),
+    "ninhursag": ("vesna_nightshade", "Ninhursag, the mother goddess of Sumerian myth who shaped the first workers from "
+                  "clay: a calm, strong woman of middle age with dark braided hair under a horned crown, a fringed "
+                  "robe of earth-brown and gold, holding a small figure of clay in her open palm"),
+    "inanna": ("ilsa_grimveil", "Inanna, the goddess of Sumerian myth who carried the Me away from Eridu to Uruk: a "
+               "striking young woman with long black hair, kohl-lined eyes, a gold horned crown with an eight-pointed "
+               "star-disc, a lapis-bead necklace, a deep red and gold fringed robe, a glowing crystal tablet held to "
+               "her chest"),
 }
 PROMPT = ("The image is a hero portrait from a hand-painted fantasy strategy game. Paint a NEW portrait of a different "
           "person in exactly the same style, framing (head and shoulders, centred), lighting and background (the same "

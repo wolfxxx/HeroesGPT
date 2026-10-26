@@ -25,6 +25,19 @@ FX = {
             "opening at the bottom, then sparkles drifting upward and fading",
     "dark": "a dark curse: swirling purple-black smoke with sickly green wisps and a few ghostly skull-like shapes "
             "coiling outward, then dissolving into faint smoke",
+    # session68: Eridu's heroes' own look (docs/ERIDU.md: star-science seen through ancient eyes, cold crystal light)
+    "arcane_eridu": "a bolt of cold crystal light striking: a burst of pale cyan and white light with sharp, clear "
+                    "faceted crystal shards flying outward and thin rings of light, then glittering motes fading",
+    "spark_eridu": "a blue-white lightning strike from the sky: a blinding blue-white and teal flash with long thin "
+                   "crackling arcs and glittering crystal sparks spraying outward, then fading teal wisps",
+    "fire_eridu": "a burst of star fire: a white-gold blaze with a white-hot core swelling into a sphere of golden "
+                  "flame ringed by tiny star-like sparks, then breaking into gold and pale amber embers",
+    "frost_eridu": "a crystal frost burst: clear glittering crystal shards and prisms bursting outward in a ring with a "
+                   "pale cyan flash, catching rainbow glints, then fine crystal dust drifting and fading",
+    "holy_eridu": "a golden blessing of the sky-gods: a column of warm golden light rising with a broad pair of soft "
+                  "golden wings of light opening around it and a gold ring at the bottom, then golden motes drifting up",
+    "dark_eridu": "a deep indigo shadow: swirling deep indigo and violet mist sprinkled with tiny cold stars, coiling "
+                  "outward like a night sky, then dissolving into faint dark blue smoke",
 }
 PROMPT = ("This is a blank 4 x 4 sprite sheet for a fantasy strategy game's battle spell effect. Paint 16 animation "
           "frames of {what}, one frame per cell, in reading order (left to right, top row first): frame 1 is the very "

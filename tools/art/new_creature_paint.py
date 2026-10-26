@@ -112,6 +112,57 @@ NEW = {
                   "bat-like dark red wings, and a long tail ending in a cluster of sharp spikes"),
     "scorpicore": ("manticore", "a Scorpicore: the same winged lion with a man-like face, its hide darker, its wings "
                    "violet-black, its tail a segmented scorpion's tail with a glistening venomous sting"),
+    # session68: Eridu, the Anunnaki of Sumerian myth (docs/ERIDU.md): ancient Mesopotamia first (bronze, lapis,
+    # blue-glazed brick, gold), their star-science only a cold crystal glow; nothing modern, no metal robots
+    "lulu": ("pikeman", "a Lulu, one of the clay-shaped workers of Sumerian myth: a lean, bare-chested dark-haired man "
+             "with sun-browned skin and blue tattooed lines on his arms and chest, a short white wool kilt with a "
+             "fringed hem, bare feet, holding a simple bronze-headed spear upright where the figure holds its weapon"),
+    "adamu": ("lulu", "an Adamu, the perfected first of the Sumerian workers: the same lean man, taller and prouder, "
+              "his tattoos glowing faintly cold blue, a fringed kilt of blue-dyed wool with a bronze-studded leather "
+              "belt, a small round bronze shield on his arm, holding a longer bronze spear with a leaf-shaped blade"),
+    "igigi": ("archer", "an Igigi, a sky-watcher of Sumerian myth: a slender bearded man in a tall conical cap and a "
+              "long fringed robe of pale blue wool, a bronze bracer, drawing a short curved bow of dark wood and bronze "
+              "whose arrow is a thin shaft of cold pale-blue light, the same pose as the archer"),
+    "igigi_skywatcher": ("igigi", "an Igigi Skywatcher: the same slender bearded sky-watcher in a taller gold-banded "
+                         "conical cap and a fringed robe of deep lapis blue with gold trim, a gold star-disc pendant on "
+                         "his chest, drawing a gilded curved bow whose arrow is a bright shaft of cold blue-white light"),
+    "scorpion_man": ("swordsman", "a Scorpion Man, the girtablilu guardian of the mountain gate in the Gilgamesh epic: "
+                     "from the waist up a bearded man with long curled black hair and a bronze conical helmet, bare "
+                     "muscular arms holding a bronze spear, from the waist down the body of a giant dark-brown scorpion "
+                     "with six jointed legs on the ground, its segmented tail curled high over its back ending in a "
+                     "venomous sting"),
+    "scorpion_guardian": ("scorpion_man", "a Scorpion Guardian: the same scorpion-man of the mountain gate, his "
+                          "scorpion body glossy black with gold banding, a bronze scale cuirass on his man's chest, a "
+                          "gold-horned helmet, holding a long bronze spear and a small round shield, the sting of his "
+                          "high-curled tail glowing a faint cold green"),
+    "sharur": ("ghost", "a Sharur, the living weapon of the war god Ninurta in Sumerian myth: a great flying mace-head "
+               "the size of a man, a heavy round head of dark bronze ringed with knobs and inlaid with lapis lazuli, "
+               "a band of glowing pale-blue crystal around it, with a pair of spread golden feathered wings, hovering "
+               "above the ground with no handle and no body, no face"),
+    "shargaz": ("sharur", "a Shargaz, the war god Ninurta's greater weapon: the same flying winged mace-head, larger, "
+                "of gilded bronze with sharp flanges, its crystal band glowing bright cold blue-white with faint "
+                "crackling light, two pairs of golden feathered wings, hovering above the ground, no face"),
+    "apkallu": ("monk", "an Apkallu, one of the seven sages of Sumerian myth who brought the arts to mankind: a bearded "
+                "sage in a long fringed robe with a great fish-skin cloak over his head and back, the fish's head "
+                "forming a hood above his own and its tail at his heels, holding a small bronze bucket in one hand and "
+                "raising a pine cone in the other, the cone glowing with cold pale-blue light"),
+    "abgal": ("apkallu", "an Abgal, a great sage of Sumerian myth: the same robed sage now with the head of an eagle "
+              "and two great feathered wings folded at his back, in a long fringed robe of white and lapis blue, "
+              "holding a small golden bucket and raising a glowing pine cone of bright cold blue-white light"),
+    "lamassu": ("cavalier", "a Lamassu, the colossal guardian of Assyrian palace gates: a huge winged bull of pale carved "
+                "limestone come to life, with a crowned bearded human head in a tall horned cap, a long curled beard, "
+                "great feathered stone wings folded along its back, a curled-stone mane and four heavy stone hooves, "
+                "faint cold-blue crystal light in its eyes, walking"),
+    "shedu": ("lamassu", "a Shedu, the greater gate guardian: the same colossal winged human-headed bull, its stone "
+              "now dark polished basalt inlaid with gold, a gold horned crown, a gold-banded curled beard, its wings "
+              "edged with gold, cold-blue crystal light glowing in its eyes and the band of its crown"),
+    "anzu": ("red_dragon", "the Anzu, the storm bird of Sumerian myth who stole the Tablets of Destiny: a gigantic eagle "
+             "with the head of a roaring lion, a lion's tawny mane, huge spread eagle wings of brown and gold feathers, "
+             "an eagle's body and great taloned feet, its feathers swirling with wisps of storm wind and faint "
+             "blue-white lightning, standing in the same pose"),
+    "imdugud": ("anzu", "the Imdugud, the storm bird in its full might: the same gigantic lion-headed eagle, its "
+                "feathers now deep storm-grey and lapis blue edged with gold, a darker black mane, crackling "
+                "blue-white lightning around its spread wings and roaring jaws, standing in the same pose"),
 }
 IDLE = ("This is a battle unit sprite from a fantasy strategy game. Redraw it as a DIFFERENT creature in exactly the same "
         "side view facing right, the same pose, the same size in the frame, standing on the same ground line at the same "

@@ -884,22 +884,31 @@ func _guard(o: Dictionary, strength := 1.6) -> void:
 	var cands := [Vector2i(1, 1), Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0)]
 	if footprint_for(o["type"]).is_empty():
 		cands = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, 1)]
-	for d in cands:
-		var q: Vector2i = p + d
-		# (and not beside another object or monster: two figures on neighbouring tiles were drawn into each other)
-		var crowded := false
-		for dy in range(-1, 2):
-			for dx in range(-1, 2):
-				var r: Vector2i = q + Vector2i(dx, dy)
-				if r != p and ((occupied.has(r) and occupied[r] != o["uid"]) or (covered.has(r) and covered[r] != o["uid"])):
-					crowded = true
-		if inside(q) and _passable(q) and not occupied.has(q) and terrain[idx(q)] != T_ROAD and not crowded:
-			var m := {"type": "monster", "uid": GameState.next_uid(), "pos": q, "strength_bonus": strength}
-			_fill_monster(m)
-			world["objects"][m["uid"]] = m
-			occupied[q] = m["uid"]
-			covered[q] = m["uid"]
-			return
+	# (a second pass takes a crowded spot rather than leave the site unguarded: session68, a seed whose Tomb of
+	# Curses had every spot beside it crowded)
+	for pass_ in 2:
+		for d in cands:
+			var q: Vector2i = p + d
+			if _guard_at(o, q, pass_ == 0, strength):
+				return
+
+func _guard_at(o: Dictionary, q: Vector2i, roomy: bool, strength: float) -> bool:
+	var p: Vector2i = o["pos"]
+	# (and not beside another object or monster: two figures on neighbouring tiles were drawn into each other)
+	var crowded := false
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var r: Vector2i = q + Vector2i(dx, dy)
+			if r != p and ((occupied.has(r) and occupied[r] != o["uid"]) or (covered.has(r) and covered[r] != o["uid"])):
+				crowded = true
+	if inside(q) and _passable(q) and not occupied.has(q) and terrain[idx(q)] != T_ROAD and not (crowded and roomy):
+		var m := {"type": "monster", "uid": GameState.next_uid(), "pos": q, "strength_bonus": strength}
+		_fill_monster(m)
+		world["objects"][m["uid"]] = m
+		occupied[q] = m["uid"]
+		covered[q] = m["uid"]
+		return true
+	return false
 
 ## A guarded neutral dwelling of a town creature, at least `far` tiles from every town (it may become a Cloud Temple
 ## or a Dragon Cave).

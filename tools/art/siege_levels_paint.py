@@ -28,9 +28,9 @@ from PIL import Image, ImageDraw, ImageFilter
 sys.path.insert(0, os.path.dirname(__file__))
 
 BATCH = "imagegen/batch28"
-FACTIONS = ["haven", "necropolis", "tower", "dungeon"]
+FACTIONS = ["haven", "necropolis", "tower", "dungeon", "eridu"]
 # a faction whose siege is the restyle of another's finished Castle (the Illuminated: the Temple's white walls)
-RESTYLE_FROM = {"tower": "haven", "dungeon": "necropolis"}
+RESTYLE_FROM = {"tower": "haven", "dungeon": "necropolis", "eridu": "haven"}
 RESTYLE = {"tower": ("the stronghold of the Illuminated, a hidden order of alchemists high in snowy mountains: the walls, "
                      "towers, gatehouse and keep of polished white marble with gold trim, their conical roofs deep blue "
                      "with gold finials, blue banners; the battlefield on the left now covered in snow with patches of "
@@ -43,7 +43,15 @@ RESTYLE = {"tower": ("the stronghold of the Illuminated, a hidden order of alche
                        "patches dark grey-brown, never yellow or golden), the far distance "
                        "a vast cavern lit warm amber by a small golden inner sun high in a hazy sky (a bright golden orb, "
                        "never dark), the moat dark water with a violet sheen, the town behind the wall dark stone with "
-                       "violet roofs and glowing crystals")}
+                       "violet roofs and glowing crystals"),
+           "eridu": ("the city of Eridu, the oldest city of ancient Sumer: the walls, towers and gatehouse of sand-coloured "
+                     "mud brick faced with glazed lapis-blue brick and rows of gold striding lions, the towers square and "
+                     "stepped with flat crenellated tops instead of conical roofs, the gate an arched gate of blue glazed "
+                     "brick with gold bulls, the keep a stepped ziggurat of mud brick with a faint cold blue glow at its "
+                     "top; the battlefield on the left a marsh-edge of green grass, reeds and dark muddy earth with a few "
+                     "date palms far off, the moat a reedy canal of dark green water, the sky warm and hazy gold, the "
+                     "courtyard behind the wall an open paved yard exactly as before (NO inner walls across it), the town "
+                     "beyond it flat-roofed mud-brick houses with palms")}
 LEVELS = {1: "fort", 2: "citadel", 3: "castle"}
 
 # battle.gd geometry (1920x1080)
@@ -145,6 +153,16 @@ CITADEL = ("This is a castle siege battlefield from a fantasy strategy game. Pai
            "roofs on the right. Keep the gatehouse, the gate, the drawbridge, the moat, the big keep on the far right, the "
            "sky, the grass and everything else exactly as it is. {style}\nNo units, no people, no text.")
 
+# (Eridu's towers are square and stepped: "the round towers" took its square keep with them; session68)
+CITADEL_FOR = {"eridu": CITADEL.replace("REMOVE the two round towers at the top and bottom ends of the castle wall (the one "
+                                        "at the top edge and the smaller one at the bottom)",
+                                        "REMOVE the two square towers standing ON the wall line at its top and bottom ends "
+                                        "(the tall one at the top edge of the picture and the short one at the bottom edge)")
+               .replace("Keep the gatehouse, the gate, the drawbridge, the moat, the big keep on the far right,",
+                        "Keep the gatehouse, the gate, the drawbridge, the moat, the BIG SQUARE BLUE-GLAZED KEEP TOWER "
+                        "standing in the courtyard at the lower right of the picture (well to the right of the wall: it "
+                        "MUST stay, exactly as it is),")}
+
 FORT = ("This is a castle siege battlefield from a fantasy strategy game. Paint EXACTLY the same picture, same camera, "
         "every shape in the same place, with two changes: (1) REMOVE the big round keep on the far right completely and "
         "paint the open courtyard of trodden earth and flagstones in its place (the town's houses stay behind, along "
@@ -175,7 +193,7 @@ def paint(names):
             else:
                 src = f"{BATCH}/in/{n}_from.png"
                 Image.open(f"{BATCH}/out/{LEVELS[lvl + 1]}_{fac}.png").convert("RGB").resize((1920, 1080), Image.LANCZOS).save(src)
-                prompt = (CITADEL if lvl == 2 else FORT).format(style=vp.STYLE)
+                prompt = (CITADEL_FOR.get(fac, CITADEL) if lvl == 2 else FORT).format(style=vp.STYLE)
             img = vp.paint(client, "gemini-nano-banana-2.1", src, prompt, "16:9", "2K", extra)
             if img:
                 img.save(dst); print("done", n, flush=True)
@@ -210,7 +228,8 @@ SEG_WHAT = {
 }
 MAT = {"haven": "pale cream limestone, blue slate roofs", "necropolis": "black basalt, dark violet roofs",
        "tower": "white marble with gold trim, deep blue roofs, snow",
-       "dungeon": "dark violet-black basalt with bronze trim, dark violet roofs"}
+       "dungeon": "dark violet-black basalt with bronze trim, dark violet roofs",
+       "eridu": "sand-coloured mud brick faced with glazed lapis-blue brick and gold reliefs, flat stepped tops"}
 RESTYLE_PROMPT = ("This is a castle siege battlefield from a fantasy strategy game. Paint EXACTLY the same picture, same "
                   "camera, every shape in exactly the same place and the same size (the wall, gatehouse, gate, the two "
                   "round towers, the keep, the moat, the drawbridge and the ground must line up with a game grid laid "
@@ -218,7 +237,9 @@ RESTYLE_PROMPT = ("This is a castle siege battlefield from a fantasy strategy ga
 ARCHER = {"tower": ("a marksman of the Illuminated: a crossbowman in a midnight-blue tabard with gold trim over mail and a "
                     "polished steel cap, drawing a crossbow"),
           "dungeon": ("a marksman of Agartha: a pale stooped Morlock archer with milky blind eyes in a dark violet "
-                      "leather jerkin and a bronze cap, drawing a short black recurve bow")}
+                      "leather jerkin and a bronze cap, drawing a short black recurve bow"),
+          "eridu": ("a marksman of Eridu: an Igigi sky-watcher, a bearded man in a tall conical cap and a pale blue "
+                    "fringed robe, drawing a short curved bow")}
 
 
 def restyle(fac):

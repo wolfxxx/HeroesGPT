@@ -187,6 +187,88 @@ FACTIONS = {
                            "within, great heaps of gold and black dragon scales at its entrance (all inside the frame)",
         },
     },
+    # session68: Eridu, the Anunnaki's city over Alalu's fallen ship (docs/ERIDU.md), in the Temple's layout
+    "eridu": {
+        "src": "haven",
+        "specials": {"house_of_me": "stables", "dur_an_ki": "brotherhood"},
+        "style": ("It belongs to Eridu, the oldest city of ancient Sumer, built by sky-gods around a ship that fell from "
+                  "the stars: sun-dried mud brick in warm sand and ochre tones faced with glazed bricks of deep lapis "
+                  "blue, gold reliefs of striding lions and bulls, palm-trunk beams, cedar doors with bronze studs, "
+                  "reed mats and canals, and only here and there a cold pale-blue glow of crystal. Ancient, never "
+                  "modern: no metal machines, no guns, no robots. No religious symbols: no crosses, crescents or "
+                  "six-pointed stars."),
+        "map": ("the city of Eridu on the adventure map: a walled city of sand-coloured mud brick faced with glazed lapis-"
+                "blue brick and gold reliefs, square stepped corner towers, a great stepped ziggurat at its centre with "
+                "the curved shining hull of a fallen sky-ship showing through its base and a cold blue crystal glow at "
+                "its top, a few palms, an arched blue gate at the front centre, on a round base of marsh and reeds"),
+        "bg": ("the marshes of southern Mesopotamia at golden evening: a wide, still marsh of green reeds and channels of "
+               "water, date palms, a warm hazy sky of gold and pale blue, and far off in the marsh the long curved hull of "
+               "a huge fallen sky-ship of polished silvery metal, half-sunk at a slant among the reeds and catching the "
+               "light, ancient and overgrown; the town site itself a broad raised platform of packed earth and mud-brick "
+               "paving with canals at its edges"),
+        "layers": {
+            "fort": "the town's fortifications: a long wall of sand-coloured mud brick faced with glazed lapis-blue brick "
+                    "and rows of gold striding lions, square stepped towers, a great arched gate of blue glazed brick "
+                    "with gold bulls and dragons in the middle (like the Ishtar Gate)",
+            "citadel": "the town's fortifications grown stronger: the long blue-glazed wall with gold lions and stepped "
+                       "towers, the great blue arched gate, and behind it a tall stepped mud-brick keep with blue bands",
+            "castle": "the town's full castle: the long blue-glazed wall with taller stepped towers crowned with gold "
+                      "crenellations, the great blue arched gate with gold reliefs, and a tall stepped ziggurat-keep "
+                      "behind it whose top glows with cold pale-blue crystal light",
+            "village_hall": "a small house of mud brick with a flat roof, a palm-trunk porch and a reed awning",
+            "town_hall": "a larger hall of mud brick with a row of cedar columns in front, blue glazed bands and a gold "
+                         "lion relief over the door",
+            "city_hall": "a grand palace of mud brick and blue glazed brick with a portico of tall cedar columns, gold "
+                         "reliefs of lions and bulls and a stepped roof",
+            "capitol": "a magnificent palace on a high terrace, blue glazed brick and gold, rows of cedar columns, two "
+                       "great gold winged bulls at its stair and a crown of cold glowing crystal on its highest tower",
+            "tavern": "a beer house of the marsh: a long arched house of bundled reeds and reed mats with a mud-brick "
+                      "front, big clay beer jars with drinking straws by the door, a palm shading it",
+            "marketplace": "a market under palm-frond and striped linen awnings, stalls of dates, fish, clay jars, dyed "
+                           "wool and copper wares, bales and baskets between them",
+            "mage_guild_1": "the Ziggurat: a small stepped temple-tower of mud brick, two terraces with a stair up the "
+                            "front, a little shrine at its top with a cold pale-blue glow",
+            "mage_guild_2": "the Ziggurat grown higher: a tall stepped temple-tower of mud brick with four terraces "
+                            "faced with blue glazed brick, a long stair up the front, and a shrine at its top crowned "
+                            "with a glowing pale-blue crystal",
+            "blacksmith": "a bronze foundry of mud brick with a tall clay chimney, a furnace glowing at its open front, "
+                          "an anvil, and an ammunition cart full of bundled arrows standing outside",
+            "dwelling_1": "the Bit-Shimti, the house where life is breathed into clay: a domed house of mud brick beside "
+                          "a clay pit, rows of drying clay figures of men on its steps, a faint blue glow at its doorway",
+            "dwelling_2": "the Skywatch: a tall slender stepped tower of mud brick with a viewing platform on top, a gold "
+                          "star-disc and bronze sighting rods set on it",
+            "dwelling_3": "the Gate of Mashu: a mountain gate of two tall pillars of rough brown rock with a lintel, "
+                          "great scorpion carvings on both pillars",
+            "dwelling_4": "the Armory of Ninurta: a strong hall of mud brick with bronze doors, a great winged mace of "
+                          "bronze and glowing crystal mounted over the door",
+            "dwelling_5": "the House of the Sages: a white temple on a platform beside a canal, fish carved along its "
+                          "frieze, a stair down to the water",
+            "dwelling_6": "the Gate of the Guardians: a monumental arched gate of carved pale stone flanked by two "
+                          "colossal winged human-headed bulls (lamassu statues)",
+            "dwelling_7": "Anzu's Eyrie: a tall jagged crag of brown rock crowned with an enormous nest of branches and "
+                          "reeds, storm clouds and wind swirling around its top (all inside the frame)",
+            "house_of_me": "the House of the Me: a square hall of blue glazed brick with a low dome of glowing pale-blue "
+                           "crystal, shelves of shining crystal tablets visible through its open front",
+            "dur_an_ki": "the Dur-An-Ki, the bond of heaven and earth: a tall slender stepped pylon of blue glazed brick "
+                         "with gold bands, a pillar of cold pale-blue light rising from its top into the sky",
+        },
+        "upgrades": {
+            "dwelling_1u": "the upgraded Bit-Shimti: a larger domed house of clay with blue glazed bands, more figures of "
+                           "clay men on its steps, a stronger blue glow at its door",
+            "dwelling_2u": "the upgraded Skywatch: a taller tower with gold bands and a bigger gold star-disc glowing "
+                           "faintly blue",
+            "dwelling_3u": "the upgraded Gate of Mashu: taller rock pillars with gold-banded scorpion carvings and "
+                           "bronze doors between them",
+            "dwelling_4u": "the upgraded Armory of Ninurta: grander, with gilded bronze doors and a larger winged mace "
+                           "blazing with crystal light over them",
+            "dwelling_5u": "the upgraded House of the Sages: a larger white temple with a colonnade and eagle-headed "
+                           "statues at its stair down to the canal",
+            "dwelling_6u": "the upgraded Gate of the Guardians: a grander gate of dark basalt and gold flanked by two "
+                           "colossal winged bulls with gold crowns",
+            "dwelling_7u": "the upgraded Eyrie: a taller crag with a vast nest, dark storm clouds and blue-white lightning "
+                           "flickering around its top (all inside the frame)",
+        },
+    },
 }
 
 LAYER = ("This image shows one building of the town screen of a hand-painted fantasy strategy game (in the style of the "

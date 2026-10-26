@@ -429,6 +429,7 @@ func defense_stat(s: Dictionary) -> int:
 		v += 3
 	if s["effects"].has("disease"):
 		v -= 2
+	v -= 2 * int(s.get("venom", 0))  # (Scorpion Men's venom: -2 a sting, for the battle)
 	if s["defending"]:
 		v = int(ceil(v * 1.2)) + 1
 	return maxi(0, v)
@@ -616,6 +617,8 @@ func _mult(a: Dictionary, d: Dictionary, ranged: bool, moved: int) -> float:
 			bonus *= 0.5
 		if behind_wall(a, d):
 			bonus *= 0.5
+		if has_ab(d, "deflector"):
+			bonus *= 0.5  # (Sharur turns shots aside: towers' and the Ballista's too)
 	else:
 		bonus += 0.10 * hero_skill(a["side"], "offense")
 		if cdata(a)["shots"] > 0 and not has_ab(a, "no_melee_penalty"):
@@ -791,6 +794,11 @@ func do_melee(s: Dictionary, target: Dictionary, from_hex: Vector2i) -> Array:
 		ev.append({"t": "move", "s": s, "path": path})
 	var woke := _wake(target)
 	ev += _strike(s, target, false, moved, false, 0.5 if woke == "stone" else 1.0)  # (stone takes half, and wakes)
+	if has_ab(s, "sweep") and s["alive"]:  # (the Lamassu strike every enemy beside them; only the one attacked strikes back)
+		for o in sweep_victims(s, target):
+			var hit := _strike(s, o, false, moved, false, 0.5 if _wake(o) == "stone" else 1.0)
+			hit[0]["sweep"] = true  # (the same blow: the screen shows it landing, not another swing)
+			ev += hit
 	if target["alive"] and s["alive"] and not target.get("machine", false) and target["retaliations"] > 0 and not has_ab(s, "no_retaliation") \
 			and _can_act(target) and woke != "stone":
 		target["retaliations"] -= 1
@@ -804,6 +812,18 @@ func do_melee(s: Dictionary, target: Dictionary, from_hex: Vector2i) -> Array:
 	s["effects"].erase("berserk")  # (Berserk ends once the stack has attacked)
 	finish_turn(s)
 	return ev
+
+## The other enemy stacks a sweeping attacker strikes beside the one it attacks, standing at `head` (the AI weighing
+## a strike) or where it stands.
+func sweep_victims(s: Dictionary, target: Dictionary, head = null) -> Array:
+	var around := []
+	for c in cells(s, head):
+		around += neighbors(c)
+	var out := []
+	for o in stacks_on(around):
+		if o != target and o != s and o["alive"] and o["side"] != s["side"] and not o.get("tower", false):
+			out.append(o)
+	return out
 
 func do_shoot(s: Dictionary, target: Dictionary) -> Array:
 	var woke := _wake(target)
@@ -861,6 +881,9 @@ func stone_or_venom(a: Dictionary, d: Dictionary) -> String:
 		return "paralyze"
 	return ""
 
+## The helpful spells an Abgal's shot ends on its target.
+const DISPELLED := ["bless", "haste", "shield", "stone_skin"]
+
 func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation: bool, mult := 1.0) -> Array:
 	var dmg := _roll_damage(a, d, ranged, moved)
 	if mult != 1.0:
@@ -889,6 +912,18 @@ func _strike(a: Dictionary, d: Dictionary, ranged: bool, moved: int, retaliation
 	if has_ab(a, "curse_strike") and d["alive"] and not immune(d["side"], "curse") and rng.randf() < 0.25:
 		d["effects"].erase("bless")  # (the Mummy's curse, as the spell: minimum damage for 3 rounds)
 		d["effects"]["curse"] = 3
+	if has_ab(a, "venom") and not ranged and d["alive"] and living(d) and int(d.get("venom", 0)) < 3:
+		d["venom"] = int(d.get("venom", 0)) + 1  # (the sting: -2 Defense for the battle, three at most; Cure ends it)
+		log_lines.append("Venom weakens %s: -%d Defense." % [_name(d), 2 * d["venom"]])
+		ev.append({"t": "status", "s": d, "text": "Venom", "log": log_lines.size()})
+	if has_ab(a, "dispel") and ranged and d["alive"]:
+		var gone := []
+		for k in DISPELLED:
+			if d["effects"].erase(k):
+				gone.append(k)
+		if not gone.is_empty():  # (the Abgal's light undoes what the spells gave)
+			log_lines.append("The sages' light dispels %s's spells." % _name(d))
+			ev.append({"t": "status", "s": d, "text": "Dispelled", "log": log_lines.size()})
 	var gaze := stone_or_venom(a, d) if not ranged else ""
 	if gaze != "" and rng.randf() < 0.2:
 		d["effects"][gaze] = 3
@@ -1162,6 +1197,7 @@ func cast(side: int, spell: String, hex: Vector2i) -> Array:
 				"cure":
 					for k in ["curse", "slow", "weakness", "disease", "paralyze"]:
 						s["effects"].erase(k)
+					s.erase("venom")
 					var g := heal(s, 10 + 5 * spell_power(side), false)
 					out.append({"t": "heal", "s": s, "amount": g})
 				"resurrection":

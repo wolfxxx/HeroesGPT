@@ -420,6 +420,70 @@ func summon_portal(town: Dictionary) -> void:
 	var had: int = int(pool.get("count", 0)) if pool.get("creature", "") == cid else 0
 	town["portal"] = {"creature": cid, "count": had + int(GameData.CREATURES[cid]["growth"])}
 
+## Eridu's House of the Me (docs/ERIDU.md): what an artifact given up is worth, by its class ({} for one that cannot
+## be given: a combination or a set's piece).
+const ME_TRIBUTE := {"treasure": {"crystal": 2, "gold": 500}, "minor": {"crystal": 4, "gold": 1000},
+	"major": {"crystal": 6, "gold": 2000}, "relic": {"crystal": 10, "gold": 4000}}
+
+static func me_tribute(a: String) -> Dictionary:
+	var d: Dictionary = GameData.ARTIFACTS.get(a, {})
+	if d.is_empty() or d.has("parts") or d.has("set"):
+		return {}
+	return ME_TRIBUTE.get(d["tier"], {})
+
+## Why the hero cannot give this artifact up in the town's House of the Me ("" when it can).
+func offer_me_reason(hero: Dictionary, town: Dictionary, a: String) -> String:
+	if TownLogic.effect(town, "artifact_tribute") <= 0:
+		return "There is no House of the Me here."
+	if hero["owner"] != town["owner"] or hero["pos"] != town["pos"]:
+		return "The hero is not in the town."
+	if not (a in hero.get("artifacts", []) or a in hero.get("backpack", [])):
+		return "The hero does not have that."
+	if me_tribute(a).is_empty():
+		return "Combination artifacts and their pieces cannot be given up."
+	return ""
+
+## The artifact read into new Me: gone from the hero, its crystal and gold to the kingdom; what was paid ({} if not).
+func offer_me(hero: Dictionary, town: Dictionary, a: String) -> Dictionary:
+	if offer_me_reason(hero, town, a) != "":
+		return {}
+	var i: int = hero["artifacts"].find(a)
+	if i >= 0:
+		hero["artifacts"].remove_at(i)
+	else:
+		hero["backpack"].remove_at(hero["backpack"].find(a))
+	hero["max_movement"] = GameState.hero_max_movement(hero)
+	hero["movement"] = mini(hero["movement"], hero["max_movement"])
+	var pay := me_tribute(a)
+	var res: Dictionary = world["players"][town["owner"]]["resources"]
+	for k in pay:
+		res[k] = int(res.get(k, 0)) + int(pay[k])
+	return pay
+
+## Eridu's Dur-An-Ki (HoMM3's Inferno Castle Gate): the towns the hero at this town's gate may pass to: its owner's
+## other towns with one, whose gate no hero stands in.
+func gate_towns(hero: Dictionary, town: Dictionary) -> Array:
+	var out := []
+	if TownLogic.effect(town, "gate") <= 0 or hero.get("in_town", false) or hero["pos"] != town["pos"] 			or hero["owner"] != town["owner"]:
+		return out
+	for t in world["towns"].values():
+		if t["uid"] != town["uid"] and t["owner"] == town["owner"] and TownLogic.effect(t, "gate") > 0 				and hero_at(t["pos"]).is_empty():
+			out.append(t)
+	out.sort_custom(func(x, y): return x["uid"] < y["uid"])
+	return out
+
+## The hero passes through the Dur-An-Ki to the other town's gate, keeping its movement (as HoMM3); false if it may not.
+func gate_jump(hero: Dictionary, town: Dictionary, to: Dictionary) -> bool:
+	if not to in gate_towns(hero, town):
+		return false
+	var from: Vector2i = hero["pos"]
+	hero["pos"] = to["pos"]
+	hero.erase("dest")
+	refresh_tile(from)
+	refresh_tile(to["pos"])
+	reveal(player_of(hero), to["pos"], hero_scout_radius(hero))
+	return true
+
 # ---------------------------------------------------------------------------------------------
 # Visiting
 # ---------------------------------------------------------------------------------------------
