@@ -112,6 +112,32 @@ class Watcher extends Node:
 		adv._click(walled, false)
 		await _frames(2)
 		_ok(GameState.view()["selected_hero"] == third["uid"], "an unreachable hero is selected instead")
+		# back home: with a hero out on the map, a click on any tile of an own town (not only the gate) shows the route
+		# to the gate and the second click walks in; it doesn't open the town screen from afar
+		var town := {}
+		for tw in adv.world["towns"].values():
+			if tw["owner"] == 0:
+				town = tw
+		var body := Vector2i(-1, -1)
+		for dy in range(-3, 1):
+			for dx in range(-2, 3):
+				var q: Vector2i = town["pos"] + Vector2i(dx, dy)
+				if body == Vector2i(-1, -1) and q != town["pos"] and adv.rules.town_covering(q).get("uid", -1) == town["uid"]:
+					body = q
+		_ok(body != Vector2i(-1, -1), "found a town tile other than the gate")
+		me["movement"] = me["max_movement"]
+		adv._select_hero(me["uid"], true)
+		adv._click(body, false)
+		await _frames(2)
+		_ok(get_tree().current_scene == adv and GameState.pending_town.is_empty(), "first click on the town doesn't open it")
+		_ok(adv._plan_target == town["pos"] and not adv._plan.is_empty(), "it shows the route to the town's gate")
+		adv._click(body + Vector2i(1, 0) if adv.rules.town_covering(body + Vector2i(1, 0)).get("uid", -1) == town["uid"] else body, false)
+		var walked := 0
+		while get_tree().current_scene == adv and walked < 900:
+			walked += 1
+			await get_tree().process_frame
+		_ok(me["pos"] == town["pos"], "a second click on the town walks the hero to its gate (%s)" % [me["pos"]])
+		_ok(GameState.pending_town.get("hero_uid", -1) == me["uid"], "and the hero visits the town")
 		print("MEET TEST: %d checks, failures: %d" % [checks, failures])
 		get_tree().quit()
 

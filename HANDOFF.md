@@ -17,6 +17,14 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
+- **Session69 back to town (2026-10-27), committed with this HANDOFF update:** the user: with a hero out on the map, a click on the own castle
+  opened the town screen instead of walking the hero home, and they didn't know how to get back. A click on any tile of
+  an own town except its one gate tile opened the town at once. Now as the classic (VCMI's `onTileLeftClicked` too):
+  with a hero selected on the map, a click anywhere on an own town shows the route to its gate and the second click
+  walks in (and visits); the town screen opens straight away only with no hero selected (or one in a garrison), or
+  when the hero can't reach the gate or already stands in it. Code: `adventure._click` (`own_town`, the target
+  snapped to `town["pos"]`). `tools/meet_test.gd` gains 4 checks (23 in all): first click routes and doesn't open,
+  second click on another town tile walks the hero to the gate and visits.
 - **Session68 Eridu (2026-10-26), committed with this HANDOFF update:** the user ("Lets do the Eridu now"); answers to the proposal's
   questions: Anzu at the top, Shaping, the House of the Me pays crystal and gold, the rest as proposed, and Eridu's
   heroes' spells get their own look. A fifth faction, id `eridu`, the user's own (no HoMM3 town), designed in

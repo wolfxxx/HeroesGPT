@@ -568,9 +568,14 @@ func _click(t: Vector2i, _dbl: bool) -> void:
 		return
 	var town := rules.town_covering(t)
 	var hero := selected_hero()
-	if not town.is_empty() and town["owner"] == me and t != town["pos"]:
+	var own_town: bool = not town.is_empty() and town["owner"] == me
+	# As the classic: with a hero out on the map, a click anywhere on an own town shows the route to its gate and the
+	# second click walks in; the town screen opens only when the hero can't get there (or is already at the gate).
+	if own_town and (hero.is_empty() or hero.get("in_town", false)) and t != town["pos"]:
 		open_town(town["uid"])
 		return
+	if own_town:
+		t = town["pos"]
 	if hero.is_empty() or hero.get("in_town", false):
 		if not town.is_empty() and town["owner"] == me:
 			open_town(town["uid"])
@@ -581,6 +586,8 @@ func _click(t: Vector2i, _dbl: bool) -> void:
 		_execute_move()
 		return
 	_make_plan(t)
+	if own_town and _plan.is_empty():
+		open_town(town["uid"])
 
 func _make_plan(t: Vector2i) -> void:
 	var hero := selected_hero()
