@@ -235,7 +235,10 @@ Swordsman (Scorpion Man), Ghost (Sharur), Monk (Apkallu), Cavalier (Lamassu) and
 CREATURE_NOTES / POSE_NOTES). Hero portraits `legend_portraits.py`; the Lugal (`battle_eridu`, `map_eridu*`) and Keeper
 (`battle_keeper`, `map_keeper*`) over the Temple's horse in a lapis caparison. The town screen `town/eridu_*.png` and
 `layout_eridu.json` by `new_faction_town.py eridu` (the Temple's layout; the House of the Me and Dur-An-Ki at the
-Stables' and Chapter House's places), the map town by its `map` step, its levels by `town_levels_paint.py`. Cards
+Stables' and Chapter House's places), the map town by its `map` step, its levels by `town_levels_paint.py`; all
+three map towns had the gate painted left of the front, so in session69 each was repainted as an edit with the gate
+moved to the front centre over the gate tile (the `vertex-image` skill's script on `imagegen/batch42/in/eridu_*.png`,
+the picture on magenta; first takes kept; cut, shadowed and anchored as the `map` step's ingest). Cards
 `building_cards.py cards eridu`. The siege `battle/bg_siege_eridu_*.png`, `siege_eridu_*`, `siege_eridu_archer.png` by
 `siege_levels_paint.py restyle eridu` (the Temple's Castle restyled; Eridu's Citadel prompt `CITADEL_FOR`), then
 `paint`, `breach`, `damage`, `archer`, `ingest eridu`. Its heroes' spell effects `battle/fx_<arcane|spark|fire|frost|holy|

@@ -52,6 +52,18 @@ func _ready() -> void:
 					h1["pos"] = q
 					print("DUEL red %s blue %s" % [h0["pos"], q])
 					break
+		if Shot.args.has("at_gate"):  # (shot: the first hero standing in its home town's gate, as on arrival)
+			var w := GameState.world
+			var h: Dictionary = w["heroes"][w["players"][0]["heroes"][0]]
+			for t in w["towns"].values():
+				if t["owner"] == 0:
+					h["pos"] = t["pos"]
+					h["in_town"] = false
+					match Shot.args["at_gate"]:  # (--at_gate=castle or village: the town at that level)
+						"castle": t["buildings"].append_array(["fort", "citadel", "castle"])
+						"village": t["buildings"] = t["buildings"].filter(func(b): return not b in ["fort", "citadel", "castle"])
+					print("GATE %s at %s" % [t["name"], t["pos"]])
+					break
 		if Shot.setup == "artifacts":  # (judge shot: one artifact of each tier laid out beside the first hero)
 			_shot_artifacts(GameState.world)
 		if Shot.setup == "town_levels":  # (shot: the first town a Castle, the second a village without a Fort)

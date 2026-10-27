@@ -17,7 +17,7 @@ the look and feel of HoMM3, and each round fixes what the judge found.
 
 ## 2. Status
 
-- **Session69 back to town (2026-10-27), committed with this HANDOFF update:** the user: with a hero out on the map, a click on the own castle
+- **Session69 back to town (2026-10-27), `7d952ed`:** the user: with a hero out on the map, a click on the own castle
   opened the town screen instead of walking the hero home, and they didn't know how to get back. A click on any tile of
   an own town except its one gate tile opened the town at once. Now as the classic (VCMI's `onTileLeftClicked` too):
   with a hero selected on the map, a click anywhere on an own town shows the route to its gate and the second click
@@ -25,6 +25,12 @@ the look and feel of HoMM3, and each round fixes what the judge found.
   when the hero can't reach the gate or already stands in it. Code: `adventure._click` (`own_town`, the target
   snapped to `town["pos"]`). `tools/meet_test.gd` gains 4 checks (23 in all): first click routes and doesn't open,
   second click on another town tile walks the hero to the gate and visits.
+- **Session69 Eridu gate (2026-10-27), committed with this HANDOFF update:** the user: a hero walking into Nippur stands next to the gate,
+  which looks awkward. All three Eridu map towns (`map/town_eridu*.png`) had the gate painted about a tile left of
+  and half a tile above the gate tile (the other four factions have it at the front centre over the anchor). Repainted
+  as edits with the gate at the front centre, same canvas, anchor and shadow (ASSETS.md, Eridu). New shot option
+  `--at_gate[=castle|village]`; seen in `shots/session69/gate_eridu_levels.png` and `gate_eridu_zoom.png` (the
+  hero in the gateway at all three levels; before: `gate_compare.png`).
 - **Session68 Eridu (2026-10-26), committed with this HANDOFF update:** the user ("Lets do the Eridu now"); answers to the proposal's
   questions: Anzu at the top, Shaping, the House of the Me pays crystal and gold, the rest as proposed, and Eridu's
   heroes' spells get their own look. A fifth faction, id `eridu`, the user's own (no HoMM3 town), designed in
@@ -1251,7 +1257,7 @@ Screenshot harness flags (`scripts/core/shot.gd`, coordinates in 1920x1080 space
 `--shot --scene --delay --shots --interval --click=x,y;x,y (prefix r for right click) --keys=A;S --hover=x,y`;
 scenes also read `--setup=` (`demo`, `rich`, `new_game`, `all_spells`, `upgraded`, `siege`, `siege_haven` (`--siege=1|2|3`,
 default 3), `town_levels`,
-`necro_rich`, `necro_max`, `x`), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b --heroes=a,b` (battle heroes by id), `--players=a,b` (demo battle flag colours, -1
+`necro_rich`, `necro_max`, `x`), `--at_gate[=castle|village]` (map: the first hero in its home town's gate), `--seed --faction --reveal --cam=x,y --zoom --broken=a,b --battered=a,b --heroes=a,b` (battle heroes by id), `--players=a,b` (demo battle flag colours, -1
 neutral), `--terrain=snow` (demo battle ground), `--effects=bless;curse;bless+slow` (spells on the attacker's stacks). The harness parks the
 mouse before each capture (except hover and right-click shots). The window must not be headless for shots.
 
